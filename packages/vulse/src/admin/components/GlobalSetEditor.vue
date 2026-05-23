@@ -205,6 +205,14 @@ async function destroy() {
         <label class="block">
           <span class="text-sm font-medium text-zinc-700">Handle</span>
           <input :value="handle" :disabled="!isCreate" class="mt-1 w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm disabled:bg-zinc-100" @input="onHandleInput" />
+          <span class="mt-1 block text-xs text-zinc-500">
+            <template v-if="isCreate">
+              Stable identifier exposed by the public globals API (<code>/api/vulse/public/globals/{{ handle || 'handle' }}</code>) and used by any frontend code that reads this global.
+            </template>
+            <template v-else>
+              Locked — changing it would break the public API path and any frontend code that loads this global by handle. Create a new global to rename.
+            </template>
+          </span>
         </label>
 
         <div>
@@ -251,9 +259,9 @@ async function destroy() {
             :key="fd.path"
             :field="fd"
             :model-value="content[fd.path]"
+            :field-errors="fieldErrors"
             @update:modelValue="content[fd.path] = $event"
           />
-          <p v-for="(msg, name) in fieldErrors" :key="name" class="text-sm text-red-600">{{ name }}: {{ msg }}</p>
           <button type="button" class="rounded-lg bg-zinc-900 px-4 py-2 text-sm text-white disabled:opacity-50" :disabled="savingValue || !canEditValue" @click="saveValue">
             {{ savingValue ? 'Saving…' : 'Save content' }}
           </button>

@@ -89,6 +89,14 @@ async function destroy() {
         <label class="block">
           <span class="text-sm font-medium text-zinc-700">Handle</span>
           <input :value="handle" :disabled="!isCreate" class="mt-1 w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm disabled:bg-zinc-100" @input="onHandleInput" />
+          <span class="mt-1 block text-xs text-zinc-500">
+            <template v-if="isCreate">
+              Stable identifier referenced by blueprints (in <code>blocks</code> and <code>replicator</code> fields) and any frontend code that renders this set.
+            </template>
+            <template v-else>
+              Locked — changing it would break every blueprint and frontend reference to this set. Create a new set and migrate to rename.
+            </template>
+          </span>
         </label>
       </div>
 
