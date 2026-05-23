@@ -74,6 +74,23 @@ export const settings = sqliteTable('vulse_settings', {
   updatedAt: integer('updated_at', { mode: 'timestamp_ms' }).notNull(),
 })
 
+// --- Live preview ---
+
+export const vulsePreviewSessions = sqliteTable('vulse_preview_sessions', {
+  id: text('id').primaryKey(),
+  userId: text('user_id').notNull(),
+  entryId: text('entry_id'),
+  collection: text('collection').notNull(),
+  slug: text('slug').notNull(),
+  content: text('content', { mode: 'json' }).notNull(),
+  expiresAt: integer('expires_at', { mode: 'timestamp_ms' }).notNull(),
+  createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
+  updatedAt: integer('updated_at', { mode: 'timestamp_ms' }).notNull(),
+}, (t) => ({
+  byExpires: index('vulse_preview_sessions_expires').on(t.expiresAt),
+  byUser: index('vulse_preview_sessions_user').on(t.userId),
+}))
+
 // --- Better Auth (canonical column names per better-auth Drizzle adapter) ---
 
 export const user = sqliteTable('user', {

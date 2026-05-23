@@ -2,12 +2,14 @@ import initSql from '../../migrations/0000_init.sql?raw'
 import collectionsSetsSql from '../../migrations/0001_collections_sets.sql?raw'
 import treeDraftsSql from '../../migrations/0002_tree_drafts.sql?raw'
 import ftsSql from '../../migrations/0003_fts.sql?raw'
+import previewSessionsSql from '../../migrations/0006_preview_sessions.sql?raw'
 
 const MIGRATIONS = [
   { id: '0000_init', sql: initSql },
   { id: '0001_collections_sets', sql: collectionsSetsSql },
   { id: '0002_tree_drafts', sql: treeDraftsSql },
   { id: '0003_fts', sql: ftsSql },
+  { id: '0006_preview_sessions', sql: previewSessionsSql },
 ] as const
 
 function splitStatements(sql: string): string[] {
