@@ -10,6 +10,12 @@ import { setsRoutes } from './routes/sets.js'
 import { mediaRoutes } from './routes/media.js'
 import { searchRoutes } from './routes/search.js'
 import { previewRoutes } from './routes/preview.js'
+import { previewSessionsRoutes } from './routes/preview-sessions.js'
+import { formsRoutes } from './routes/forms.js'
+import { formSubmitRoutes } from './routes/form-submit.js'
+import { formUploadRoutes } from './routes/form-upload.js'
+import { globalsRoutes } from './routes/globals.js'
+import { globalsPublicRoutes } from './routes/globals-public.js'
 import { createSdk } from './sdk/index.js'
 import { previewSecret } from './preview.js'
 import type { Auth } from './better-auth.js'
@@ -30,6 +36,12 @@ export interface VulseRuntime {
     media: ReturnType<typeof mediaRoutes>
     search: ReturnType<typeof searchRoutes>
     preview: ReturnType<typeof previewRoutes>
+    previewSessions: ReturnType<typeof previewSessionsRoutes>
+    forms: ReturnType<typeof formsRoutes>
+    formSubmit: ReturnType<typeof formSubmitRoutes>
+    formUpload: ReturnType<typeof formUploadRoutes>
+    globals: ReturnType<typeof globalsRoutes>
+    globalsPublic: ReturnType<typeof globalsPublicRoutes>
   }
 }
 
@@ -63,6 +75,12 @@ export async function getRuntime(env: RuntimeEnv, registry: BlueprintRegistry, b
       }),
       search: searchRoutes(db, auth),
       preview: previewRoutes(auth, previewSecret(env)),
+      previewSessions: previewSessionsRoutes(db, auth, registry),
+      forms: formsRoutes(db, auth),
+      formSubmit: formSubmitRoutes(db, env.FORM_QUEUE),
+      formUpload: formUploadRoutes(db, { bucket: env.BUCKET }),
+      globals: globalsRoutes(db, auth),
+      globalsPublic: globalsPublicRoutes(db),
     },
   }
   return cached
