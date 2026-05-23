@@ -22,6 +22,16 @@ export interface MediaItem extends MediaRow {
 
 const paramsId = z.object({ id: z.string() })
 
+const ALLOWED_MIME = new Set([
+  'image/jpeg',
+  'image/png',
+  'image/gif',
+  'image/webp',
+  'image/avif',
+  'image/svg+xml',
+])
+const MAX_UPLOAD_BYTES = 25 * 1024 * 1024 // 25 MB
+
 export function mediaRoutes(db: VulseDb, auth: Auth, mediaEnv: MediaEnv) {
   const repo = new MediaRepo(db)
 
@@ -62,7 +72,16 @@ export function mediaRoutes(db: VulseDb, auth: Auth, mediaEnv: MediaEnv) {
         const entry = form.get('file')
         if (!entry || typeof entry === 'string') throw new ValidationError('file required')
         const file = entry as File
+        if (!ALLOWED_MIME.has(file.type)) {
+          throw new ValidationError(`Unsupported file type: ${file.type || 'unknown'}`)
+        }
+        if (file.size > MAX_UPLOAD_BYTES) {
+          throw new ValidationError(`File too large (max ${MAX_UPLOAD_BYTES} bytes)`)
+        }
         const buf = await file.arrayBuffer()
+        if (buf.byteLength > MAX_UPLOAD_BYTES) {
+          throw new ValidationError(`File too large (max ${MAX_UPLOAD_BYTES} bytes)`)
+        }
         const dims = probeDimensions(buf, file.type)
         const { key } = await putToR2({ bucket: mediaEnv.bucket }, buf, file.type)
         const row = await repo.create({

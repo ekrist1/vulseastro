@@ -1,17 +1,29 @@
 ---
-import { getCollection } from 'astro:content'
 import SiteLayout from '../layouts/SiteLayout.astro'
 import BlockRenderer from 'vulse/client/BlockRenderer.astro'
+import { getRuntimeEnv, getRuntime, createDb, registryForRequest } from 'vulse/server'
 
-const { slug } = Astro.params
-const pages = await getCollection('page')
-const page = pages.find((p) => p.data.slug === slug)
+const slug = Astro.params.slug!
+const env = getRuntimeEnv()
+const db = createDb(env.DB)
+const rt = await getRuntime(env, await registryForRequest(db), Astro.url.origin)
+const session = await rt.auth.api.getSession({ headers: Astro.request.headers })
+const isPreview = (Astro.locals as { vulsePreview?: boolean }).vulsePreview === true
+
+const page = await rt.sdk.collections.findBySlug('page', slug, {
+  ...(session?.user ? { audience: session.user } : {}),
+})
 if (!page) return new Response(null, { status: 404, statusText: 'Not found' })
+
+const content = (isPreview && page.draftContent ? page.draftContent : page.content) as {
+  title: string
+  body?: unknown
+}
 ---
-<SiteLayout title={`${page.data.title} · Vulse Playground`}>
+<SiteLayout title={`${content.title} · Vulse Playground`}>
   <article class="prose-content">
     <p class="hero__eyebrow" style="margin-bottom: 0.5rem;">Page</p>
-    <h1>{page.data.title}</h1>
-    <BlockRenderer blocks={page.data.body ?? []} mediaUrl={(id) => `/api/vulse/media/${id}/file`} />
+    <h1>{content.title}</h1>
+    <BlockRenderer blocks={content.body ?? []} mediaUrl={(id) => `/api/vulse/media/${id}/file`} />
   </article>
 </SiteLayout>

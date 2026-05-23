@@ -15,10 +15,15 @@ export function searchRoutes(db: VulseDb, auth: Auth) {
         limit: z.number().optional(),
         includeDrafts: z.boolean().optional(),
       }),
-    }, async ({ body }) => sdk.query(body.q, {
-      ...(body.collections !== undefined ? { collections: body.collections } : {}),
-      ...(body.limit !== undefined ? { limit: body.limit } : {}),
-      ...(body.includeDrafts !== undefined ? { includeDrafts: body.includeDrafts } : {}),
-    })),
+    }, async ({ body, auth: authCtx }) => {
+      const role = authCtx.user?.role
+      const mayReadDrafts = role === 'admin' || role === 'editor'
+      const includeDrafts = body.includeDrafts === true && mayReadDrafts
+      return sdk.query(body.q, {
+        ...(body.collections !== undefined ? { collections: body.collections } : {}),
+        ...(body.limit !== undefined ? { limit: body.limit } : {}),
+        includeDrafts,
+      })
+    }),
   }
 }

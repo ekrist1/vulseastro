@@ -6,6 +6,13 @@ const password = ref('')
 const error = ref<string | null>(null)
 const loading = ref(false)
 
+function safeNext(raw: string): string {
+  // Only allow same-origin path redirects; reject protocol-relative ("//evil")
+  // and absolute URLs.
+  if (typeof raw !== 'string' || !raw.startsWith('/') || raw.startsWith('//')) return '/admin'
+  return raw
+}
+
 async function submit(e: Event) {
   e.preventDefault()
   loading.value = true
@@ -20,7 +27,7 @@ async function submit(e: Event) {
   })
   loading.value = false
   if (!res.ok) { error.value = 'Invalid email or password'; return }
-  window.location.href = props.next
+  window.location.href = safeNext(props.next)
 }
 </script>
 

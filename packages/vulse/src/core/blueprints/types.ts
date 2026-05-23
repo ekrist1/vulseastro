@@ -18,6 +18,15 @@ export interface AdminConfig {
   listColumns?: string[]
 }
 
+export interface PreviewConfig {
+  /**
+   * URL template for the public-facing entry page. `{slug}` is replaced with
+   * the entry's URL slug. Defaults to `/{slug}` if omitted.
+   * Example: `/recipes/{slug}` or `/blog/{slug}`.
+   */
+  path: string
+}
+
 export interface BlueprintAccess<T = unknown> {
   read?: AccessFn<T>
   create?: AccessFn<T>
@@ -31,6 +40,7 @@ export interface Blueprint<S extends z.ZodTypeAny = z.ZodTypeAny> {
   schema: S
   admin: AdminConfig
   access?: BlueprintAccess<z.infer<S>>
+  preview?: PreviewConfig
   singleton?: boolean
   tree?: boolean
   maxDepth?: number

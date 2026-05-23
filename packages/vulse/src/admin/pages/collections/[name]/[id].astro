@@ -35,11 +35,14 @@ const initial = {
   status: row.status,
   hasUnpublishedChanges: row.hasUnpublishedChanges,
 }
+
+const previewTemplate = bp.preview?.path ?? '/{slug}'
+const previewPath = previewTemplate.replace('{slug}', encodeURIComponent(row.slug))
 ---
 <AdminShell title={`Edit ${bp.label}`} activePath={`/admin/collections/${bp.name}`}>
   <div class="mb-4 flex items-center gap-4">
     <a href={`/admin/collections/${bp.name}/${Astro.params.id}/revisions`} class="text-sm text-zinc-600 underline">View history</a>
-    <a href={`/api/vulse/preview/start?to=/${row.slug}`} class="rounded border border-zinc-300 px-3 py-1 text-sm hover:bg-zinc-50">Preview</a>
+    <a href={`/api/vulse/preview/start?to=${encodeURIComponent(previewPath)}`} class="rounded border border-zinc-300 px-3 py-1 text-sm hover:bg-zinc-50">Preview</a>
   </div>
   <EntryForm
     client:load

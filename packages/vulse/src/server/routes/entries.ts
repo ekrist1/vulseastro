@@ -8,6 +8,17 @@ import { evaluate } from '../../core/access.js'
 import { parseContent } from '../../core/parse-content.js'
 import { defineHandler } from '../handler.js'
 
+/**
+ * The URL slug is owned by the entries table. If a user schema also declares a
+ * `slug` field (common for templates), it is hidden from the form; we mirror
+ * the canonical slug into content here so schemas that require it still parse.
+ */
+function withCanonicalSlug(content: unknown, slug: string | undefined): unknown {
+  if (slug === undefined) return content
+  if (content === null || typeof content !== 'object' || Array.isArray(content)) return content
+  return { ...(content as Record<string, unknown>), slug }
+}
+
 const paramsByCollection = z.object({ collection: z.string() })
 const paramsById = z.object({ collection: z.string(), id: z.string() })
 
@@ -70,7 +81,7 @@ export function entriesRoutes(db: VulseDb, auth: Auth, reg: BlueprintRegistry) {
       if (!allowed) throw new AccessDeniedError('Cannot create')
       if (!authCtx.user) throw new AccessDeniedError('Authentication required')
       if (body.parentId && !bp.tree) throw new ValidationError('Collection does not support nesting')
-      const validated = parseContent(bp.schema, body.content)
+      const validated = parseContent(bp.schema, withCanonicalSlug(body.content, body.slug))
       return await entries.create({
         collection: params.collection,
         slug: body.slug,
@@ -101,7 +112,10 @@ export function entriesRoutes(db: VulseDb, auth: Auth, reg: BlueprintRegistry) {
       })
       if (!allowed) throw new AccessDeniedError('Cannot update')
       if (!authCtx.user) throw new AccessDeniedError('Authentication required')
-      const validated = body.content !== undefined ? parseContent(bp.schema, body.content) : undefined
+      const nextSlug = body.slug ?? row.slug
+      const validated = body.content !== undefined
+        ? parseContent(bp.schema, withCanonicalSlug(body.content, nextSlug))
+        : undefined
       return await entries.updateWithRevision(params.id, {
         ...(body.slug !== undefined ? { slug: body.slug } : {}),
         ...(validated !== undefined ? { content: validated } : {}),

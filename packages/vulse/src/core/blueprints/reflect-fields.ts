@@ -101,9 +101,16 @@ function describe(path: string, sch: ZodTypeAny): FieldDescriptor {
   return { path, widget: 'text', required }
 }
 
+// Names that the entries table owns directly; if user schemas declare them,
+// they are managed by the form's dedicated UI (URL slug input, status select)
+// and must not render as duplicate fields.
+const RESERVED_FIELD_NAMES = new Set(['slug', 'status'])
+
 export function fieldDescriptorsFromBlueprint(bp: Blueprint): FieldDescriptor[] {
-  if (!bp.fields?.length) return reflectFields(bp.schema as z.ZodObject<any>)
-  return bp.fields.map(fieldDefinitionToDescriptor)
+  const all = !bp.fields?.length
+    ? reflectFields(bp.schema as z.ZodObject<any>)
+    : bp.fields.map(fieldDefinitionToDescriptor)
+  return all.filter((f) => !RESERVED_FIELD_NAMES.has(f.path))
 }
 
 function fieldDefinitionToDescriptor(f: FieldDefinition): FieldDescriptor {

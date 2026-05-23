@@ -25,6 +25,7 @@ function mergeBlueprint(compiled: Blueprint, code?: Blueprint): Blueprint {
     ...compiled,
     admin: code?.admin ?? compiled.admin,
     ...(code?.access ? { access: code.access } : {}),
+    ...(code?.preview ? { preview: code.preview } : {}),
   }
 }
 

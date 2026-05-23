@@ -9,6 +9,7 @@ export default defineCollection({
     body: blocks(),
   }),
   admin: { titleField: 'title', listColumns: ['title', 'slug'] },
+  preview: { path: '/{slug}' },
   access: {
     read: ({ user, entry }) => entry?.status === 'published' || !!user,
     create: ({ user }) => user?.role === 'admin' || user?.role === 'editor',

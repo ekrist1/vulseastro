@@ -31,8 +31,9 @@ export const onRequest = defineMiddleware(async (ctx, next) => {
     if (role !== 'admin' && role !== 'editor') {
       return new Response('Forbidden', { status: 403 })
     }
-  } catch {
-    return next()
+  } catch (err) {
+    console.error('[vulse] admin middleware error:', err)
+    return new Response('Internal Server Error', { status: 500 })
   }
   return next()
 })
