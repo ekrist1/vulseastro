@@ -36,8 +36,15 @@ const slugNotice = ref<string | null>(null)
 const status = ref<'draft' | 'published'>((props.initial?.status as 'draft' | 'published') ?? 'draft')
 const hasChanges = ref(props.hasUnpublishedChanges ?? false)
 const error = ref<string | null>(null)
+const fieldErrors = ref<Record<string, string>>({})
 const saving = ref(false)
 const lastAction = ref<'draft' | 'publish' | 'save'>('save')
+
+const fieldLabelByPath = computed<Record<string, string>>(() => {
+  const map: Record<string, string> = {}
+  for (const f of props.fields) map[f.path] = f.label ?? f.path
+  return map
+})
 
 function emitPreview() {
   emit('previewChange', {
@@ -55,15 +62,49 @@ const titleFieldLabel = computed(() => {
 function applyApiError(e: AdminApiError) {
   slugError.value = null
   error.value = null
+  fieldErrors.value = {}
   const details = e.details as {
     field?: string
     issues?: Array<{ path?: (string | number)[]; message?: string }>
   } | undefined
-  const slugIssue = details?.field === 'slug'
-    || details?.issues?.find((issue) => issue.path?.[0] === 'slug')
-  if (slugIssue) {
-    slugError.value = slugIssue === true ? e.message : (slugIssue.message ?? e.message)
+  const issues = details?.issues ?? []
+
+  if (details?.field === 'slug') {
+    slugError.value = e.message
     slugExpanded.value = true
+    return
+  }
+
+  const nextFieldErrors: Record<string, string> = {}
+  const unmapped: string[] = []
+  for (const issue of issues) {
+    const path = issue.path ?? []
+    const message = issue.message ?? 'Invalid value'
+    if (path[0] === 'slug') {
+      slugError.value = message
+      slugExpanded.value = true
+      continue
+    }
+    const topLevel = path[0]
+    if (typeof topLevel === 'string' && topLevel in fieldLabelByPath.value) {
+      // Keep the first error per field — subsequent ones are noise for the user.
+      if (!(topLevel in nextFieldErrors)) nextFieldErrors[topLevel] = message
+    } else {
+      unmapped.push(path.length ? `${path.join('.')}: ${message}` : message)
+    }
+  }
+
+  fieldErrors.value = nextFieldErrors
+  const fieldCount = Object.keys(nextFieldErrors).length
+  if (fieldCount > 0 && unmapped.length === 0) {
+    const names = Object.keys(nextFieldErrors)
+      .map((p) => fieldLabelByPath.value[p] ?? p)
+      .join(', ')
+    error.value = `Please fix ${fieldCount === 1 ? 'the issue' : 'the issues'} below (${names}).`
+    return
+  }
+  if (unmapped.length > 0) {
+    error.value = unmapped.join('; ')
     return
   }
   error.value = e.message
@@ -78,6 +119,11 @@ function syncSlugFromResponse(nextSlug: string, requestedSlug: string) {
 
 function onFieldUpdate(path: string, value: unknown) {
   content.value = { ...content.value, [path]: value }
+  if (path in fieldErrors.value) {
+    const next = { ...fieldErrors.value }
+    delete next[path]
+    fieldErrors.value = next
+  }
   if (props.titleField && path === props.titleField && !slugTouched.value && typeof value === 'string') {
     slug.value = normalizeSlug(value)
   }
@@ -114,6 +160,7 @@ async function save(publish = false) {
   error.value = null
   slugError.value = null
   slugNotice.value = null
+  fieldErrors.value = {}
   lastAction.value = props.draftsEnabled ? (publish ? 'publish' : 'draft') : 'save'
   const requestedSlug = slug.value
   try {
@@ -184,6 +231,7 @@ onMounted(() => emitPreview())
       :key="f.path"
       :field="f"
       :model-value="content[f.path]"
+      :field-errors="fieldErrors"
       @update:modelValue="onFieldUpdate(f.path, $event)"
     />
 

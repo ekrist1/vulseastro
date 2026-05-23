@@ -660,6 +660,17 @@ async function save() {
             class="mt-1 w-full rounded border border-zinc-300 px-3 py-2 text-sm read-only:bg-zinc-50 disabled:bg-zinc-100"
             data-testid="blueprint-handle"
           />
+          <p class="mt-1 text-xs text-zinc-500">
+            <template v-if="isCreate">
+              The collection's stable identifier — used in admin URLs (<code>/admin/collections/{{ handle || 'handle' }}</code>),
+              API paths, and your codebase imports. Lowercase letters, numbers, <code>-</code> and <code>_</code> only.
+            </template>
+            <template v-else>
+              Handle is locked because changing it would break admin URLs (<code>/admin/collections/{{ handle }}</code>),
+              public API paths, any frontend code that references this collection by name, and routing in generated
+              pages. To rename, create a new collection and migrate entries.
+            </template>
+          </p>
           <span v-if="errors['handle']" class="mt-1 block text-xs text-red-600">{{ errors['handle'] }}</span>
         </div>
         <label class="flex items-center gap-2">

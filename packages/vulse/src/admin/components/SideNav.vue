@@ -11,15 +11,12 @@ const props = defineProps<{
 }>()
 
 const schemaOpen = ref(false)
-const usersOpen = ref(false)
 
 const SCHEMA_OPEN_KEY = 'vulse.sidebar.schema.open'
-const USERS_OPEN_KEY = 'vulse.sidebar.users.open'
 
 onMounted(() => {
   try {
     schemaOpen.value = localStorage.getItem(SCHEMA_OPEN_KEY) === '1'
-    usersOpen.value = localStorage.getItem(USERS_OPEN_KEY) === '1'
   } catch {
     // ignore
   }
@@ -28,13 +25,17 @@ onMounted(() => {
 watch(schemaOpen, (v) => {
   try { localStorage.setItem(SCHEMA_OPEN_KEY, v ? '1' : '0') } catch { /* ignore */ }
 })
-watch(usersOpen, (v) => {
-  try { localStorage.setItem(USERS_OPEN_KEY, v ? '1' : '0') } catch { /* ignore */ }
-})
 
 function navClass(href: string) {
   const active = props.activePath === href || (href !== '/admin' && props.activePath?.startsWith(href))
   return ['vulse-nav-link rounded-xl text-sm text-zinc-800', active && 'vulse-nav-link-active'].filter(Boolean)
+}
+
+function subNavClass(href: string, exact = false) {
+  const active = exact ? props.activePath === href : props.activePath?.startsWith(href)
+  return ['block rounded px-2 py-1.5 text-sm hover:bg-zinc-100', active && 'bg-zinc-100 font-medium']
+    .filter(Boolean)
+    .join(' ')
 }
 
 async function signOut() {
@@ -91,7 +92,7 @@ async function signOut() {
         </span>
       </a>
 
-      <div class="px-2 pt-4 text-xs uppercase tracking-wide text-zinc-500">Settings</div>
+      <div class="px-2 pt-4 text-xs uppercase tracking-wide text-zinc-500">Schema</div>
       <button
         type="button"
         class="flex w-full items-center gap-1 rounded px-2 py-1.5 text-left text-sm hover:bg-zinc-100"
@@ -99,7 +100,7 @@ async function signOut() {
         @click="schemaOpen = !schemaOpen"
       >
         <span class="inline-block w-3 text-zinc-400">{{ schemaOpen ? '▾' : '▸' }}</span>
-        <span>Schema</span>
+        <span>Collections</span>
       </button>
       <div v-if="schemaOpen" class="ml-4">
         <a
@@ -116,59 +117,29 @@ async function signOut() {
         <a href="/admin/schema/new" :class="navClass('/admin/schema/new')" class="text-zinc-600">
           + New collection
         </a>
-        <div v-if="isAdmin" class="my-1 border-t border-zinc-100"></div>
-        <a
-          v-if="isAdmin"
-          href="/admin/settings/sets"
-          class="block rounded px-2 py-1.5 text-sm hover:bg-zinc-100"
-          :class="activePath?.startsWith('/admin/settings/sets') && 'bg-zinc-100 font-medium'"
-        >
-          Sets
-        </a>
-        <a
-          v-if="isAdmin"
-          href="/admin/settings/globals"
-          class="block rounded px-2 py-1.5 text-sm hover:bg-zinc-100"
-          :class="activePath?.startsWith('/admin/settings/globals') && 'bg-zinc-100 font-medium'"
-        >
-          Globals
-        </a>
       </div>
+      <a
+        v-if="isAdmin"
+        href="/admin/settings/sets"
+        :class="subNavClass('/admin/settings/sets')"
+      >
+        Sets
+      </a>
+      <a
+        v-if="isAdmin"
+        href="/admin/settings/globals"
+        :class="subNavClass('/admin/settings/globals')"
+      >
+        Globals
+      </a>
 
       <template v-if="isAdmin">
-        <button
-          type="button"
-          class="flex w-full items-center gap-1 rounded px-2 py-1.5 text-left text-sm hover:bg-zinc-100"
-          :aria-expanded="usersOpen"
-          @click="usersOpen = !usersOpen"
-        >
-          <span class="inline-block w-3 text-zinc-400">{{ usersOpen ? '▾' : '▸' }}</span>
-          <span>Users</span>
-        </button>
-        <div v-if="usersOpen" class="ml-4">
-          <a
-            href="/admin/users"
-            class="block rounded px-2 py-1.5 text-sm hover:bg-zinc-100"
-            :class="activePath?.startsWith('/admin/users') && 'bg-zinc-100 font-medium'"
-          >
-            Users
-          </a>
-        </div>
-        <a
-          v-if="isAdmin"
-          href="/admin/settings/auth"
-          class="block rounded px-2 py-1.5 text-sm hover:bg-zinc-100"
-          :class="activePath === '/admin/settings/auth' && 'bg-zinc-100 font-medium'"
-        >
-          Auth
-        </a>
-        <a
-          href="/admin/settings"
-          class="block rounded px-2 py-1.5 text-sm hover:bg-zinc-100"
-          :class="activePath === '/admin/settings' && 'bg-zinc-100 font-medium'"
-        >
-          Site settings
-        </a>
+        <div class="px-2 pt-4 text-xs uppercase tracking-wide text-zinc-500">Users</div>
+        <a href="/admin/users" :class="subNavClass('/admin/users')">Users</a>
+
+        <div class="px-2 pt-4 text-xs uppercase tracking-wide text-zinc-500">Settings</div>
+        <a href="/admin/settings" :class="subNavClass('/admin/settings', true)">Site</a>
+        <a href="/admin/settings/auth" :class="subNavClass('/admin/settings/auth', true)">Auth</a>
       </template>
     </nav>
   </aside>
