@@ -33,6 +33,7 @@ export function injectVulseRoutes({ injectRoute, logger }: InjectArgs) {
     { pattern: '/api/vulse/preview/stop', file: 'api-vulse-preview-stop.js' },
     { pattern: '/api/vulse/preview/sessions', file: 'api-vulse-preview-sessions.js' },
     { pattern: '/api/vulse/preview/sessions/[id]', file: 'api-vulse-preview-sessions-id.js' },
+    { pattern: '/api/vulse/preview/bridge.js', file: 'api-vulse-preview-bridge.js' },
     { pattern: '/api/vulse/forms', file: 'api-vulse-forms.js' },
     { pattern: '/api/vulse/forms/[handle]', file: 'api-vulse-form-handle.js' },
     { pattern: '/api/vulse/forms/[handle]/submissions', file: 'api-vulse-form-handle.js' },
