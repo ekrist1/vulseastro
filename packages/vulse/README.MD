@@ -98,6 +98,8 @@ Migrations shipped with Vulse:
 | `0001_collections_sets.sql` | Runtime schema editor (`vulse_collections`, sets) |
 | `0002_tree_drafts.sql` | Tree structure, draft columns |
 | `0003_fts.sql` | FTS5 search index + triggers |
+| `0004_forms.sql` | Forms, submissions, upload drafts |
+| `0005_globals.sql` | Global sets and values |
 
 ### 4. Seeding — first admin (super user)
 
@@ -164,6 +166,10 @@ wrangler d1 execute DB --local --command "
   DELETE FROM vulse_settings;
   DELETE FROM vulse_collections;
   DELETE FROM vulse_sets;
+  DELETE FROM vulse_forms;
+  DELETE FROM vulse_form_submissions;
+  DELETE FROM vulse_global_sets;
+  DELETE FROM vulse_global_values;
   DELETE FROM session;
   DELETE FROM account;
   DELETE FROM user;
@@ -208,6 +214,35 @@ export default defineCollection({
 
 Reload `/admin` — the collection appears in the sidebar. Use **Schema** in settings to edit blueprints at runtime.
 
+### Scaffold collection pages (Statamic-style)
+
+After creating a collection in **Admin → Schema**, open the collection editor and use **Scaffold frontend** to copy Astro page templates and a CLI command. Or run the CLI directly:
+
+```bash
+npx vulse collection:scaffold blog \
+  --route '/blog/{slug}' \
+  --index '/blog'
+```
+
+This generates:
+
+| Output | Purpose |
+|--------|---------|
+| `src/vulse/collections/<handle>.ts` | Code blueprint with `preview.path`, access rules |
+| `src/pages/<segment>/[slug].astro` | Entry detail page (runtime SDK) |
+| `src/pages/<segment>/index.astro` | Listing page (`getCollection`) — when `--index` is set |
+| `src/content.config.ts` | Adds a `vulseLoader()` entry (merged if file exists) |
+
+Options:
+
+```bash
+npx vulse collection:scaffold page --route '/{slug}'          # show-only at site root
+npx vulse collection:scaffold blog --force                    # overwrite existing files
+npx vulse collection:scaffold blog --skip-blueprint           # pages + content.config only
+```
+
+Restart the dev server after scaffolding, then create entries under **Admin → Collections**.
+
 ### Admin UI
 
 | Route | Purpose |
@@ -221,7 +256,9 @@ Reload `/admin` — the collection appears in the sidebar. Use **Schema** in set
 | `/admin/users` | User management |
 | `/admin/settings/auth` | Sign-up toggle, domain allowlist |
 | `/admin/settings/sets` | Reusable block sets |
-| `/admin/schema/:handle` | Blueprint editor |
+| `/admin/settings/globals` | Site-wide global content sets |
+| `/admin/forms` | Form builder and submissions |
+| `/admin/schema/:handle` | Blueprint editor (+ scaffold frontend panel) |
 
 ### Content delivery — static / SSG path
 
@@ -292,9 +329,41 @@ const results = await rt.sdk.search.query('astro', { collections: ['post'], limi
 const imageUrl = rt.sdk.media.url(mediaId, 'hero')
 ```
 
-### Preview drafts on the public site
+### Live Preview
 
-In the entry editor, click **Preview**. That sets a signed `vulse_preview` cookie and redirects to the public URL. Middleware treats preview mode as “include drafts” for SDK reads.
+The entry editor includes a **split-panel live preview** beside the form. As you edit fields, the iframe updates the real public page template without autosaving to the database — unsaved state lives in a short-lived preview session (1 hour TTL).
+
+| Mechanism | Trigger | Content source | Writes DB? |
+|-----------|---------|----------------|------------|
+| **Live preview panel** | Typing in the editor | Preview session (`vulse_live_preview` token) | Never |
+| **Preview button** | Click **Preview** in toolbar | Saved draft via signed `vulse_preview` cookie | Only if you saved |
+
+Both can be active. Use `resolvePreviewContent()` in SSR page templates — it applies priority: **live session → saved draft → published**.
+
+```astro
+---
+import { getRuntimeEnv, getRuntime, createDb, registryForRequest, resolvePreviewContent } from 'vulse/server'
+
+const entry = await rt.sdk.collections.findBySlug('post', slug, { audience: session?.user ?? null })
+if (!entry) return new Response(null, { status: 404 })
+
+const content = resolvePreviewContent(entry, Astro.locals)
+---
+```
+
+**SSR required:** Live preview only works on server-rendered pages (`output: 'server'` in `astro.config.mjs`). Loader-only SSG pages cannot reflect unsaved session state at request time. The Preview button (saved draft cookie) may still work if the page has an SSR fallback.
+
+**Blueprint options:**
+
+```ts
+preview: {
+  path: '/blog/{slug}',
+  rootSelector: 'article', // DOM morph target; defaults to 'main'
+  live: false,             // hide split panel; Preview button still works
+}
+```
+
+Set `preview.rootSelector` when your layout does not use a `<main>` element. Set `preview.live: false` to disable the inline panel for collections that should only use the saved-draft Preview flow.
 
 ---
 
@@ -594,6 +663,218 @@ Vulse targets **Cloudflare Workers/Pages** with a single artifact.
    ```
 
    Add a `[triggers]` cron schedule in `wrangler.toml`.
+
+---
+
+## Forms
+
+Vulse includes a first-party form builder: define forms in **Admin → Forms**, embed them on the public site with `FormRenderer`, and store submissions in D1.
+
+### Embed a form
+
+```astro
+---
+import FormRenderer from 'vulse/client/components/FormRenderer.astro'
+---
+<FormRenderer form="contact">
+  <input name="name" type="text" required />
+  <input name="email" type="email" required />
+  <textarea name="message" required />
+  <button type="submit">Send</button>
+</FormRenderer>
+```
+
+The component posts JSON to `POST /api/vulse/forms/:handle/submit`. Listen for `vulse:form:success` and `vulse:form:error` on the form element.
+
+### Admin
+
+- **Forms** — create/edit field definitions, success message, redirect, notification emails
+- **Submissions** — list, detail view, bulk delete, CSV export
+
+### Spam & limits (v1)
+
+- Honeypot field (default `_hp`) — non-empty values get a fake success response without storage
+- Per-IP rate limiting (default 10 submissions / hour per form)
+- Per-form unique fields (e.g. one newsletter signup per email)
+
+### File uploads
+
+Two-phase: `POST /api/vulse/forms/:handle/upload` (multipart `file` + `field`) returns `{ mediaId }`; include the media ID in the submit payload. Orphan draft uploads are purged by the scheduled cron handler.
+
+### Async processing (`FORM_QUEUE`)
+
+Submit responses return immediately. Notification/confirmation emails and webhooks run in a queue consumer:
+
+```toml
+[[queues.producers]]
+queue = "vulse-form-queue"
+binding = "FORM_QUEUE"
+
+[[queues.consumers]]
+queue = "vulse-form-queue"
+max_batch_size = 10
+max_batch_timeout = 30
+```
+
+Export `vulseFormQueue` from your worker entry and wire it to the consumer. Without a queue binding, submissions are stored but side effects must be processed manually (or via cron in dev).
+
+### Integration hooks
+
+```ts
+vulse({
+  forms: {
+    onSubmit: async ({ form, payload, submission }) => { /* CRM, Slack, etc. */ },
+    onAfterProcess: async ({ form, submission }) => { /* after built-in actions */ },
+  },
+})
+```
+
+Hooks run in the queue consumer, not the submit handler.
+
+---
+
+## Globals
+
+Globals are **site-wide content sets** (Statamic-style) that are not tied to a URL or collection entry. Use them for footer copy, contact details, social links, default SEO text, or anything your layout needs on every page.
+
+They are separate from **Site settings** (`vulse_settings`) — those are flat key/value config (auth flags, deploy hooks). Globals use structured fields, an editor UI, and a public read API.
+
+> **Security:** All global values are public. Do not store secrets, API keys, or raw analytics scripts in globals.
+
+### Admin
+
+Under **Settings → Globals** (`/admin/settings/globals`):
+
+1. Create a global set (handle + label). You can save a set with **no fields** first, then add fields later.
+2. Define fields on the left (text, textarea, blocks, date, boolean, select, asset).
+3. Edit content values on the right and click **Save content**.
+
+| Action | Role |
+|--------|------|
+| Read (list / get set + value) | `admin`, `editor` |
+| Create / update definition / update value / delete | `admin` only |
+
+### Public API (fetch-only)
+
+No authentication. Responses use the standard Vulse envelope (`{ ok: true, data: … }`).
+
+```txt
+GET /api/vulse/public/globals
+GET /api/vulse/public/globals/:handle
+```
+
+**All sets** — keyed by handle:
+
+```json
+{
+  "ok": true,
+  "data": {
+    "site": {
+      "siteName": "Vulse",
+      "tagline": "Content everywhere"
+    },
+    "footer": {
+      "copyright": "© 2026 Vulse"
+    }
+  }
+}
+```
+
+**Single set** — content object only:
+
+```json
+{
+  "ok": true,
+  "data": {
+    "siteName": "Vulse",
+    "tagline": "Content everywhere"
+  }
+}
+```
+
+### Admin API
+
+Requires a staff session (cookie from `/admin/login`).
+
+```txt
+GET    /api/vulse/globals
+GET    /api/vulse/globals/:handle          → { set, value }
+POST   /api/vulse/globals                  → create set (definition)
+PUT    /api/vulse/globals/:handle          → update definition
+PUT    /api/vulse/globals/:handle/value    → update content only
+DELETE /api/vulse/globals/:handle
+```
+
+`POST` and `PUT` (definition) accept a global set definition:
+
+```json
+{
+  "handle": "site",
+  "label": "Site",
+  "fields": [
+    { "name": "siteName", "label": "Site name", "ui": { "kind": "text" }, "optional": false },
+    { "name": "tagline", "ui": { "kind": "textarea" }, "optional": true }
+  ]
+}
+```
+
+`PUT /api/vulse/globals/:handle/value` accepts only the content object:
+
+```json
+{
+  "siteName": "Vulse",
+  "tagline": "Content everywhere"
+}
+```
+
+Invalid content returns HTTP 422 with validation issues in the error envelope.
+
+### Frontend usage
+
+Fetch at build time (SSG) or request time (SSR). There is no Astro Content Layer loader for globals in v1 — use `fetch` against the public API.
+
+**All globals in a layout (Astro):**
+
+```astro
+---
+const res = await fetch(new URL('/api/vulse/public/globals', Astro.url))
+const { data: globals } = await res.json() as {
+  ok: true
+  data: Record<string, Record<string, unknown>>
+}
+---
+<footer>
+  <p>{globals.footer?.copyright}</p>
+  <p>{globals.site?.tagline}</p>
+</footer>
+```
+
+**Single set:**
+
+```astro
+---
+const res = await fetch(new URL('/api/vulse/public/globals/site', Astro.url))
+const { data: site } = await res.json() as { ok: true; data: { siteName?: string; tagline?: string } }
+---
+<title>{site.siteName ?? 'My site'}</title>
+```
+
+**Client-side (after hydration):**
+
+```ts
+const res = await fetch('/api/vulse/public/globals')
+const { data: globals } = await res.json()
+console.log(globals.site?.siteName)
+```
+
+For static builds, prefer fetching in `getStaticPaths` / layout frontmatter so values are baked into HTML. On SSR, the same URLs resolve on your Worker origin.
+
+### TypeScript shape
+
+```ts
+type PublicGlobals = Record<string, Record<string, unknown>>
+// globals.site.siteName, globals.footer.copyright, etc.
+```
 
 ---
 

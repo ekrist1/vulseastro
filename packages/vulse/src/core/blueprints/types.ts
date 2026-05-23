@@ -25,6 +25,10 @@ export interface PreviewConfig {
    * Example: `/recipes/{slug}` or `/blog/{slug}`.
    */
   path: string
+  /** DOM selector for live preview morph target. Defaults to `main`. */
+  rootSelector?: string
+  /** When `false`, hides the live preview split panel (Preview button still works). Defaults to `true`. */
+  live?: boolean
 }
 
 export interface BlueprintAccess<T = unknown> {

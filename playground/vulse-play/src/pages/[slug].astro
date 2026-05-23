@@ -1,21 +1,20 @@
 ---
 import SiteLayout from '../layouts/SiteLayout.astro'
 import BlockRenderer from 'vulse/client/BlockRenderer.astro'
-import { getRuntimeEnv, getRuntime, createDb, registryForRequest } from 'vulse/server'
+import { getRuntimeEnv, getRuntime, createDb, registryForRequest, resolvePreviewContent } from 'vulse/server'
 
 const slug = Astro.params.slug!
 const env = getRuntimeEnv()
 const db = createDb(env.DB)
 const rt = await getRuntime(env, await registryForRequest(db), Astro.url.origin)
 const session = await rt.auth.api.getSession({ headers: Astro.request.headers })
-const isPreview = (Astro.locals as { vulsePreview?: boolean }).vulsePreview === true
 
 const page = await rt.sdk.collections.findBySlug('page', slug, {
   ...(session?.user ? { audience: session.user } : {}),
 })
 if (!page) return new Response(null, { status: 404, statusText: 'Not found' })
 
-const content = (isPreview && page.draftContent ? page.draftContent : page.content) as {
+const content = resolvePreviewContent(page, Astro.locals) as {
   title: string
   body?: unknown
 }
