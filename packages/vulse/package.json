@@ -1,0 +1,39 @@
+{
+  "name": "vulse",
+  "version": "0.0.0",
+  "type": "module",
+  "bin": { "vulse": "./dist/cli/index.js" },
+  "exports": {
+    ".": { "types": "./dist/index.d.ts", "import": "./dist/index.js" },
+    "./loader": { "types": "./dist/loader.d.ts", "import": "./dist/loader.js" },
+    "./server": { "types": "./dist/server.d.ts", "import": "./dist/server.js" },
+    "./integration": { "types": "./dist/integration.d.ts", "import": "./dist/integration.js" }
+  },
+  "files": ["dist", "migrations"],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:integration": "vitest run -c vitest.integration.config.ts",
+    "typecheck": "tsc --noEmit",
+    "drizzle:generate": "drizzle-kit generate"
+  },
+  "dependencies": {
+    "drizzle-orm": "^0.36.0",
+    "commander": "^12.0.0",
+    "nanoid": "^5.0.0"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20240320.0",
+    "@cloudflare/vitest-pool-workers": "^0.6.0",
+    "drizzle-kit": "^0.27.0",
+    "typescript": "^5.6.0",
+    "@types/node": "^22.0.0",
+    "vitest": "^2.1.0",
+    "astro": "^6.3.7",
+    "wrangler": "^3.80.0"
+  },
+  "peerDependencies": {
+    "astro": "^6.3.0"
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "name": "vulseastro",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "pnpm -r build",
+    "test": "pnpm -r test",
+    "typecheck": "pnpm -r typecheck",
+    "lint": "pnpm -r lint"
+  },
+  "packageManager": "pnpm@9.0.0",
+  "engines": { "node": ">=22.12.0" }
+}
