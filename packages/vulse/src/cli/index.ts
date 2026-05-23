@@ -28,6 +28,32 @@ program
     })
   })
 
+program
+  .command('collection:scaffold <handle>')
+  .description('Scaffold a code blueprint, Astro index/show pages, and content.config entry')
+  .option('--route <path>', 'Show route template, e.g. /blog/{slug}')
+  .option('--index <path>', 'Index route, e.g. /blog (omit for show-only)')
+  .option('--label <label>', 'Collection label for generated files')
+  .option('--title-field <field>', 'Title field used in templates')
+  .option('--force', 'Overwrite existing scaffold files', false)
+  .option('--skip-blueprint', 'Skip src/vulse/collections/<handle>.ts', false)
+  .option('--skip-pages', 'Skip Astro page files', false)
+  .option('--skip-content-config', 'Skip content.config.ts update', false)
+  .action(async (handle: string, opts) => {
+    const { runCollectionScaffold } = await import('./collection-scaffold.js')
+    await runCollectionScaffold({
+      handle,
+      ...(opts.route !== undefined ? { route: opts.route } : {}),
+      ...(opts.index !== undefined ? { index: opts.index } : {}),
+      ...(opts.label !== undefined ? { label: opts.label } : {}),
+      ...(opts.titleField !== undefined ? { titleField: opts.titleField } : {}),
+      force: !!opts.force,
+      skipBlueprint: !!opts.skipBlueprint,
+      skipPages: !!opts.skipPages,
+      skipContentConfig: !!opts.skipContentConfig,
+    })
+  })
+
 program.parseAsync().catch((err) => {
   console.error(err instanceof Error ? err.message : err)
   process.exit(1)

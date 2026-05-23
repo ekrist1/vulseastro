@@ -1,0 +1,9 @@
+---
+import AdminShell from '../../../../components/AdminShell.astro'
+import SubmissionList from '../../../../components/SubmissionList.vue'
+
+const { handle } = Astro.params
+---
+<AdminShell title="Submissions" activePath="/admin/forms">
+  <SubmissionList client:load formHandle={handle!} />
+</AdminShell>

@@ -71,6 +71,16 @@ async function signOut() {
         </span>
       </a>
 
+      <div class="px-2 pt-4 text-xs uppercase tracking-wide text-zinc-500">Forms</div>
+      <a href="/admin/forms" :class="navClass('/admin/forms')">
+        <span class="flex items-center gap-2">
+          <svg class="h-4 w-4 shrink-0 text-zinc-500" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+            <path d="M2.5 4A1.5 1.5 0 0 1 4 2.5h12A1.5 1.5 0 0 1 17.5 4v12a1.5 1.5 0 0 1-1.5 1.5H4A1.5 1.5 0 0 1 2.5 16V4ZM4 4v12h12V4H4Zm2 2h8v1.5H6V6Zm0 3h8v1.5H6V9Zm0 3h5v1.5H6V12Z" />
+          </svg>
+          <span>Forms</span>
+        </span>
+      </a>
+
       <div class="px-2 pt-4 text-xs uppercase tracking-wide text-zinc-500">Media</div>
       <a href="/admin/media" :class="navClass('/admin/media')">
         <span class="flex items-center gap-2">
@@ -114,6 +124,14 @@ async function signOut() {
           :class="activePath?.startsWith('/admin/settings/sets') && 'bg-zinc-100 font-medium'"
         >
           Sets
+        </a>
+        <a
+          v-if="isAdmin"
+          href="/admin/settings/globals"
+          class="block rounded px-2 py-1.5 text-sm hover:bg-zinc-100"
+          :class="activePath?.startsWith('/admin/settings/globals') && 'bg-zinc-100 font-medium'"
+        >
+          Globals
         </a>
       </div>
 

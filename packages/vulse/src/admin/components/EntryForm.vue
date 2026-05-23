@@ -16,6 +16,7 @@ const props = defineProps<{
   tree?: boolean
   parentId?: string | null
   hasUnpublishedChanges?: boolean
+  wide?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -168,7 +169,11 @@ onMounted(() => emitPreview())
 </script>
 
 <template>
-  <form class="vulse-form max-w-3xl space-y-5" @submit.prevent="draftsEnabled ? save(false) : save()">
+  <form
+    class="vulse-form space-y-5"
+    :class="wide ? 'max-w-none' : 'max-w-3xl'"
+    @submit.prevent="draftsEnabled ? save(false) : save()"
+  >
     <div v-if="entryId" class="flex items-center gap-3">
       <h2 class="text-lg font-semibold text-zinc-900">Entry details</h2>
       <EntryStatusBadge v-if="draftsEnabled" :status="status" :has-unpublished-changes="hasChanges" />

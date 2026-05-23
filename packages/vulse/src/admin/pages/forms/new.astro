@@ -1,0 +1,7 @@
+---
+import AdminShell from '../../components/AdminShell.astro'
+import FormEditor from '../../components/FormEditor.vue'
+---
+<AdminShell title="New form" activePath="/admin/forms">
+  <FormEditor client:load handle={null} />
+</AdminShell>

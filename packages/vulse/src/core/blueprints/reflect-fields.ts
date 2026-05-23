@@ -106,6 +106,10 @@ function describe(path: string, sch: ZodTypeAny): FieldDescriptor {
 // and must not render as duplicate fields.
 const RESERVED_FIELD_NAMES = new Set(['slug', 'status'])
 
+export function fieldDescriptorsFromDefinitions(fields: FieldDefinition[]): FieldDescriptor[] {
+  return fields.map(fieldDefinitionToDescriptor)
+}
+
 export function fieldDescriptorsFromBlueprint(bp: Blueprint): FieldDescriptor[] {
   const all = !bp.fields?.length
     ? reflectFields(bp.schema as z.ZodObject<any>)

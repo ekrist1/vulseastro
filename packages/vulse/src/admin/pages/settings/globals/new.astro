@@ -1,0 +1,7 @@
+---
+import AdminShell from '../../../components/AdminShell.astro'
+import GlobalSetEditor from '../../../components/GlobalSetEditor.vue'
+---
+<AdminShell title="New global set" activePath="/admin/settings/globals">
+  <GlobalSetEditor client:load handle={null} />
+</AdminShell>

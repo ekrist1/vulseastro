@@ -1,0 +1,100 @@
+---
+import SiteLayout from '../layouts/SiteLayout.astro'
+import FormRenderer from 'vulse/client/components/FormRenderer.astro'
+---
+<SiteLayout title="Contact">
+  <h1 class="section-title">Contact us</h1>
+  <p class="section-desc">Send a message using the headless form renderer.</p>
+
+  <FormRenderer form="contact" class="contact-form">
+    <label>
+      Name
+      <input name="name" type="text" required placeholder="Your name" />
+    </label>
+    <label>
+      Email
+      <input name="email" type="email" required placeholder="you@example.com" />
+    </label>
+    <label>
+      Message
+      <textarea name="message" required rows="5" placeholder="How can we help?" />
+    </label>
+    <input name="_hp" type="text" tabindex="-1" autocomplete="off" aria-hidden="true" class="contact-form__hp" />
+    <button type="submit" class="btn btn--primary">Send message</button>
+  </FormRenderer>
+
+  <p id="form-status" class="form-status" hidden></p>
+</SiteLayout>
+
+<script>
+  document.querySelector('form[data-vulse-form="contact"]')?.addEventListener('vulse:form:success', (e) => {
+    const el = document.getElementById('form-status')
+    if (!el) return
+    const detail = (e as CustomEvent).detail?.data
+    el.textContent = detail?.message ?? 'Message sent!'
+    el.hidden = false
+  })
+  document.querySelector('form[data-vulse-form="contact"]')?.addEventListener('vulse:form:error', () => {
+    const el = document.getElementById('form-status')
+    if (!el) return
+    el.textContent = 'Something went wrong. Please try again.'
+    el.hidden = false
+  })
+</script>
+
+<style>
+  /* :global() — form element is rendered inside FormRenderer, outside scoped boundary */
+  :global(form.contact-form) {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    max-width: 32rem;
+  }
+
+  :global(form.contact-form) label {
+    display: flex;
+    flex-direction: column;
+    gap: 0.375rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--text-muted);
+  }
+
+  :global(form.contact-form) input:not(.contact-form__hp),
+  :global(form.contact-form) textarea {
+    padding: 0.625rem 0.875rem;
+    border: 1px solid var(--border);
+    border-radius: 0.5rem;
+    background: var(--bg-elevated);
+    color: var(--text);
+    font: inherit;
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+
+  :global(form.contact-form) input:not(.contact-form__hp):focus,
+  :global(form.contact-form) textarea:focus {
+    outline: none;
+    border-color: rgba(232, 168, 56, 0.5);
+    box-shadow: 0 0 0 3px var(--accent-dim);
+  }
+
+  :global(form.contact-form) textarea {
+    resize: vertical;
+    min-height: 8rem;
+  }
+
+  :global(.contact-form__hp) {
+    position: absolute;
+    left: -9999px;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+  }
+
+  .form-status {
+    margin-top: 1rem;
+    font-size: 0.9375rem;
+    font-weight: 500;
+    color: var(--accent);
+  }
+</style>

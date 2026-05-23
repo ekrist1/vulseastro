@@ -1,0 +1,9 @@
+---
+import AdminShell from '../../../components/AdminShell.astro'
+import GlobalSetEditor from '../../../components/GlobalSetEditor.vue'
+
+const { handle } = Astro.params
+---
+<AdminShell title={handle ? `Global: ${handle}` : 'Global set'} activePath="/admin/settings/globals">
+  <GlobalSetEditor client:load handle={handle ?? null} />
+</AdminShell>

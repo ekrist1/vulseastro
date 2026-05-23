@@ -23,7 +23,7 @@ export function previewSessionsRoutes(db: VulseDb, auth: Auth, registry: Bluepri
         collection: z.string(),
         entryId: z.string().nullable().optional(),
         slug: z.string(),
-        content: z.record(z.unknown()),
+        content: z.record(z.string(), z.unknown()),
       }),
     }, async ({ auth: ctx, body, url }) => {
       const bp = registry.get(body.collection)
@@ -48,10 +48,13 @@ export function previewSessionsRoutes(db: VulseDb, auth: Auth, registry: Bluepri
       params: z.object({ id: z.string() }),
       body: z.object({
         slug: z.string().optional(),
-        content: z.record(z.unknown()).optional(),
+        content: z.record(z.string(), z.unknown()).optional(),
       }),
     }, async ({ auth: ctx, params, body }) => {
-      const updated = await repo.update(params.id, ctx.user!.id, body)
+      const patch: { slug?: string; content?: unknown } = {}
+      if (body.slug !== undefined) patch.slug = body.slug
+      if (body.content !== undefined) patch.content = body.content
+      const updated = await repo.update(params.id, ctx.user!.id, patch)
       if (!updated) throw new AccessDeniedError('Session not found or not owned by you')
       return { expiresAt: updated.expiresAt.toISOString() }
     }),

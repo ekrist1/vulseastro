@@ -3,11 +3,14 @@ import { env as cfEnv } from 'cloudflare:workers'
 export interface RuntimeEnv {
   DB: D1Database
   BUCKET?: R2Bucket
+  FORM_QUEUE?: Queue
   BETTER_AUTH_SECRET: string
   BETTER_AUTH_URL?: string
   VULSE_PREVIEW_SECRET?: string
   CF_IMAGES_ACCOUNT_HASH?: string
   CF_IMAGES_TOKEN?: string
+  EMAIL_FROM?: string
+  EMAIL_API_TOKEN?: string
 }
 
 export function getRuntimeEnv(): RuntimeEnv {

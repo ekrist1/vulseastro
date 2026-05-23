@@ -41,7 +41,7 @@ export class MediaRepo {
     r2Key: string
     mime: string
     size: number
-    uploadedBy: string
+    uploadedBy?: string | null
     width?: number | null
     height?: number | null
     alt?: string | null
@@ -57,7 +57,7 @@ export class MediaRepo {
       height: input.height ?? null,
       alt: input.alt ?? null,
       blurhash: input.blurhash ?? null,
-      uploadedBy: input.uploadedBy,
+      uploadedBy: input.uploadedBy ?? null,
       createdAt: now,
       deletedAt: null,
     }

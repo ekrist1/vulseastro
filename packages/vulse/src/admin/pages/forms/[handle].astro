@@ -1,0 +1,9 @@
+---
+import AdminShell from '../../components/AdminShell.astro'
+import FormEditor from '../../components/FormEditor.vue'
+
+const { handle } = Astro.params
+---
+<AdminShell title={handle ? `Form: ${handle}` : 'Form'} activePath="/admin/forms">
+  <FormEditor client:load handle={handle ?? null} />
+</AdminShell>

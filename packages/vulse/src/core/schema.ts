@@ -74,6 +74,78 @@ export const settings = sqliteTable('vulse_settings', {
   updatedAt: integer('updated_at', { mode: 'timestamp_ms' }).notNull(),
 })
 
+// --- Forms ---
+
+export const vulseForms = sqliteTable('vulse_forms', {
+  handle: text('handle').primaryKey(),
+  label: text('label').notNull(),
+  definition: text('definition', { mode: 'json' }).notNull(),
+  enabled: integer('enabled', { mode: 'boolean' }).notNull().default(true),
+  createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
+  updatedAt: integer('updated_at', { mode: 'timestamp_ms' }).notNull(),
+})
+
+export const vulseFormSubmissions = sqliteTable('vulse_form_submissions', {
+  id: text('id').primaryKey(),
+  formHandle: text('form_handle').notNull().references(() => vulseForms.handle, { onDelete: 'cascade' }),
+  payload: text('payload', { mode: 'json' }).notNull(),
+  fileRefs: text('file_refs', { mode: 'json' }).notNull().default([]),
+  meta: text('meta', { mode: 'json' }).notNull(),
+  status: text('status', { enum: ['received', 'processed', 'failed'] }).notNull().default('received'),
+  error: text('error'),
+  createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
+}, (t) => ({
+  byFormCreated: index('vulse_form_submissions_form_created').on(t.formHandle, t.createdAt),
+}))
+
+export const vulseFormUploadDrafts = sqliteTable('vulse_form_upload_drafts', {
+  id: text('id').primaryKey(),
+  formHandle: text('form_handle').notNull(),
+  fieldName: text('field_name').notNull(),
+  mediaId: text('media_id').notNull().references(() => media.id, { onDelete: 'cascade' }),
+  expiresAt: integer('expires_at', { mode: 'timestamp_ms' }).notNull(),
+  createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
+}, (t) => ({
+  byExpires: index('vulse_form_upload_drafts_expires').on(t.expiresAt),
+}))
+
+export const vulseFormUniqueValues = sqliteTable('vulse_form_unique_values', {
+  formHandle: text('form_handle').notNull(),
+  fieldName: text('field_name').notNull(),
+  valueHash: text('value_hash').notNull(),
+  submissionId: text('submission_id').notNull(),
+  createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
+}, (t) => ({
+  pk: uniqueIndex('vulse_form_unique_values_pk').on(t.formHandle, t.fieldName, t.valueHash),
+}))
+
+export const vulseFormRateLimits = sqliteTable('vulse_form_rate_limits', {
+  formHandle: text('form_handle').notNull(),
+  ipHash: text('ip_hash').notNull(),
+  windowStart: integer('window_start', { mode: 'timestamp_ms' }).notNull(),
+  count: integer('count').notNull().default(1),
+}, (t) => ({
+  pk: uniqueIndex('vulse_form_rate_limits_pk').on(t.formHandle, t.ipHash, t.windowStart),
+}))
+
+// --- Globals ---
+
+export const vulseGlobalSets = sqliteTable('vulse_global_sets', {
+  handle: text('handle').primaryKey(),
+  label: text('label').notNull(),
+  definition: text('definition', { mode: 'json' }).notNull(),
+  blueprintHash: text('blueprint_hash').notNull().default(''),
+  createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
+  updatedAt: integer('updated_at', { mode: 'timestamp_ms' }).notNull(),
+})
+
+export const vulseGlobalValues = sqliteTable('vulse_global_values', {
+  handle: text('handle').primaryKey().references(() => vulseGlobalSets.handle, { onDelete: 'cascade' }),
+  content: text('content', { mode: 'json' }).notNull().default({}),
+  createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
+  updatedAt: integer('updated_at', { mode: 'timestamp_ms' }).notNull(),
+})
+
 // --- Live preview ---
 
 export const vulsePreviewSessions = sqliteTable('vulse_preview_sessions', {

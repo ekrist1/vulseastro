@@ -16,3 +16,13 @@ bucket_name = "vulse-media"
 
 [vars]
 BETTER_AUTH_SECRET = "dev-secret-change-me-in-production-32chars"
+
+# vulse:form-queue — async submission processing (notify/confirmation emails, webhooks)
+# [[queues.producers]]
+# queue = "vulse-form-queue"
+# binding = "FORM_QUEUE"
+#
+# [[queues.consumers]]
+# queue = "vulse-form-queue"
+# max_batch_size = 10
+# max_batch_timeout = 30

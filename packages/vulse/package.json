@@ -48,7 +48,7 @@
   ],
   "scripts": {
     "build": "pnpm run build:bridge && tsc -p tsconfig.json",
-    "build:bridge": "esbuild src/client/live-preview-bridge.ts --bundle --format=esm --outfile=src/server/assets/live-preview-bridge.js --platform=browser",
+    "build:bridge": "esbuild src/client/live-preview-bridge.ts --bundle --format=esm --outfile=src/server/assets/live-preview-bridge.js --platform=browser && node scripts/embed-bridge.mjs",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:integration": "vitest run -c vitest.integration.config.ts",

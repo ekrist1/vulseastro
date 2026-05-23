@@ -11,6 +11,12 @@ import type {
 } from '../../core/blueprints/definition.js'
 import { useSets } from '../composables/useSets.js'
 import { normalizeFieldHandle } from '../../core/slug.js'
+import {
+  defaultScaffoldRoutes,
+  generateCollectionScaffoldFiles,
+  generateContentConfig,
+  scaffoldCliCommand,
+} from '../../scaffold/collection.js'
 
 const props = defineProps<{ handle: string | null }>()
 const { sets, hydrate: hydrateSets } = useSets()
@@ -175,6 +181,41 @@ function resetHandle() {
 
 const isCreate = computed(() => props.handle === null);
 
+const scaffoldShowRoute = ref('')
+const scaffoldIndexRoute = ref('')
+const scaffoldOpen = ref(true)
+const copyNotice = ref<string | null>(null)
+
+function syncScaffoldRoutes() {
+  const defaults = defaultScaffoldRoutes(handle.value || 'collection')
+  scaffoldShowRoute.value = defaults.showRoute
+  scaffoldIndexRoute.value = defaults.indexRoute
+}
+
+const scaffoldInput = computed(() => ({
+  handle: handle.value,
+  label: label.value || handle.value,
+  showRoute: scaffoldShowRoute.value,
+  indexRoute: scaffoldIndexRoute.value,
+  fields: fields
+    .filter((f) => f.name.trim())
+    .map((f) => ({ name: f.name, ui: { kind: f.ui.kind } })),
+}))
+
+const scaffoldCommand = computed(() => scaffoldCliCommand(scaffoldInput.value))
+const scaffoldFiles = computed(() => generateCollectionScaffoldFiles(scaffoldInput.value, { includeContentConfig: false }))
+const scaffoldContentConfigSnippet = computed(() => generateContentConfig(scaffoldInput.value))
+
+async function copyText(text: string, label: string) {
+  try {
+    await navigator.clipboard.writeText(text)
+    copyNotice.value = `Copied ${label}`
+    setTimeout(() => { copyNotice.value = null }, 2000)
+  } catch {
+    copyNotice.value = 'Copy failed'
+  }
+}
+
 watch(label, (v) => {
   if (isCreate.value && !handleLocked.value) {
     handle.value = slugify(v);
@@ -207,6 +248,7 @@ async function load() {
   for (const f of bp.fields) {
     fields.push(toEditorField(f));
   }
+  syncScaffoldRoutes()
 }
 
 onMounted(async () => {
@@ -1180,6 +1222,66 @@ async function save() {
         </button>
       </div>
     </form>
+
+    <section v-if="!isCreate && hydrated" class="mt-10 max-w-3xl rounded-xl border border-zinc-200 bg-white p-4">
+      <div class="flex items-start justify-between gap-4">
+        <div>
+          <h2 class="text-sm font-semibold text-zinc-800">Scaffold frontend</h2>
+          <p class="mt-1 text-xs text-zinc-500">
+            Generate a code blueprint, Astro index/show pages, and a content.config entry — like Statamic’s scaffold views.
+            Run the CLI locally or copy the files below.
+          </p>
+        </div>
+        <button
+          type="button"
+          class="text-xs text-zinc-500 hover:text-zinc-900"
+          @click="scaffoldOpen = !scaffoldOpen"
+        >
+          {{ scaffoldOpen ? 'Hide' : 'Show' }}
+        </button>
+      </div>
+
+      <div v-if="scaffoldOpen" class="mt-4 space-y-4">
+        <div class="grid gap-3 sm:grid-cols-2">
+          <label class="block text-sm">
+            <span class="font-medium text-zinc-700">Show route</span>
+            <input v-model="scaffoldShowRoute" class="mt-1 w-full rounded border border-zinc-300 px-2 py-1.5 font-mono text-xs" placeholder="/blog/{slug}" />
+          </label>
+          <label class="block text-sm">
+            <span class="font-medium text-zinc-700">Index route</span>
+            <input v-model="scaffoldIndexRoute" class="mt-1 w-full rounded border border-zinc-300 px-2 py-1.5 font-mono text-xs" placeholder="/blog" />
+            <span class="mt-1 block text-xs text-zinc-400">Leave empty to skip the index page.</span>
+          </label>
+        </div>
+
+        <div>
+          <div class="mb-2 flex items-center justify-between">
+            <span class="text-xs font-medium uppercase tracking-wide text-zinc-500">CLI command</span>
+            <button type="button" class="text-xs text-zinc-600 hover:underline" @click="copyText(scaffoldCommand, 'CLI command')">Copy</button>
+          </div>
+          <pre class="overflow-x-auto rounded bg-zinc-50 p-3 text-xs">{{ scaffoldCommand }}</pre>
+        </div>
+
+        <div v-for="file in scaffoldFiles" :key="file.path">
+          <div class="mb-2 flex items-center justify-between">
+            <span class="font-mono text-xs text-zinc-600">{{ file.path }}</span>
+            <button type="button" class="text-xs text-zinc-600 hover:underline" @click="copyText(file.content, file.path)">Copy</button>
+          </div>
+          <pre class="max-h-64 overflow-auto rounded bg-zinc-50 p-3 text-xs">{{ file.content }}</pre>
+        </div>
+
+        <div>
+          <div class="mb-2 flex items-center justify-between">
+            <span class="font-mono text-xs text-zinc-600">src/content.config.ts</span>
+            <button type="button" class="text-xs text-zinc-600 hover:underline" @click="copyText(scaffoldContentConfigSnippet, 'content.config.ts')">Copy</button>
+          </div>
+          <p class="mb-2 text-xs text-zinc-500">Merge into an existing file or use as-is if you do not have one yet.</p>
+          <pre class="max-h-48 overflow-auto rounded bg-zinc-50 p-3 text-xs">{{ scaffoldContentConfigSnippet }}</pre>
+        </div>
+
+        <p v-if="copyNotice" class="text-xs text-green-700">{{ copyNotice }}</p>
+      </div>
+    </section>
 
     <div
       v-if="removalTarget"
