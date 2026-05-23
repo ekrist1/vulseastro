@@ -1,5 +1,7 @@
 import { createDb } from '../core/db.js'
+import { PreviewSessionsRepo } from '../core/repos/preview-sessions.js'
 import { mediaRoutes } from './routes/media.js'
+import { purgeExpiredFormUploadDrafts } from './routes/form-upload.js'
 import { createAuth } from './better-auth.js'
 
 export interface CronEnv {
@@ -24,6 +26,12 @@ export async function vulseScheduled(env: CronEnv): Promise<void> {
       ...(env.CF_IMAGES_TOKEN ? { token: env.CF_IMAGES_TOKEN } : {}),
     },
   })
-  const result = await routes.purge()
-  console.log(`[vulse-cron] purged ${result.purged} media row(s)`)
+  const mediaResult = await routes.purge()
+  console.log(`[vulse-cron] purged ${mediaResult.purged} media row(s)`)
+
+  const draftResult = await purgeExpiredFormUploadDrafts(db, env.BUCKET)
+  console.log(`[vulse-cron] purged ${draftResult.purged} form upload draft(s)`)
+
+  const previewResult = await new PreviewSessionsRepo(db).purgeExpired(new Date())
+  console.log(`[vulse-cron] purged ${previewResult} preview session(s)`)
 }
