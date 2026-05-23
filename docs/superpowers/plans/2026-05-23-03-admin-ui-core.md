@@ -404,7 +404,7 @@ git commit -m "feat(vulse-admin): API client with envelope unwrapping"
 
 ```ts
 import { describe, it, expect } from 'vitest'
-import { z } from 'zod'
+import { z } from 'astro/zod'
 import { reflectFields } from '../../src/admin/client/form-from-zod'
 
 describe('reflectFields', () => {
@@ -458,7 +458,7 @@ describe('reflectFields', () => {
 - [ ] **Step 2: Implement**
 
 ```ts
-import { z, ZodTypeAny } from 'zod'
+import { z, type ZodTypeAny } from 'astro/zod'
 
 export type Widget = 'text' | 'textarea' | 'number' | 'bool' | 'date' | 'enum' | 'ref' | 'media' | 'blocks' | 'object' | 'repeater'
 
@@ -1006,7 +1006,7 @@ export class SettingsRepo {
 `src/server/routes/settings.ts`:
 
 ```ts
-import { z } from 'zod'
+import { z } from 'astro/zod'
 import type { VulseDb } from '../../core/db.js'
 import type { Auth } from '../better-auth.js'
 import { defineHandler } from '../handler.js'

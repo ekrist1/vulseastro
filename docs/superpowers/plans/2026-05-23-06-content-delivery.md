@@ -342,7 +342,7 @@ export function searchSdk(db: VulseDb) {
 `src/server/routes/search.ts`:
 
 ```ts
-import { z } from 'zod'
+import { z } from 'astro/zod'
 import type { VulseDb } from '../../core/db.js'
 import type { Auth } from '../better-auth.js'
 import { defineHandler } from '../handler.js'

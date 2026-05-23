@@ -357,7 +357,7 @@ git commit -m "feat(vulse): cloudflare images URL builder + variant registration
 - [ ] **Step 1: Implement routes**
 
 ```ts
-import { z } from 'zod'
+import { z } from 'astro/zod'
 import type { VulseDb } from '../../core/db.js'
 import type { Auth } from '../better-auth.js'
 import { MediaRepo } from '../../core/repos/media.js'
@@ -625,7 +625,7 @@ function pick(id: string) { emit('update:modelValue', id); showPicker.value = fa
 
 ```vue
 <script setup lang="ts">
-import type { z } from 'zod'
+import type { z } from 'astro/zod'
 import { imageBlock } from '../../../../core/blocks/schema'
 import MediaField from '../../fields/MediaField.vue'
 type Block = z.infer<typeof imageBlock>

@@ -52,7 +52,7 @@ describe('blockSchema', () => {
 - [ ] **Step 2: Implement schema**
 
 ```ts
-import { z } from 'zod'
+import { z } from 'astro/zod'
 
 export const headingBlock = z.object({
   type: z.literal('heading'),
@@ -111,7 +111,7 @@ export const BUILT_IN_BLOCK_TYPES: BlockType[] = ['heading', 'paragraph', 'image
 `src/core/blueprints/zod-helpers.ts`:
 
 ```ts
-import { z } from 'zod'
+import { z } from 'astro/zod'
 import { blockSchema } from '../blocks/schema.js'
 
 export function blocks() {
@@ -348,7 +348,7 @@ Each is a thin v-model wrapper. Here's `ParagraphEdit.vue` as the template — a
 
 ```vue
 <script setup lang="ts">
-import type { z } from 'zod'
+import type { z } from 'astro/zod'
 import { paragraphBlock } from '../../../../core/blocks/schema'
 type Block = z.infer<typeof paragraphBlock>
 const props = defineProps<{ modelValue: Block }>()
