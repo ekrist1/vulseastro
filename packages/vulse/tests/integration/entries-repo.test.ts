@@ -28,16 +28,19 @@ describe('EntriesRepo', () => {
     expect(published.length).toBe(1)
   })
 
-  it('rejects duplicate slug within (collection, locale)', async () => {
+  it('auto-increments duplicate slug on create', async () => {
     const repo = new EntriesRepo(createDb(env.DB))
     await repo.create({ collection: 'post', slug: 'dup', content: {}, createdBy: 'u1' })
-    await expect(repo.create({ collection: 'post', slug: 'dup', content: {}, createdBy: 'u1' })).rejects.toThrow()
+    const second = await repo.create({ collection: 'post', slug: 'dup', content: {}, createdBy: 'u1' })
+    expect(second.slug).toBe('dup-2')
+    const third = await repo.create({ collection: 'post', slug: 'dup', content: {}, createdBy: 'u1' })
+    expect(third.slug).toBe('dup-3')
   })
 
   it('updates increments version', async () => {
     const repo = new EntriesRepo(createDb(env.DB))
     const e = await repo.create({ collection: 'post', slug: 'v', content: { title: 'a' }, createdBy: 'u1' })
-    const updated = await repo.update(e.id, { content: { title: 'b' }, updatedBy: 'u1' })
+    const updated = await repo.updateWithRevision(e.id, { content: { title: 'b' }, updatedBy: 'u1' })
     expect(updated.version).toBe(2)
   })
 })

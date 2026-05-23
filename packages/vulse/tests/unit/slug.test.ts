@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { normalizeSlug, isValidSlug } from '../../src/core/slug'
+import { normalizeSlug, isValidSlug, normalizeFieldHandle } from '../../src/core/slug'
 
 describe('slug', () => {
   it.each([
@@ -19,5 +19,13 @@ describe('slug', () => {
     expect(isValidSlug('trailing-')).toBe(false)
     expect(isValidSlug('UPPER')).toBe(false)
     expect(isValidSlug('')).toBe(false)
+  })
+
+  it.each([
+    ['Hero Title', 'hero_title'],
+    ['Block 2', 'block_2'],
+    ['FAQ Items', 'faq_items'],
+  ])('normalizeFieldHandle(%s) === %s', (input, expected) => {
+    expect(normalizeFieldHandle(input)).toBe(expected)
   })
 })

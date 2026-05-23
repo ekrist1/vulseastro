@@ -12,7 +12,7 @@ describe('users routes', () => {
   async function setup() {
     await applyMigrations(env.DB)
     const db = createDb(env.DB)
-    const auth = createAuth(db, { baseURL: 'http://localhost', secret: SECRET, allowSignUp: true })
+    const auth = await createAuth(db, { baseURL: 'http://localhost', secret: SECRET, allowSignUp: true })
     const routes = usersRoutes(db, auth)
     return { db, auth, routes }
   }

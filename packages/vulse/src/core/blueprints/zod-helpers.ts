@@ -1,8 +1,18 @@
 import { z as astroZ } from 'astro/zod'
+import { blockSchema } from '../blocks/schema.js'
 
-/** Block-tree value: opaque JSON for now; Plan 4 narrows the schema. */
-export function blocks() {
-  return astroZ.array(astroZ.record(astroZ.string(), astroZ.unknown())).default([])
+export const EMPTY_BLOCKS_DOC = {
+  type: 'doc',
+  content: [{ type: 'paragraph' }],
+} as const
+export function blocks(sets?: string[]) {
+  const tag = sets?.length ? `vulse:blocks:${sets.join(',')}` : 'vulse:blocks'
+  return astroZ.any().default(EMPTY_BLOCKS_DOC).describe(tag)
+}
+
+/** Legacy flat block list (deprecated). */
+export function blocksLegacy() {
+  return astroZ.array(blockSchema).default([]).describe('vulse:blocks-legacy')
 }
 
 /** Media reference: stored as the media row's id; resolved at read time. */

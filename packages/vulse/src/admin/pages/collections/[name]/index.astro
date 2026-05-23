@@ -1,12 +1,17 @@
 ---
 import AdminShell from '../../../components/AdminShell.astro'
 import EntryList from '../../../components/EntryList.vue'
-import { registryFromUserCollections } from '../../../../core/blueprints/load.js'
-const reg = await registryFromUserCollections()
+import { createDb } from '../../../../core/db.js'
+import { getRuntimeEnv } from '../../../../server/env.js'
+import { registryForRequest } from '../../../../core/blueprints/load.js'
+
+const env = getRuntimeEnv()
+const db = createDb(env.DB)
+const reg = await registryForRequest(db)
 const bp = reg.get(Astro.params.name!)
 if (!bp) return Astro.redirect('/admin')
 const columns = bp.admin.listColumns ?? [bp.admin.titleField]
 ---
 <AdminShell title={bp.label} activePath={`/admin/collections/${bp.name}`}>
-  <EntryList client:load collection={bp.name} columns={columns} />
+  <EntryList client:load collection={bp.name} label={bp.label} columns={columns} tree={bp.tree === true} />
 </AdminShell>

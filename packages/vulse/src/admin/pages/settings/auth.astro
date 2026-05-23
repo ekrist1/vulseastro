@@ -1,0 +1,9 @@
+---
+import AdminShell from '../../components/AdminShell.astro'
+import AuthSettings from '../../components/AuthSettings.vue'
+---
+<AdminShell title="Auth settings" activePath="/admin/settings/auth">
+  <h1 class="mb-4 text-2xl font-semibold text-zinc-900">Authentication</h1>
+  <p class="mb-4 text-sm text-zinc-600">Control public member sign-up on your site. End-user sign-in forms are headless — you style them in your Astro pages.</p>
+  <AuthSettings client:load />
+</AdminShell>

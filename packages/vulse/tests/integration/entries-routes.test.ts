@@ -24,7 +24,7 @@ const post = defineCollection({
 async function makeContext() {
   await applyMigrations(env.DB)
   const db = createDb(env.DB)
-  const auth = createAuth(db, { baseURL: 'http://localhost', secret: SECRET, allowSignUp: true })
+  const auth = await createAuth(db, { baseURL: 'http://localhost', secret: SECRET, allowSignUp: true })
   const reg = new BlueprintRegistry(); reg.register(post)
   return { db, auth, reg }
 }
@@ -72,5 +72,26 @@ describe('entries routes', () => {
     expect(update.status).toBe(200)
     const updated = await update.json() as { data: { version: number } }
     expect(updated.data.version).toBe(2)
+  })
+
+  it('POST auto-increments slug when duplicate exists', async () => {
+    const { db, auth, reg } = await makeContext()
+    const routes = entriesRoutes(db, auth, reg)
+    const cookie = await signUpAsAdmin(env, auth)
+
+    const body = { slug: 'hello', content: { title: 'Hi', slug: 'hello', body: '' } }
+    const first = await routes.create(new Request('http://localhost/api/vulse/entries/post', {
+      method: 'POST', headers: { 'content-type': 'application/json', cookie },
+      body: JSON.stringify(body),
+    }), { collection: 'post' })
+    expect(first.status).toBe(200)
+
+    const second = await routes.create(new Request('http://localhost/api/vulse/entries/post', {
+      method: 'POST', headers: { 'content-type': 'application/json', cookie },
+      body: JSON.stringify(body),
+    }), { collection: 'post' })
+    expect(second.status).toBe(200)
+    const payload = await second.json() as { ok: true; data: { slug: string } }
+    expect(payload.data.slug).toBe('hello-2')
   })
 })

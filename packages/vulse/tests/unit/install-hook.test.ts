@@ -23,15 +23,15 @@ describe('runInstallHook', () => {
     await runInstallHook(cwd)
     const starter = await readFile(join(cwd, 'src/vulse/collections/page.ts'), 'utf8')
     expect(starter).toMatch(/defineCollection/)
-    const cfg = await readFile(join(cwd, 'src/content/config.ts'), 'utf8')
+    const cfg = await readFile(join(cwd, 'src/content.config.ts'), 'utf8')
     expect(cfg).toMatch(/vulseLoader/)
   })
 
-  it('preserves an existing src/content/config.ts', async () => {
-    await mkdir(join(cwd, 'src/content'), { recursive: true })
-    await writeFile(join(cwd, 'src/content/config.ts'), '// keep me\n', 'utf8')
+  it('preserves an existing src/content.config.ts', async () => {
+    await mkdir(join(cwd, 'src'), { recursive: true })
+    await writeFile(join(cwd, 'src/content.config.ts'), '// keep me\n', 'utf8')
     await runInstallHook(cwd)
-    const cfg = await readFile(join(cwd, 'src/content/config.ts'), 'utf8')
+    const cfg = await readFile(join(cwd, 'src/content.config.ts'), 'utf8')
     expect(cfg).toBe('// keep me\n')
   })
 })

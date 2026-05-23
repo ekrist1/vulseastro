@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { defineCollection, z } from '../../src/core/blueprints/define'
-import { blocks, media, ref } from '../../src/core/blueprints/zod-helpers'
+import { blocks, media, ref, EMPTY_BLOCKS_DOC } from '../../src/core/blueprints/zod-helpers'
 
 describe('defineCollection', () => {
   it('returns the blueprint unchanged when valid', () => {
@@ -20,8 +20,8 @@ describe('defineCollection', () => {
 })
 
 describe('zod helpers', () => {
-  it('blocks() defaults to []', () => {
-    expect(blocks().parse(undefined)).toEqual([])
+  it('blocks() defaults to empty ProseMirror doc', () => {
+    expect(blocks().parse(undefined)).toEqual(EMPTY_BLOCKS_DOC)
   })
   it('media() carries the vulse:media tag', () => {
     expect(media().description).toBe('vulse:media')

@@ -57,6 +57,7 @@ export function defineHandler<P = unknown, B = unknown, R = unknown>(
       }
 
       const result = await fn({ request, url, params, body, auth: authCtx })
+      if (result instanceof Response) return result
       return ok(result)
     } catch (err) {
       return fail(err)

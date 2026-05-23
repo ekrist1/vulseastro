@@ -1,0 +1,27 @@
+---
+import { getRuntimeEnv } from '../../server/env.js'
+import { createDb } from '../../core/db.js'
+import { registryForRequest } from '../../core/blueprints/load.js'
+import { getRuntime } from '../../server/runtime.js'
+
+interface Props { requireRole?: 'member' | 'editor' | 'admin'; redirectTo?: string }
+const { requireRole = 'member', redirectTo = '/sign-in' } = Astro.props
+
+const ROLE_RANK = { member: 1, editor: 2, admin: 3 } as const
+
+try {
+  const env = getRuntimeEnv()
+  const db = createDb(env.DB)
+  const rt = await getRuntime(env, await registryForRequest(db), new URL(Astro.request.url).origin)
+  const session = await rt.auth.api.getSession({ headers: Astro.request.headers })
+  if (!session) return Astro.redirect(redirectTo)
+  const role = (session.user as { role?: keyof typeof ROLE_RANK }).role ?? 'member'
+  if (ROLE_RANK[role] < ROLE_RANK[requireRole]) {
+    return new Response('Forbidden', { status: 403 })
+  }
+  ;(Astro.locals as { vulseSession?: typeof session }).vulseSession = session
+} catch {
+  return Astro.redirect(redirectTo)
+}
+---
+<slot />

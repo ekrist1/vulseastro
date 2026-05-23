@@ -1,23 +1,55 @@
 ---
 import AdminShell from '../../../components/AdminShell.astro'
 import EntryForm from '../../../components/EntryForm.vue'
-import { registryFromUserCollections } from '../../../../core/blueprints/load.js'
-import { reflectFields } from '../../../client/form-from-zod.js'
+import { createDb } from '../../../../core/db.js'
+import { registryForRequest } from '../../../../core/blueprints/load.js'
+import { fieldDescriptorsFromBlueprint } from '../../../client/form-from-zod.js'
 import { getRuntime } from '../../../../server/runtime.js'
 import { getRuntimeEnv } from '../../../../server/env.js'
 
-const reg = await registryFromUserCollections()
+const env = getRuntimeEnv()
+const db = createDb(env.DB)
+const reg = await registryForRequest(db)
 const bp = reg.get(Astro.params.name!)
 if (!bp) return Astro.redirect('/admin')
-const fields = reflectFields(bp.schema as import('astro/zod').z.ZodObject<any>)
+const fields = fieldDescriptorsFromBlueprint(bp)
 
-const env = getRuntimeEnv()
 const rt = await getRuntime(env, reg, new URL(Astro.request.url).origin)
 const res = await rt.routes.entries.findById(new Request(Astro.request.url, { headers: Astro.request.headers }), { collection: bp.name, id: Astro.params.id! })
-const body = await res.json() as { ok: true; data: { content: Record<string, unknown>; slug: string; status: 'draft' | 'published' } } | { ok: false }
+const body = await res.json() as {
+  ok: true
+  data: {
+    content: Record<string, unknown>
+    draftContent: Record<string, unknown> | null
+    slug: string
+    status: 'draft' | 'published'
+    hasUnpublishedChanges: boolean
+  }
+} | { ok: false }
 if (!body.ok) return new Response('Not found', { status: 404 })
-const initial = { ...body.data.content, slug: body.data.slug, status: body.data.status }
+const row = body.data
+const editContent = bp.drafts && row.draftContent ? row.draftContent : row.content
+const initial = {
+  ...(editContent as Record<string, unknown>),
+  slug: row.slug,
+  status: row.status,
+  hasUnpublishedChanges: row.hasUnpublishedChanges,
+}
 ---
 <AdminShell title={`Edit ${bp.label}`} activePath={`/admin/collections/${bp.name}`}>
-  <EntryForm client:load collection={bp.name} entryId={Astro.params.id!} fields={fields} initial={initial} />
+  <div class="mb-4 flex items-center gap-4">
+    <a href={`/admin/collections/${bp.name}/${Astro.params.id}/revisions`} class="text-sm text-zinc-600 underline">View history</a>
+    <a href={`/api/vulse/preview/start?to=/${row.slug}`} class="rounded border border-zinc-300 px-3 py-1 text-sm hover:bg-zinc-50">Preview</a>
+  </div>
+  <EntryForm
+    client:load
+    collection={bp.name}
+    entryId={Astro.params.id!}
+    fields={fields}
+    initial={initial}
+    draftsEnabled={bp.drafts === true}
+    tree={bp.tree === true}
+    hasUnpublishedChanges={row.hasUnpublishedChanges}
+    titleField={bp.admin.titleField}
+  />
 </AdminShell>

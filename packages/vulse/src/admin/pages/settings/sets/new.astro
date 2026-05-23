@@ -1,0 +1,7 @@
+---
+import AdminShell from '../../../components/AdminShell.astro'
+import SetEditor from '../../../components/SetEditor.vue'
+---
+<AdminShell title="New set" activePath="/admin/settings/sets">
+  <SetEditor client:load handle={null} />
+</AdminShell>

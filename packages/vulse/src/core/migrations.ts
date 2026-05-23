@@ -1,6 +1,14 @@
 import initSql from '../../migrations/0000_init.sql?raw'
+import collectionsSetsSql from '../../migrations/0001_collections_sets.sql?raw'
+import treeDraftsSql from '../../migrations/0002_tree_drafts.sql?raw'
+import ftsSql from '../../migrations/0003_fts.sql?raw'
 
-const MIGRATIONS = [{ id: '0000_init', sql: initSql }] as const
+const MIGRATIONS = [
+  { id: '0000_init', sql: initSql },
+  { id: '0001_collections_sets', sql: collectionsSetsSql },
+  { id: '0002_tree_drafts', sql: treeDraftsSql },
+  { id: '0003_fts', sql: ftsSql },
+] as const
 
 function splitStatements(sql: string): string[] {
   return sql

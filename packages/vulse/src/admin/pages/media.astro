@@ -1,0 +1,8 @@
+---
+import AdminShell from '../components/AdminShell.astro'
+import MediaLibrary from '../components/MediaLibrary.vue'
+---
+<AdminShell title="Media" activePath="/admin/media">
+  <h1 class="mb-4 text-2xl font-semibold text-zinc-900">Assets</h1>
+  <MediaLibrary client:load />
+</AdminShell>

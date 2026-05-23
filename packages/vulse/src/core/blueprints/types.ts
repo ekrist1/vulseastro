@@ -1,4 +1,5 @@
 import type { z } from 'astro/zod'
+import type { BlueprintDefinition, FieldDefinition } from './definition.js'
 
 export type Role = 'admin' | 'editor' | 'member'
 
@@ -30,4 +31,10 @@ export interface Blueprint<S extends z.ZodTypeAny = z.ZodTypeAny> {
   schema: S
   admin: AdminConfig
   access?: BlueprintAccess<z.infer<S>>
+  singleton?: boolean
+  tree?: boolean
+  maxDepth?: number
+  drafts?: boolean
+  fields?: FieldDefinition[]
+  definition?: BlueprintDefinition
 }

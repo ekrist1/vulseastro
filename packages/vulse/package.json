@@ -21,11 +21,29 @@
     "./integration": {
       "types": "./dist/integration.d.ts",
       "import": "./dist/integration.js"
-    }
+    },
+    "./integration/cron": {
+      "types": "./dist/integration/cron.d.ts",
+      "import": "./dist/integration/cron.js"
+    },
+    "./client": {
+      "types": "./dist/client/index.d.ts",
+      "import": "./dist/client/index.js"
+    },
+    "./client/auth": {
+      "import": "./src/client/auth.ts"
+    },
+    "./client/components/SignInForm.astro": "./src/client/components/SignInForm.astro",
+    "./client/components/SignUpForm.astro": "./src/client/components/SignUpForm.astro",
+    "./client/components/SignOutButton.astro": "./src/client/components/SignOutButton.astro",
+    "./client/components/SessionGuard.astro": "./src/client/components/SessionGuard.astro",
+    "./client/BlockRenderer.vue": "./src/client/BlockRenderer.vue",
+    "./client/BlockRenderer.astro": "./src/client/BlockRenderer.astro"
   },
   "files": [
     "dist",
-    "migrations"
+    "migrations",
+    "src/client"
   ],
   "scripts": {
     "build": "tsc -p tsconfig.json",
@@ -37,9 +55,15 @@
   },
   "dependencies": {
     "@astrojs/vue": "^6.0.1",
+    "@tiptap/core": "^2.8.0",
+    "@tiptap/pm": "^2.8.0",
+    "@tiptap/starter-kit": "^2.8.0",
+    "@tiptap/vue-3": "^2.8.0",
     "better-auth": "^1.0.0",
     "commander": "^12.0.0",
+    "diff": "^9.0.0",
     "drizzle-orm": "^0.45.2",
+    "jose": "^6.2.3",
     "nanoid": "^5.0.0",
     "vue": "^3.5.34"
   },
@@ -47,6 +71,7 @@
     "@cloudflare/vitest-pool-workers": "^0.6.0",
     "@cloudflare/workers-types": "^4.20240320.0",
     "@tailwindcss/vite": "^4.3.0",
+    "@types/diff": "^8.0.0",
     "@types/node": "^22.0.0",
     "astro": "^6.3.7",
     "drizzle-kit": "^0.31.10",
@@ -61,6 +86,8 @@
     "vue": "^3.5.0"
   },
   "peerDependenciesMeta": {
-    "vue": { "optional": false }
+    "vue": {
+      "optional": false
+    }
   }
 }

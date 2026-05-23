@@ -2,10 +2,12 @@
 import AdminShell from '../components/AdminShell.astro'
 import { getRuntime } from '../../server/runtime.js'
 import { getRuntimeEnv } from '../../server/env.js'
-import { registryFromUserCollections } from '../../core/blueprints/load.js'
+import { createDb } from '../../core/db.js'
+import { registryForRequest } from '../../core/blueprints/load.js'
 
 const env = getRuntimeEnv()
-const rt = await getRuntime(env, await registryFromUserCollections(), new URL(Astro.request.url).origin)
+const db = createDb(env.DB)
+const rt = await getRuntime(env, await registryForRequest(db), new URL(Astro.request.url).origin)
 const reg = rt.registry
 
 const counts: { name: string; label: string; total: number; published: number }[] = []

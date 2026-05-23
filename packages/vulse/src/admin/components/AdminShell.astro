@@ -1,12 +1,25 @@
 ---
 import '../styles/admin.css'
 import SideNav from './SideNav.vue'
-import { registryFromUserCollections } from '../../core/blueprints/load.js'
+import { createDb } from '../../core/db.js'
+import { getRuntimeEnv } from '../../server/env.js'
+import { registryForRequest } from '../../core/blueprints/load.js'
 
 interface Props { title: string; activePath?: string }
 const { title, activePath } = Astro.props
-const registry = await registryFromUserCollections()
-const collections = registry.list().map((b) => ({ name: b.name, label: b.label }))
+
+const env = getRuntimeEnv()
+const db = createDb(env.DB)
+const registry = await registryForRequest(db)
+const collections = registry.list().map((b) => ({
+  name: b.name,
+  label: b.label,
+  singleton: b.singleton,
+}))
+
+const vulseUser = (Astro.locals as { vulseUser?: { email?: string; role?: string } }).vulseUser
+const userEmail = vulseUser?.email
+const isAdmin = vulseUser?.role === 'admin'
 ---
 <!doctype html>
 <html lang="en" class="vulse-admin">
@@ -15,10 +28,16 @@ const collections = registry.list().map((b) => ({ name: b.name, label: b.label }
     <meta name="viewport" content="width=device-width" />
     <title>{title} — Vulse</title>
   </head>
-  <body class="min-h-screen bg-zinc-50 text-zinc-900">
-    <div class="flex">
-      <SideNav client:load collections={collections} activePath={activePath} />
-      <main class="flex-1 p-8 max-w-6xl"><slot /></main>
+  <body class="min-h-screen">
+    <div class="flex min-h-screen">
+      <SideNav
+        client:load
+        collections={collections}
+        activePath={activePath}
+        userEmail={userEmail}
+        isAdmin={isAdmin}
+      />
+      <main class="flex-1 overflow-auto p-8 max-w-6xl"><slot /></main>
     </div>
   </body>
 </html>

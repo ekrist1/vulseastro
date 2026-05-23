@@ -1,13 +1,28 @@
 ---
 import AdminShell from '../../../components/AdminShell.astro'
 import EntryForm from '../../../components/EntryForm.vue'
-import { registryFromUserCollections } from '../../../../core/blueprints/load.js'
-import { reflectFields } from '../../../client/form-from-zod.js'
-const reg = await registryFromUserCollections()
+import { createDb } from '../../../../core/db.js'
+import { getRuntimeEnv } from '../../../../server/env.js'
+import { registryForRequest } from '../../../../core/blueprints/load.js'
+import { fieldDescriptorsFromBlueprint } from '../../../client/form-from-zod.js'
+
+const env = getRuntimeEnv()
+const db = createDb(env.DB)
+const reg = await registryForRequest(db)
 const bp = reg.get(Astro.params.name!)
 if (!bp) return Astro.redirect('/admin')
-const fields = reflectFields(bp.schema as import('astro/zod').z.ZodObject<any>)
+const fields = fieldDescriptorsFromBlueprint(bp)
+const parentId = Astro.url.searchParams.get('parent_id')
 ---
 <AdminShell title={`New ${bp.label}`} activePath={`/admin/collections/${bp.name}`}>
-  <EntryForm client:load collection={bp.name} fields={fields} initial={{}} />
+  <EntryForm
+    client:load
+    collection={bp.name}
+    fields={fields}
+    initial={{}}
+    draftsEnabled={bp.drafts === true}
+    tree={bp.tree === true}
+    parentId={parentId}
+    titleField={bp.admin.titleField}
+  />
 </AdminShell>

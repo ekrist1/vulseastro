@@ -1,24 +1,157 @@
 <script setup lang="ts">
-defineProps<{
-  collections: { name: string; label: string }[]
+import { onMounted, ref, watch } from 'vue'
+import logoUrl from '../assets/logo-mark.svg'
+import CollectionKindIcon from './CollectionKindIcon.vue'
+
+const props = defineProps<{
+  collections: { name: string; label: string; singleton?: boolean }[]
   activePath?: string
+  userEmail?: string
+  isAdmin?: boolean
 }>()
+
+const schemaOpen = ref(false)
+const usersOpen = ref(false)
+
+const SCHEMA_OPEN_KEY = 'vulse.sidebar.schema.open'
+const USERS_OPEN_KEY = 'vulse.sidebar.users.open'
+
+onMounted(() => {
+  try {
+    schemaOpen.value = localStorage.getItem(SCHEMA_OPEN_KEY) === '1'
+    usersOpen.value = localStorage.getItem(USERS_OPEN_KEY) === '1'
+  } catch {
+    // ignore
+  }
+})
+
+watch(schemaOpen, (v) => {
+  try { localStorage.setItem(SCHEMA_OPEN_KEY, v ? '1' : '0') } catch { /* ignore */ }
+})
+watch(usersOpen, (v) => {
+  try { localStorage.setItem(USERS_OPEN_KEY, v ? '1' : '0') } catch { /* ignore */ }
+})
+
+function navClass(href: string) {
+  const active = props.activePath === href || (href !== '/admin' && props.activePath?.startsWith(href))
+  return ['vulse-nav-link rounded-xl text-sm text-zinc-800', active && 'vulse-nav-link-active'].filter(Boolean)
+}
+
+async function signOut() {
+  await fetch('/api/auth/sign-out', { method: 'POST', credentials: 'same-origin' })
+  window.location.href = '/admin/login'
+}
 </script>
 
 <template>
-  <nav class="w-60 min-h-screen border-r bg-white p-4 space-y-1 text-sm">
-    <div class="text-xl font-semibold mb-6">Vulse</div>
-    <a href="/admin" class="block px-3 py-2 rounded hover:bg-zinc-100" :class="activePath === '/admin' && 'bg-zinc-100 font-medium'">Dashboard</a>
-    <div class="pt-4 pb-1 text-xs uppercase text-zinc-500">Content</div>
-    <a v-for="c in collections" :key="c.name"
-       :href="`/admin/collections/${c.name}`"
-       class="block px-3 py-2 rounded hover:bg-zinc-100"
-       :class="activePath?.startsWith(`/admin/collections/${c.name}`) && 'bg-zinc-100 font-medium'">
-      {{ c.label }}
-    </a>
-    <div class="pt-4 pb-1 text-xs uppercase text-zinc-500">System</div>
-    <a href="/admin/media" class="block px-3 py-2 rounded hover:bg-zinc-100">Media</a>
-    <a href="/admin/users" class="block px-3 py-2 rounded hover:bg-zinc-100" :class="activePath?.startsWith('/admin/users') && 'bg-zinc-100 font-medium'">Users</a>
-    <a href="/admin/settings" class="block px-3 py-2 rounded hover:bg-zinc-100" :class="activePath?.startsWith('/admin/settings') && 'bg-zinc-100 font-medium'">Settings</a>
-  </nav>
+  <aside class="w-[var(--vulse-sidebar-width)] min-h-screen border-r border-zinc-200 bg-white shrink-0">
+    <div class="px-4 py-3 font-semibold tracking-tight flex items-center gap-2">
+      <img class="h-8 w-8" :src="logoUrl" alt="Vulse" />
+      Vulse
+    </div>
+
+    <div v-if="userEmail" class="border-y border-zinc-100 px-4 py-2 text-xs">
+      <div class="font-mono text-zinc-700">{{ userEmail }}</div>
+      <button type="button" class="mt-1 text-zinc-500 hover:text-zinc-900" @click="signOut">
+        Sign out
+      </button>
+    </div>
+
+    <nav class="px-2 pb-6">
+      <div class="px-2 pt-2 text-xs uppercase tracking-wide text-zinc-500">Collections</div>
+      <a
+        v-for="c in collections"
+        :key="`coll-${c.name}`"
+        :href="`/admin/collections/${c.name}`"
+        :class="navClass(`/admin/collections/${c.name}`)"
+      >
+        <span class="flex items-center gap-2">
+          <CollectionKindIcon :singleton="c.singleton" />
+          <span>{{ c.label }}</span>
+        </span>
+      </a>
+
+      <div class="px-2 pt-4 text-xs uppercase tracking-wide text-zinc-500">Media</div>
+      <a href="/admin/media" :class="navClass('/admin/media')">
+        <span class="flex items-center gap-2">
+          <svg class="h-4 w-4 shrink-0 text-zinc-500" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+            <path fill-rule="evenodd" d="M3 5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5Zm2 0v8.586l2.293-2.293a1 1 0 0 1 1.414 0L11 13.586l2.293-2.293a1 1 0 0 1 1.414 0L15 11.586V5H5Zm9 3a1 1 0 1 1-2 0 1 1 0 0 1 2 0Z" clip-rule="evenodd" />
+          </svg>
+          <span>Assets</span>
+        </span>
+      </a>
+
+      <div class="px-2 pt-4 text-xs uppercase tracking-wide text-zinc-500">Settings</div>
+      <button
+        type="button"
+        class="flex w-full items-center gap-1 rounded px-2 py-1.5 text-left text-sm hover:bg-zinc-100"
+        :aria-expanded="schemaOpen"
+        @click="schemaOpen = !schemaOpen"
+      >
+        <span class="inline-block w-3 text-zinc-400">{{ schemaOpen ? '▾' : '▸' }}</span>
+        <span>Schema</span>
+      </button>
+      <div v-if="schemaOpen" class="ml-4">
+        <a
+          v-for="c in collections"
+          :key="`schema-${c.name}`"
+          :href="`/admin/schema/${c.name}`"
+          :class="navClass(`/admin/schema/${c.name}`)"
+        >
+          <span class="flex items-center gap-2">
+            <CollectionKindIcon :singleton="c.singleton" />
+            <span>{{ c.label }}</span>
+          </span>
+        </a>
+        <a href="/admin/schema/new" :class="navClass('/admin/schema/new')" class="text-zinc-600">
+          + New collection
+        </a>
+        <div v-if="isAdmin" class="my-1 border-t border-zinc-100"></div>
+        <a
+          v-if="isAdmin"
+          href="/admin/settings/sets"
+          class="block rounded px-2 py-1.5 text-sm hover:bg-zinc-100"
+          :class="activePath?.startsWith('/admin/settings/sets') && 'bg-zinc-100 font-medium'"
+        >
+          Sets
+        </a>
+      </div>
+
+      <template v-if="isAdmin">
+        <button
+          type="button"
+          class="flex w-full items-center gap-1 rounded px-2 py-1.5 text-left text-sm hover:bg-zinc-100"
+          :aria-expanded="usersOpen"
+          @click="usersOpen = !usersOpen"
+        >
+          <span class="inline-block w-3 text-zinc-400">{{ usersOpen ? '▾' : '▸' }}</span>
+          <span>Users</span>
+        </button>
+        <div v-if="usersOpen" class="ml-4">
+          <a
+            href="/admin/users"
+            class="block rounded px-2 py-1.5 text-sm hover:bg-zinc-100"
+            :class="activePath?.startsWith('/admin/users') && 'bg-zinc-100 font-medium'"
+          >
+            Users
+          </a>
+        </div>
+        <a
+          v-if="isAdmin"
+          href="/admin/settings/auth"
+          class="block rounded px-2 py-1.5 text-sm hover:bg-zinc-100"
+          :class="activePath === '/admin/settings/auth' && 'bg-zinc-100 font-medium'"
+        >
+          Auth
+        </a>
+        <a
+          href="/admin/settings"
+          class="block rounded px-2 py-1.5 text-sm hover:bg-zinc-100"
+          :class="activePath === '/admin/settings' && 'bg-zinc-100 font-medium'"
+        >
+          Site settings
+        </a>
+      </template>
+    </nav>
+  </aside>
 </template>

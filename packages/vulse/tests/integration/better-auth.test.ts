@@ -10,7 +10,7 @@ describe('better-auth wiring', () => {
   beforeEach(async () => { await applyMigrations(env.DB) })
 
   it('signs up a member and returns a session', async () => {
-    const auth = createAuth(createDb(env.DB), { baseURL: 'http://localhost', secret: SECRET, allowSignUp: true })
+    const auth = await createAuth(createDb(env.DB), { baseURL: 'http://localhost', secret: SECRET, allowSignUp: true })
     const req = new Request('http://localhost/api/auth/sign-up/email', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
@@ -21,7 +21,7 @@ describe('better-auth wiring', () => {
   })
 
   it('rejects sign-up when disabled', async () => {
-    const auth = createAuth(createDb(env.DB), { baseURL: 'http://localhost', secret: SECRET, allowSignUp: false })
+    const auth = await createAuth(createDb(env.DB), { baseURL: 'http://localhost', secret: SECRET, allowSignUp: false })
     const req = new Request('http://localhost/api/auth/sign-up/email', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },

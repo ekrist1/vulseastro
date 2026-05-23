@@ -1,0 +1,10 @@
+---
+import AdminShell from '../../../../components/AdminShell.astro'
+import RevisionList from '../../../../components/RevisionList.vue'
+const name = Astro.params.name!
+const id = Astro.params.id!
+---
+<AdminShell title="Revisions" activePath={`/admin/collections/${name}`}>
+  <h1 class="text-2xl font-semibold mb-4">Revisions</h1>
+  <RevisionList client:load collection={name} entryId={id} />
+</AdminShell>

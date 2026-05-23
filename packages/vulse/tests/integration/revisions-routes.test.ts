@@ -15,7 +15,7 @@ describe('revisions routes', () => {
   it('lists revisions and restores a version', async () => {
     await applyMigrations(env.DB)
     const db = createDb(env.DB)
-    const auth = createAuth(db, { baseURL: 'http://localhost', secret: SECRET, allowSignUp: true })
+    const auth = await createAuth(db, { baseURL: 'http://localhost', secret: SECRET, allowSignUp: true })
     const reg = new BlueprintRegistry()
     reg.register(defineCollection({
       name: 'post', label: 'P', schema: z.object({ title: z.string() }),

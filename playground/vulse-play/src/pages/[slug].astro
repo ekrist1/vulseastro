@@ -1,0 +1,19 @@
+---
+import { getCollection } from 'astro:content'
+import BlockRenderer from 'vulse/client/BlockRenderer.astro'
+
+const { slug } = Astro.params
+const pages = await getCollection('page')
+const page = pages.find((p) => p.data.slug === slug)
+if (!page) return new Response(null, { status: 404, statusText: 'Not found' })
+---
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>{page.data.title}</title>
+  </head>
+  <body>
+    <h1>{page.data.title}</h1>
+    <BlockRenderer blocks={page.data.body ?? []} />
+  </body>
+</html>

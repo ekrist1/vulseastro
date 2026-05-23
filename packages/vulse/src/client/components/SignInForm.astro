@@ -1,0 +1,24 @@
+---
+interface Props { redirectTo?: string; class?: string }
+const { redirectTo = '/', class: cls } = Astro.props
+---
+<form data-vulse-sign-in data-redirect={redirectTo} class={cls}>
+  <slot />
+</form>
+<script>
+  document.querySelectorAll('form[data-vulse-sign-in]').forEach((form) => {
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault()
+      const f = new FormData(form as HTMLFormElement)
+      const res = await fetch('/api/auth/sign-in/email', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ email: f.get('email'), password: f.get('password') }),
+        credentials: 'same-origin',
+      })
+      const event = new CustomEvent(res.ok ? 'vulse:sign-in:success' : 'vulse:sign-in:error', { detail: { status: res.status } })
+      form.dispatchEvent(event)
+      if (res.ok) window.location.href = (form as HTMLFormElement).dataset.redirect || '/'
+    })
+  })
+</script>

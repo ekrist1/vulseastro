@@ -17,9 +17,17 @@ export function injectVulseAdminRoutes({ injectRoute, logger, adminPath = '/admi
     { pattern: `${prefix}/collections/[name]`, file: 'collections/[name]/index.astro' },
     { pattern: `${prefix}/collections/[name]/new`, file: 'collections/[name]/new.astro' },
     { pattern: `${prefix}/collections/[name]/[id]`, file: 'collections/[name]/[id].astro' },
+    { pattern: `${prefix}/collections/[name]/[id]/revisions`, file: 'collections/[name]/[id]/revisions.astro' },
     { pattern: `${prefix}/users`, file: 'users/index.astro' },
     { pattern: `${prefix}/users/[id]`, file: 'users/[id].astro' },
     { pattern: `${prefix}/settings`, file: 'settings/index.astro' },
+    { pattern: `${prefix}/settings/auth`, file: 'settings/auth.astro' },
+    { pattern: `${prefix}/media`, file: 'media.astro' },
+    { pattern: `${prefix}/settings/sets`, file: 'settings/sets/index.astro' },
+    { pattern: `${prefix}/settings/sets/new`, file: 'settings/sets/new.astro' },
+    { pattern: `${prefix}/settings/sets/[handle]`, file: 'settings/sets/[handle].astro' },
+    { pattern: `${prefix}/schema/new`, file: 'schema/new.astro' },
+    { pattern: `${prefix}/schema/[handle]`, file: 'schema/[handle].astro' },
   ]
   for (const r of routes) {
     injectRoute({ pattern: r.pattern, entrypoint: ADMIN(r.file), prerender: false })
