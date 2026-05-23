@@ -1,0 +1,13 @@
+---
+import AdminShell from '../../../components/AdminShell.astro'
+import EntryForm from '../../../components/EntryForm.vue'
+import { registryFromUserCollections } from '../../../../core/blueprints/load.js'
+import { reflectFields } from '../../../client/form-from-zod.js'
+const reg = await registryFromUserCollections()
+const bp = reg.get(Astro.params.name!)
+if (!bp) return Astro.redirect('/admin')
+const fields = reflectFields(bp.schema as import('astro/zod').z.ZodObject<any>)
+---
+<AdminShell title={`New ${bp.label}`} activePath={`/admin/collections/${bp.name}`}>
+  <EntryForm client:load collection={bp.name} fields={fields} initial={{}} />
+</AdminShell>

@@ -1,0 +1,23 @@
+---
+import AdminShell from '../../../components/AdminShell.astro'
+import EntryForm from '../../../components/EntryForm.vue'
+import { registryFromUserCollections } from '../../../../core/blueprints/load.js'
+import { reflectFields } from '../../../client/form-from-zod.js'
+import { getRuntime } from '../../../../server/runtime.js'
+import { getRuntimeEnv } from '../../../../server/env.js'
+
+const reg = await registryFromUserCollections()
+const bp = reg.get(Astro.params.name!)
+if (!bp) return Astro.redirect('/admin')
+const fields = reflectFields(bp.schema as import('astro/zod').z.ZodObject<any>)
+
+const env = getRuntimeEnv()
+const rt = await getRuntime(env, reg, new URL(Astro.request.url).origin)
+const res = await rt.routes.entries.findById(new Request(Astro.request.url, { headers: Astro.request.headers }), { collection: bp.name, id: Astro.params.id! })
+const body = await res.json() as { ok: true; data: { content: Record<string, unknown>; slug: string; status: 'draft' | 'published' } } | { ok: false }
+if (!body.ok) return new Response('Not found', { status: 404 })
+const initial = { ...body.data.content, slug: body.data.slug, status: body.data.status }
+---
+<AdminShell title={`Edit ${bp.label}`} activePath={`/admin/collections/${bp.name}`}>
+  <EntryForm client:load collection={bp.name} entryId={Astro.params.id!} fields={fields} initial={initial} />
+</AdminShell>

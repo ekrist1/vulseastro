@@ -1,0 +1,34 @@
+---
+import AdminShell from '../components/AdminShell.astro'
+import { getRuntime } from '../../server/runtime.js'
+import { getRuntimeEnv } from '../../server/env.js'
+import { registryFromUserCollections } from '../../core/blueprints/load.js'
+
+const env = getRuntimeEnv()
+const rt = await getRuntime(env, await registryFromUserCollections(), new URL(Astro.request.url).origin)
+const reg = rt.registry
+
+const counts: { name: string; label: string; total: number; published: number }[] = []
+for (const bp of reg.list()) {
+  const all = await rt.routes.entries.list(new Request(Astro.request.url, { headers: Astro.request.headers }), { collection: bp.name })
+  const body = await all.json() as { ok: true; data: { status: string }[] } | { ok: false }
+  const list = body.ok ? body.data : []
+  counts.push({
+    name: bp.name, label: bp.label,
+    total: list.length,
+    published: list.filter((e) => e.status === 'published').length,
+  })
+}
+---
+<AdminShell title="Dashboard" activePath="/admin">
+  <h1 class="text-2xl font-semibold mb-6">Dashboard</h1>
+  <div class="grid grid-cols-3 gap-4">
+    {counts.map((c) => (
+      <a href={`/admin/collections/${c.name}`} class="block p-4 rounded-xl border bg-white hover:shadow-sm">
+        <div class="text-sm text-zinc-500">{c.label}</div>
+        <div class="text-3xl font-semibold mt-1">{c.total}</div>
+        <div class="text-xs text-zinc-400 mt-1">{c.published} published</div>
+      </a>
+    ))}
+  </div>
+</AdminShell>

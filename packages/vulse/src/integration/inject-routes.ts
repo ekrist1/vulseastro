@@ -16,6 +16,8 @@ export function injectVulseRoutes({ injectRoute, logger }: InjectArgs) {
     { pattern: '/api/vulse/entries/[collection]/[id]/revisions/[version]/restore', file: 'api-vulse-revisions-restore.js' },
     { pattern: '/api/vulse/users', file: 'api-vulse-users.js' },
     { pattern: '/api/vulse/users/[id]/role', file: 'api-vulse-users-role.js' },
+    { pattern: '/api/vulse/settings', file: 'api-vulse-settings.js' },
+    { pattern: '/api/vulse/settings/[key]', file: 'api-vulse-settings.js' },
     { pattern: '/api/auth/[...all]', file: 'api-auth.js' },
   ]
   for (const r of routes) {

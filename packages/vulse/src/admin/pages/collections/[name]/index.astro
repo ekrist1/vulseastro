@@ -1,0 +1,12 @@
+---
+import AdminShell from '../../../components/AdminShell.astro'
+import EntryList from '../../../components/EntryList.vue'
+import { registryFromUserCollections } from '../../../../core/blueprints/load.js'
+const reg = await registryFromUserCollections()
+const bp = reg.get(Astro.params.name!)
+if (!bp) return Astro.redirect('/admin')
+const columns = bp.admin.listColumns ?? [bp.admin.titleField]
+---
+<AdminShell title={bp.label} activePath={`/admin/collections/${bp.name}`}>
+  <EntryList client:load collection={bp.name} columns={columns} />
+</AdminShell>

@@ -1,0 +1,8 @@
+---
+import AdminShell from '../../components/AdminShell.astro'
+import UserList from '../../components/UserList.vue'
+---
+<AdminShell title="Users" activePath="/admin/users">
+  <h1 class="text-2xl font-semibold mb-4">Users</h1>
+  <UserList client:load />
+</AdminShell>

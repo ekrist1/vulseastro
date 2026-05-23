@@ -4,6 +4,7 @@ import { BlueprintRegistry } from '../core/blueprints/registry.js'
 import { entriesRoutes } from './routes/entries.js'
 import { revisionsRoutes } from './routes/revisions.js'
 import { usersRoutes } from './routes/users.js'
+import { settingsRoutes } from './routes/settings.js'
 import type { RuntimeEnv } from './env.js'
 
 export interface VulseRuntime {
@@ -14,6 +15,7 @@ export interface VulseRuntime {
     entries: ReturnType<typeof entriesRoutes>
     revisions: ReturnType<typeof revisionsRoutes>
     users: ReturnType<typeof usersRoutes>
+    settings: ReturnType<typeof settingsRoutes>
   }
 }
 
@@ -33,6 +35,7 @@ export async function getRuntime(env: RuntimeEnv, registry: BlueprintRegistry, b
       entries: entriesRoutes(db, auth, registry),
       revisions: revisionsRoutes(db, auth),
       users: usersRoutes(db, auth),
+      settings: settingsRoutes(db, auth),
     },
   }
   return cached
