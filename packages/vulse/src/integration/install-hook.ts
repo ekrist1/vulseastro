@@ -16,11 +16,18 @@ export default defineCollection({
 })
 `
 
-const CONTENT_CONFIG = `import { defineCollection } from 'astro:content'
+const CONTENT_CONFIG = `import { defineCollection, z } from 'astro:content'
 import { vulseLoader } from 'vulse/loader'
 
 export const collections = {
-  page: defineCollection({ loader: vulseLoader({ collection: 'page' }) }),
+  page: defineCollection({
+    loader: vulseLoader({ collection: 'page' }),
+    schema: z.object({
+      title: z.string(),
+      slug: z.string(),
+      body: z.any().optional(),
+    }),
+  }),
 }
 `
 
@@ -39,10 +46,16 @@ export async function runInstallHook(cwd: string): Promise<void> {
   const starter = join(collectionsDir, 'page.ts')
   if (!(await fileExists(starter))) await writeFile(starter, STARTER_BLUEPRINT, 'utf8')
 
-  const contentConfig = join(cwd, 'src/content/config.ts')
+  const contentConfig = join(cwd, 'src/content.config.ts')
   if (!(await fileExists(contentConfig))) {
-    await mkdir(join(cwd, 'src/content'), { recursive: true })
     await writeFile(contentConfig, CONTENT_CONFIG, 'utf8')
+  }
+
+  const tsConfigPath = join(cwd, 'tsconfig.json')
+  if (await fileExists(tsConfigPath)) {
+    const json = JSON.parse(await readFile(tsConfigPath, 'utf8')) as { include?: string[] }
+    json.include = [...new Set([...(json.include ?? []), '.vulse/types.d.ts'])]
+    await writeFile(tsConfigPath, `${JSON.stringify(json, null, 2)}\n`, 'utf8')
   }
 
   console.log(`

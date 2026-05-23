@@ -1,0 +1,8 @@
+---
+import AdminShell from '../../components/AdminShell.astro'
+import SettingsForm from '../../components/SettingsForm.vue'
+---
+<AdminShell title="Settings" activePath="/admin/settings">
+  <h1 class="text-2xl font-semibold mb-4">Settings</h1>
+  <SettingsForm client:load />
+</AdminShell>

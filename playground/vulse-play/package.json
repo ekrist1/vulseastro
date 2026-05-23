@@ -14,5 +14,11 @@
   "dependencies": {
     "astro": "^6.3.7",
     "vulse": "workspace:*"
+  },
+  "devDependencies": {
+    "@astrojs/cloudflare": "^13.5.4",
+    "@astrojs/vue": "^6.0.1",
+    "vue": "^3.5.0",
+    "wrangler": "^4.94.0"
   }
 }

@@ -17,5 +17,8 @@ export function patchWranglerToml(input: string, opts: PatchOptions): string {
   if (!hasR2) {
     out += `\n${R2_MARKER}\n[[r2_buckets]]\nbinding = "BUCKET"\nbucket_name = "${opts.r2Bucket}"\n`
   }
+  if (!out.includes('nodejs_compat')) {
+    out = out.replace(/compatibility_date = "[^"]+"/, (m) => `${m}\ncompatibility_flags = ["nodejs_compat"]`)
+  }
   return out
 }

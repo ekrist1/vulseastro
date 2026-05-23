@@ -1,2 +1,6 @@
-// Placeholder — implemented in Plan 2 (server auth)
-export const vulse = {}
+export { createSdk } from './server/sdk/index.js'
+export type { VulseSdk } from './server/sdk/index.js'
+export { getRuntime, invalidateRuntime } from './server/runtime.js'
+export { getRuntimeEnv } from './server/env.js'
+export { createDb } from './core/db.js'
+export { registryForRequest } from './core/blueprints/load.js'

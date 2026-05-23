@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" role="img" aria-label="Vulse">
+  <rect x="0" y="0" width="120" height="120" rx="24" fill="#0B0B0C"></rect>
+  <path d="M30 36 L60 92 L90 36" stroke="#FAFAF7" stroke-width="11" stroke-linecap="round" stroke-linejoin="round" fill="none"></path>
+  <circle cx="60" cy="92" r="6" fill="#FF5B2E"></circle>
+</svg>

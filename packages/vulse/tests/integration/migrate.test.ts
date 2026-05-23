@@ -9,10 +9,14 @@ describe('applyMigrations', () => {
       `SELECT name FROM sqlite_master WHERE type='table' AND name LIKE 'vulse_%'`
     ).all<{ name: string }>()
     const names = rows.results.map((r) => r.name).sort()
-    expect(names).toEqual([
+    const core = names.filter((n) => !/_fts_(config|content|data|docsize|idx)$/.test(n))
+    expect(core).toEqual([
+      'vulse_collections',
       'vulse_entries',
+      'vulse_entries_fts',
       'vulse_entry_revisions',
       'vulse_media',
+      'vulse_sets',
       'vulse_settings',
     ])
   })

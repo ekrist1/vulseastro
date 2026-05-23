@@ -8,5 +8,12 @@
     "types": ["@cloudflare/workers-types", "vitest/globals", "node"]
   },
   "include": ["src/**/*"],
-  "exclude": ["dist", "tests"]
+  "exclude": [
+    "dist",
+    "tests",
+    "src/admin/**/*.vue",
+    "src/admin/components/fields/**/*.ts",
+    "src/admin/composables/**",
+    "src/client/**"
+  ]
 }

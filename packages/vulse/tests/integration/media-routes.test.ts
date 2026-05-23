@@ -1,0 +1,55 @@
+import { describe, it, expect } from 'vitest'
+import { env } from 'cloudflare:test'
+import { applyMigrations } from '../../src/core/migrations'
+import { createDb } from '../../src/core/db'
+import { createAuth } from '../../src/server/better-auth'
+import { mediaRoutes } from '../../src/server/routes/media'
+import { signUpAsAdmin } from '../helpers/auth'
+
+const SECRET = 'a'.repeat(32)
+const PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9ZjYJ6cAAAAASUVORK5CYII=', 'base64')
+
+async function makeContext() {
+  await applyMigrations(env.DB)
+  const db = createDb(env.DB)
+  const auth = await createAuth(db, { baseURL: 'http://localhost', secret: SECRET, allowSignUp: true })
+  const routes = mediaRoutes(db, auth, { bucket: env.BUCKET, cfImages: {} })
+  return { routes, auth }
+}
+
+describe('media routes', () => {
+  it('uploads a PNG and records dimensions', async () => {
+    const { routes, auth } = await makeContext()
+    const cookie = await signUpAsAdmin(env, auth)
+
+    const form = new FormData()
+    form.append('file', new File([PNG], 'pic.png', { type: 'image/png' }))
+    const res = await routes.upload(new Request('http://localhost/api/vulse/media', {
+      method: 'POST',
+      body: form,
+      headers: { cookie },
+    }))
+    expect(res.status).toBe(200)
+    const body = await res.json() as { ok: true; data: { id: string; width: number; height: number } }
+    expect(body.data.width).toBe(1)
+    expect(body.data.height).toBe(1)
+  })
+
+  it('lists uploaded media', async () => {
+    const { routes, auth } = await makeContext()
+    const cookie = await signUpAsAdmin(env, auth)
+
+    const form = new FormData()
+    form.append('file', new File([PNG], 'pic.png', { type: 'image/png' }))
+    await routes.upload(new Request('http://localhost/api/vulse/media', {
+      method: 'POST',
+      body: form,
+      headers: { cookie },
+    }))
+
+    const list = await routes.list(new Request('http://localhost/api/vulse/media', { headers: { cookie } }))
+    expect(list.status).toBe(200)
+    const body = await list.json() as { ok: true; data: unknown[] }
+    expect(body.data.length).toBe(1)
+  })
+})

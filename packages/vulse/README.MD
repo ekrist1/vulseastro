@@ -1,0 +1,570 @@
+# Vulse
+
+Vulse is an Astro-native, Cloudflare-hosted headless CMS. One deploy serves your public site, the admin UI (`/admin`), and the REST API (`/api/vulse/*`). Content lives in D1, assets in R2, and delivery uses Astro’s Content Layer loader (build/sync) plus a runtime SDK (SSR/members-only content).
+
+---
+
+## Prerequisites
+
+- **Node.js 22+**
+- **pnpm 9+**
+- **A Cloudflare account** (free tier is fine)
+- **Wrangler CLI** installed and logged in:
+
+  ```bash
+  npm i -g wrangler
+  wrangler login
+  ```
+
+- **An Astro 6 project** with the Cloudflare adapter (`output: 'server'`). The playground in this repo is a working reference.
+
+---
+
+## Installation
+
+### 1. Add Vulse to your Astro project
+
+```bash
+pnpm astro add vulse
+pnpm astro add cloudflare
+```
+
+The install hook will:
+
+- Patch `wrangler.toml` with D1 (`DB`) and R2 (`BUCKET`) bindings
+- Scaffold `src/vulse/collections/page.ts` (starter blueprint)
+- Create `src/content.config.ts` wired to `vulseLoader()`
+- Add `.vulse/types.d.ts` to your `tsconfig.json` include list
+
+Your `astro.config.mjs` should look like:
+
+```js
+import { defineConfig } from 'astro/config'
+import cloudflare from '@astrojs/cloudflare'
+import vulse from 'vulse/integration'
+
+export default defineConfig({
+  output: 'server',
+  adapter: cloudflare({ platformProxy: { enabled: true } }),
+  integrations: [vulse()],
+})
+```
+
+### 2. Create Cloudflare resources
+
+```bash
+wrangler d1 create vulse-db
+wrangler r2 bucket create vulse-media
+```
+
+Copy the `database_id` from the D1 output into `wrangler.toml` (replace `TODO_PASTE_ID` if the install hook left a placeholder).
+
+Example `wrangler.toml` bindings:
+
+```toml
+[[d1_databases]]
+binding = "DB"
+database_name = "vulse-db"
+database_id = "<your-database-id>"
+migrations_dir = "node_modules/vulse/migrations"
+
+[[r2_buckets]]
+binding = "BUCKET"
+bucket_name = "vulse-media"
+
+[vars]
+BETTER_AUTH_SECRET = "dev-secret-change-me-in-production-32chars"
+```
+
+### 3. Migrations
+
+Apply bundled SQL migrations to local D1 (miniflare):
+
+```bash
+npx vulse migrate
+```
+
+For production:
+
+```bash
+npx vulse migrate --remote
+```
+
+Migrations shipped with Vulse:
+
+| File | Purpose |
+|------|---------|
+| `0000_init.sql` | Core tables, Better Auth tables |
+| `0001_collections_sets.sql` | Runtime schema editor (`vulse_collections`, sets) |
+| `0002_tree_drafts.sql` | Tree structure, draft columns |
+| `0003_fts.sql` | FTS5 search index + triggers |
+
+### 4. Seeding — first admin (super user)
+
+Public sign-up is **off by default**. Create your first admin with one of these approaches.
+
+#### Option A — Sign up, then promote (recommended for local dev)
+
+1. Enable sign-up in the database **before** starting the dev server (or restart after):
+
+   ```bash
+   wrangler d1 execute DB --local --command \
+     "INSERT INTO vulse_settings (key, value, updated_at) VALUES ('allowMemberSignUp', true, $(date +%s)000) ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at;"
+   ```
+
+2. Start dev and create an account at `/sign-in` (or your own sign-up page using `SignUpForm.astro`).
+
+3. Promote the user to admin:
+
+   ```bash
+   wrangler d1 execute DB --local --command \
+     "UPDATE user SET role = 'admin' WHERE email = 'you@example.com';"
+   ```
+
+4. Sign in at `/admin/login`. Turn off public sign-up under **Settings → Auth** when done.
+
+#### Option B — API bootstrap (scriptable)
+
+With sign-up enabled (step 1 above) and the dev server running:
+
+```bash
+curl -X POST http://localhost:4321/api/auth/sign-up/email \
+  -H 'content-type: application/json' \
+  -d '{"email":"admin@example.com","password":"your-secure-password","name":"Admin"}'
+
+wrangler d1 execute DB --local --command \
+  "UPDATE user SET role = 'admin' WHERE email = 'admin@example.com';"
+```
+
+#### Option C — `vulse seed:admin` (CLI)
+
+From your Astro project root (where `wrangler.toml` lives):
+
+```bash
+npx vulse migrate
+npx vulse seed:admin --email you@example.com
+npx vulse seed:admin --email you@example.com --remote   # production D1
+npx vulse seed:admin --email you@example.com --password 'your-secure-password'  # optional
+```
+
+Run `vulse migrate` first. The command creates the user via Better Auth (proper password hash), promotes them to `admin`, and prints the temporary password when one was generated.
+
+**Roles:** `admin` (full access), `editor` (content), `member` (end-user). Promote users in **Admin → Users**.
+
+### 5. Clearing the database
+
+To reset local D1 content and auth (keeps schema):
+
+```bash
+wrangler d1 execute DB --local --command "
+  DELETE FROM vulse_entries;
+  DELETE FROM vulse_entry_revisions;
+  DELETE FROM vulse_entries_fts;
+  DELETE FROM vulse_media;
+  DELETE FROM vulse_settings;
+  DELETE FROM vulse_collections;
+  DELETE FROM vulse_sets;
+  DELETE FROM session;
+  DELETE FROM account;
+  DELETE FROM user;
+"
+```
+
+Then re-run migrations if needed (`npx vulse migrate`) and seed a new admin.
+
+To wipe the local D1 file entirely, delete `.wrangler/state/v3/d1/` and migrate again.
+
+---
+
+## Usage
+
+### Define collections (blueprints)
+
+Create one file per collection in `src/vulse/collections/`:
+
+```ts
+// src/vulse/collections/post.ts
+import { defineCollection, z, blocks, media } from 'vulse'
+
+export default defineCollection({
+  name: 'post',
+  label: 'Blog post',
+  schema: z.object({
+    title: z.string().min(1),
+    slug: z.string(),
+    excerpt: z.string().optional(),
+    cover: media().optional(),
+    body: blocks(),
+  }),
+  admin: { titleField: 'title', listColumns: ['title', 'slug'] },
+  access: {
+    read: ({ user, entry }) => entry?.status === 'published' || !!user,
+    create: ({ user }) => user?.role === 'admin' || user?.role === 'editor',
+    update: ({ user }) => user?.role === 'admin' || user?.role === 'editor',
+    delete: ({ user }) => user?.role === 'admin',
+  },
+})
+```
+
+Reload `/admin` — the collection appears in the sidebar. Use **Schema** in settings to edit blueprints at runtime.
+
+### Admin UI
+
+| Route | Purpose |
+|-------|---------|
+| `/admin` | Dashboard |
+| `/admin/login` | Staff sign-in |
+| `/admin/collections/:name` | Entry list / tree |
+| `/admin/collections/:name/new` | Create entry |
+| `/admin/collections/:name/:id` | Edit entry (+ Preview) |
+| `/admin/media` | Asset library |
+| `/admin/users` | User management |
+| `/admin/settings/auth` | Sign-up toggle, domain allowlist |
+| `/admin/settings/sets` | Reusable block sets |
+| `/admin/schema/:handle` | Blueprint editor |
+
+### Content delivery — static / SSG path
+
+Wire the Content Layer in `src/content.config.ts`:
+
+```ts
+import { defineCollection, z } from 'astro:content'
+import { vulseLoader } from 'vulse/loader'
+
+export const collections = {
+  post: defineCollection({
+    loader: vulseLoader({ collection: 'post' }),
+    schema: z.object({
+      title: z.string(),
+      slug: z.string(),
+      body: z.any().optional(),
+    }),
+  }),
+}
+```
+
+Use standard Astro content APIs in pages:
+
+```astro
+---
+import { getCollection } from 'astro:content'
+import BlockRenderer from 'vulse/client/BlockRenderer.astro'
+
+const posts = await getCollection('post')
+const post = posts.find((p) => p.data.slug === Astro.params.slug)
+---
+<h1>{post.data.title}</h1>
+<BlockRenderer blocks={post.data.body ?? []} />
+```
+
+The loader reads **published** entries from D1 at sync/build time. In dev, D1 is resolved via wrangler’s platform proxy (no extra config).
+
+### Content delivery — SSR / dynamic path
+
+Use the runtime SDK in server-rendered pages:
+
+```ts
+import { getRuntimeEnv, getRuntime, createDb, registryForRequest } from 'vulse/server'
+
+const env = getRuntimeEnv()
+const db = createDb(env.DB)
+const rt = await getRuntime(env, await registryForRequest(db), Astro.url.origin)
+const session = await rt.auth.api.getSession({ headers: Astro.request.headers })
+
+const post = await rt.sdk.collections.findBySlug('post', slug, {
+  audience: session?.user ?? null,
+})
+
+const results = await rt.sdk.search.query('astro', { collections: ['post'], limit: 10 })
+const imageUrl = rt.sdk.media.url(mediaId, 'hero')
+```
+
+### Preview drafts on the public site
+
+In the entry editor, click **Preview**. That sets a signed `vulse_preview` cookie and redirects to the public URL. Middleware treats preview mode as “include drafts” for SDK reads.
+
+---
+
+## Configuration
+
+### `wrangler.toml` bindings
+
+| Binding | Required | Purpose |
+|---------|----------|---------|
+| `DB` | Yes | D1 database |
+| `BUCKET` | Yes | R2 bucket for media uploads |
+
+### Environment variables (`[vars]` / secrets)
+
+| Variable | Required | Purpose |
+|----------|----------|---------|
+| `BETTER_AUTH_SECRET` | Yes | Session signing (32+ chars in production) |
+| `BETTER_AUTH_URL` | No | Auth base URL override |
+| `VULSE_PREVIEW_SECRET` | No | Preview cookie signing (falls back to `BETTER_AUTH_SECRET`) |
+| `CF_IMAGES_ACCOUNT_HASH` | No | Cloudflare Images delivery URLs |
+| `CF_IMAGES_TOKEN` | No | CF Images API (variant registration) |
+
+Without `CF_IMAGES_*`, media previews fall back to R2-proxied URLs (`/api/vulse/media/:id/file`).
+
+### Settings stored in D1
+
+| Key | Default | Purpose |
+|-----|---------|---------|
+| `allowMemberSignUp` | `false` | Public member registration |
+| `allowedSignUpDomains` | `[]` | Email domain allowlist (empty = any) |
+
+Managed in **Admin → Settings → Auth**. Changing auth settings invalidates the runtime cache on the next request.
+
+### Integration options
+
+```ts
+vulse({ adminPath: '/admin' }) // override admin URL prefix
+```
+
+---
+
+## Frontend foundation
+
+Vulse ships **headless** auth and rendering primitives — you own all styling.
+
+### Block rendering
+
+ProseMirror JSON from the TipTap editor renders via:
+
+```astro
+import BlockRenderer from 'vulse/client/BlockRenderer.astro'
+<!-- or Vue: import BlockRenderer from 'vulse/client/BlockRenderer.vue' -->
+
+<BlockRenderer blocks={entry.body} mediaUrl={(id, variant) => `/api/vulse/media/${id}/file`} />
+```
+
+Legacy flat block arrays are also supported.
+
+### End-user auth (browser)
+
+```ts
+import { auth as vulseAuth } from 'vulse/client/auth'
+
+await vulseAuth.signIn({ email, password })
+await vulseAuth.signUp({ email, password, name })
+await vulseAuth.signOut()
+const session = await vulseAuth.session()
+```
+
+### Headless Astro components
+
+| Component | Import | Purpose |
+|-----------|--------|---------|
+| `SignInForm.astro` | `vulse/client/components/SignInForm.astro` | Slot-based sign-in form |
+| `SignUpForm.astro` | `vulse/client/components/SignUpForm.astro` | Slot-based sign-up form |
+| `SignOutButton.astro` | `vulse/client/components/SignOutButton.astro` | Sign-out button |
+| `SessionGuard.astro` | `vulse/client/components/SessionGuard.astro` | Server-side role gate |
+
+Example:
+
+```astro
+---
+import SignInForm from 'vulse/client/components/SignInForm.astro'
+---
+<SignInForm redirectTo="/account" class="my-form">
+  <input name="email" type="email" required />
+  <input name="password" type="password" required />
+  <button type="submit">Sign in</button>
+</SignInForm>
+```
+
+Forms dispatch custom events (`vulse:sign-in:success`, `vulse:sign-in:error`, etc.) for your own UI feedback.
+
+### Member-gated pages
+
+```astro
+---
+import SessionGuard from 'vulse/client/components/SessionGuard.astro'
+---
+<SessionGuard requireRole="member" redirectTo="/sign-in">
+  <h1>Members only</h1>
+</SessionGuard>
+```
+
+### Generated types
+
+On dev/build, Vulse writes `.vulse/types.d.ts` from your blueprint files. Ensure it is included in `tsconfig.json`:
+
+```json
+{
+  "include": [".astro/types.d.ts", ".vulse/types.d.ts", "**/*"]
+}
+```
+
+---
+
+## Development
+
+### User project (playground-style)
+
+```bash
+pnpm install
+npx vulse migrate
+pnpm dev
+```
+
+Open the URL printed in the terminal (often `http://localhost:4321`). Admin: `/admin/login`.
+
+### This monorepo (`vulseastro`)
+
+```bash
+pnpm install
+pnpm --filter vulse build          # compile package after TS changes
+cd playground/vulse-play && pnpm dev
+```
+
+Package scripts:
+
+```bash
+pnpm --filter vulse test             # unit tests
+pnpm --filter vulse test:integration # D1/miniflare integration tests
+pnpm --filter vulse typecheck
+```
+
+### Package exports
+
+| Import | Purpose |
+|--------|---------|
+| `vulse` | Blueprint helpers (`defineCollection`, `z`, `blocks`, `media`, `ref`) |
+| `vulse/integration` | Astro integration |
+| `vulse/loader` | Content Layer `vulseLoader()` |
+| `vulse/server` | Runtime SDK (`getRuntime`, `createSdk`, …) |
+| `vulse/client` | Block types, schemas |
+| `vulse/client/auth` | Browser auth SDK |
+| `vulse/integration/cron` | Scheduled media purge handler |
+
+---
+
+## Deployment
+
+Vulse targets **Cloudflare Workers/Pages** with a single artifact.
+
+1. **Production D1 & R2** — create resources in your Cloudflare account; update `wrangler.toml` with production IDs.
+
+2. **Migrate remote database:**
+
+   ```bash
+   npx vulse migrate --remote
+   ```
+
+3. **Secrets** (do not commit these):
+
+   ```bash
+   wrangler secret put BETTER_AUTH_SECRET
+   wrangler secret put VULSE_PREVIEW_SECRET
+   # Optional — Cloudflare Images:
+   wrangler secret put CF_IMAGES_ACCOUNT_HASH
+   wrangler secret put CF_IMAGES_TOKEN
+   ```
+
+4. **Seed production admin** — use the same bootstrap flow as local (enable sign-up → create user → promote → disable sign-up), or your preferred automation.
+
+5. **Build & deploy:**
+
+   ```bash
+   pnpm build
+   wrangler deploy   # or Cloudflare Pages via your CI
+   ```
+
+6. **Cron (optional)** — soft-deleted media is hard-purged after 7 days. Wire in your worker:
+
+   ```ts
+   import { vulseScheduled } from 'vulse/integration/cron'
+
+   export default {
+     async scheduled(event, env, ctx) {
+       ctx.waitUntil(vulseScheduled(env))
+     },
+   }
+   ```
+
+   Add a `[triggers]` cron schedule in `wrangler.toml`.
+
+---
+
+## Testing
+
+### Unit tests
+
+```bash
+cd packages/vulse
+pnpm test
+```
+
+### Integration tests (D1 + Workers runtime)
+
+```bash
+pnpm test:integration
+```
+
+Uses `@cloudflare/vitest-pool-workers` with an in-memory D1 binding.
+
+### Playground smoke test
+
+```bash
+cd playground/vulse-play
+pnpm build
+pnpm preview
+```
+
+---
+
+## Troubleshooting
+
+### Admin routes return 404
+
+- Restart the dev server after upgrading Vulse or changing the integration.
+- Kill stale Astro processes (`pkill -f "astro dev"`) — old instances may not have injected routes.
+- Check the terminal for the actual port (if 4321 is busy, Astro picks another).
+
+### Vite / SSR cache errors after config changes
+
+```bash
+rm -rf node_modules/.vite
+pnpm dev
+```
+
+### `Vulse: D1 binding "DB" is missing`
+
+Ensure `wrangler.toml` has the `[[d1_databases]]` block with `binding = "DB"` and `platformProxy: { enabled: true }` in the Cloudflare adapter config.
+
+### `Vulse: R2 binding "BUCKET" is missing`
+
+Add the `[[r2_buckets]]` block. Media uploads require R2 even when Cloudflare Images is not configured.
+
+### `BETTER_AUTH_SECRET missing`
+
+Add to `[vars]` in dev; use `wrangler secret put` in production. Use a long random string (32+ characters).
+
+### Sign-in returns 403 / CSRF issues
+
+Better Auth expects a matching `Origin` header. The admin login form sends this automatically; custom fetch clients should set `Origin` to your site URL.
+
+### Content Layer / `getCollection` empty
+
+- Confirm entries are **published** (drafts are excluded by default).
+- Run `npx vulse migrate` if the DB is fresh.
+- Restart dev after adding `src/content.config.ts` (Astro 6 uses this path, not `src/content/config.ts`).
+
+### Public sign-up rejected
+
+Sign-up is disabled by default. Enable it in **Admin → Settings → Auth**, or insert `allowMemberSignUp: true` into `vulse_settings` and restart dev.
+
+### Media uploads fail
+
+Verify R2 binding, run migrations, and check that the playground/worker has `nodejs_compat` in `compatibility_flags`.
+
+### Type errors for collections
+
+Ensure `.vulse/types.d.ts` is in `tsconfig.json` `include`. Regenerate by restarting dev (the integration writes types on `astro:config:setup`).
+
+---
+
+## License
+
+See the repository root for license information.

@@ -2,14 +2,49 @@
   "name": "vulse",
   "version": "0.0.0",
   "type": "module",
-  "bin": { "vulse": "./dist/cli/index.js" },
-  "exports": {
-    ".": { "types": "./dist/index.d.ts", "import": "./dist/index.js" },
-    "./loader": { "types": "./dist/loader.d.ts", "import": "./dist/loader.js" },
-    "./server": { "types": "./dist/server.d.ts", "import": "./dist/server.js" },
-    "./integration": { "types": "./dist/integration.d.ts", "import": "./dist/integration.js" }
+  "bin": {
+    "vulse": "./dist/cli/index.js"
   },
-  "files": ["dist", "migrations"],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./loader": {
+      "types": "./dist/loader.d.ts",
+      "import": "./dist/loader.js"
+    },
+    "./server": {
+      "types": "./dist/server.d.ts",
+      "import": "./dist/server.js"
+    },
+    "./integration": {
+      "types": "./dist/integration.d.ts",
+      "import": "./dist/integration.js"
+    },
+    "./integration/cron": {
+      "types": "./dist/integration/cron.d.ts",
+      "import": "./dist/integration/cron.js"
+    },
+    "./client": {
+      "types": "./dist/client/index.d.ts",
+      "import": "./dist/client/index.js"
+    },
+    "./client/auth": {
+      "import": "./src/client/auth.ts"
+    },
+    "./client/components/SignInForm.astro": "./src/client/components/SignInForm.astro",
+    "./client/components/SignUpForm.astro": "./src/client/components/SignUpForm.astro",
+    "./client/components/SignOutButton.astro": "./src/client/components/SignOutButton.astro",
+    "./client/components/SessionGuard.astro": "./src/client/components/SessionGuard.astro",
+    "./client/BlockRenderer.vue": "./src/client/BlockRenderer.vue",
+    "./client/BlockRenderer.astro": "./src/client/BlockRenderer.astro"
+  },
+  "files": [
+    "dist",
+    "migrations",
+    "src/client"
+  ],
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "test": "vitest run",
@@ -19,21 +54,40 @@
     "drizzle:generate": "drizzle-kit generate"
   },
   "dependencies": {
-    "drizzle-orm": "^0.36.0",
+    "@astrojs/vue": "^6.0.1",
+    "@tiptap/core": "^2.8.0",
+    "@tiptap/pm": "^2.8.0",
+    "@tiptap/starter-kit": "^2.8.0",
+    "@tiptap/vue-3": "^2.8.0",
+    "better-auth": "^1.0.0",
     "commander": "^12.0.0",
-    "nanoid": "^5.0.0"
+    "diff": "^9.0.0",
+    "drizzle-orm": "^0.45.2",
+    "jose": "^6.2.3",
+    "nanoid": "^5.0.0",
+    "vue": "^3.5.34"
   },
   "devDependencies": {
-    "@cloudflare/workers-types": "^4.20240320.0",
     "@cloudflare/vitest-pool-workers": "^0.6.0",
-    "drizzle-kit": "^0.27.0",
-    "typescript": "^5.6.0",
+    "@cloudflare/workers-types": "^4.20240320.0",
+    "@tailwindcss/vite": "^4.3.0",
+    "@types/diff": "^8.0.0",
     "@types/node": "^22.0.0",
-    "vitest": "^2.1.0",
     "astro": "^6.3.7",
-    "wrangler": "^3.80.0"
+    "drizzle-kit": "^0.31.10",
+    "tailwindcss": "^4",
+    "typescript": "^5.6.0",
+    "vite": "^7.3.0",
+    "vitest": "^2.1.0",
+    "wrangler": "^4.94.0"
   },
   "peerDependencies": {
-    "astro": "^6.3.0"
+    "astro": "^6.3.0",
+    "vue": "^3.5.0"
+  },
+  "peerDependenciesMeta": {
+    "vue": {
+      "optional": false
+    }
   }
 }

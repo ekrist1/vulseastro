@@ -1,0 +1,14 @@
+---
+import '../styles/admin.css'
+import LoginForm from '../components/LoginForm.vue'
+const next = new URL(Astro.request.url).searchParams.get('next') ?? '/admin'
+---
+<!doctype html>
+<html lang="en" class="vulse-admin">
+  <head>
+    <meta charset="utf-8" /><title>Sign in — Vulse</title>
+  </head>
+  <body class="min-h-screen grid place-items-center bg-zinc-50 vulse-admin">
+    <LoginForm client:load next={next} />
+  </body>
+</html>
