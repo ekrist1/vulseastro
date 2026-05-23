@@ -1,29 +1,40 @@
 ---
 import type { Block } from '../core/blocks/schema.js'
+import { isProseMirrorDoc, renderProseMirrorHtml } from './render-pm-html.js'
 
-interface Props { blocks: Block[]; mediaUrl?: (id: string, variant?: string) => string }
+interface Props {
+  blocks: Block[] | Record<string, unknown> | null | undefined
+  mediaUrl?: (id: string, variant?: string) => string
+}
+
 const { blocks, mediaUrl } = Astro.props
+const pmHtml = isProseMirrorDoc(blocks) ? renderProseMirrorHtml(blocks, { mediaUrl }) : null
+const legacyBlocks = Array.isArray(blocks) ? (blocks as Block[]) : []
 ---
-<div class="vulse-blocks">
-  {blocks.map((b) => {
-    if (b.type === 'heading') {
-      const Tag = `h${b.level}` as 'h1' | 'h2' | 'h3' | 'h4'
-      return <Tag>{b.text}</Tag>
-    }
-    if (b.type === 'paragraph') return <p>{b.text}</p>
-    if (b.type === 'image') return (
-      <figure>
-        {mediaUrl ? <img src={mediaUrl(b.mediaId, 'hero')} alt={b.alt} /> : <span class="text-zinc-400">[image: {b.mediaId}]</span>}
-        {b.caption && <figcaption>{b.caption}</figcaption>}
-      </figure>
-    )
-    if (b.type === 'code') return <pre><code class={`language-${b.language}`}>{b.code}</code></pre>
-    if (b.type === 'embed') return <iframe src={b.url} class="w-full aspect-video" />
-    if (b.type === 'quote') return <blockquote>{b.text}{b.cite && <cite>{b.cite}</cite>}</blockquote>
-    if (b.type === 'list') {
-      const Tag = b.ordered ? 'ol' : 'ul'
-      return <Tag>{b.items.map((it) => <li>{it}</li>)}</Tag>
-    }
-    return null
-  })}
-</div>
+{pmHtml ? (
+  <Fragment set:html={pmHtml} />
+) : (
+  <div class="vulse-blocks">
+    {legacyBlocks.map((b) => {
+      if (b.type === 'heading') {
+        const Tag = `h${b.level}` as 'h1' | 'h2' | 'h3' | 'h4'
+        return <Tag>{b.text}</Tag>
+      }
+      if (b.type === 'paragraph') return <p>{b.text}</p>
+      if (b.type === 'image') return (
+        <figure>
+          {mediaUrl ? <img src={mediaUrl(b.mediaId, 'hero')} alt={b.alt} /> : <span class="text-zinc-400">[image: {b.mediaId}]</span>}
+          {b.caption && <figcaption>{b.caption}</figcaption>}
+        </figure>
+      )
+      if (b.type === 'code') return <pre><code class={`language-${b.language}`}>{b.code}</code></pre>
+      if (b.type === 'embed') return <iframe src={b.url} class="w-full aspect-video" />
+      if (b.type === 'quote') return <blockquote>{b.text}{b.cite && <cite>{b.cite}</cite>}</blockquote>
+      if (b.type === 'list') {
+        const Tag = b.ordered ? 'ol' : 'ul'
+        return <Tag>{b.items.map((it) => <li>{it}</li>)}</Tag>
+      }
+      return null
+    })}
+  </div>
+)}
