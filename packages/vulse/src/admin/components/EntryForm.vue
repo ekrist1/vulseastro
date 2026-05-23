@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { adminApi, AdminApiError } from '../client/api.js'
 import type { FieldDescriptor } from '../client/form-from-zod.js'
 import { normalizeSlug } from '../../core/slug.js'
@@ -18,6 +18,10 @@ const props = defineProps<{
   hasUnpublishedChanges?: boolean
 }>()
 
+const emit = defineEmits<{
+  previewChange: [{ content: Record<string, unknown>; slug: string }]
+}>()
+
 const content = ref<Record<string, unknown>>({ ...props.initial })
 delete content.value.slug
 delete content.value.status
@@ -33,6 +37,13 @@ const hasChanges = ref(props.hasUnpublishedChanges ?? false)
 const error = ref<string | null>(null)
 const saving = ref(false)
 const lastAction = ref<'draft' | 'publish' | 'save'>('save')
+
+function emitPreview() {
+  emit('previewChange', {
+    content: { ...content.value },
+    slug: slug.value,
+  })
+}
 
 const titleFieldLabel = computed(() => {
   if (!props.titleField) return 'title'
@@ -69,6 +80,7 @@ function onFieldUpdate(path: string, value: unknown) {
   if (props.titleField && path === props.titleField && !slugTouched.value && typeof value === 'string') {
     slug.value = normalizeSlug(value)
   }
+  emitPreview()
 }
 
 function resetSlugFromTitle() {
@@ -150,6 +162,9 @@ async function publishNow() {
     saving.value = false
   }
 }
+
+watch(slug, () => emitPreview())
+onMounted(() => emitPreview())
 </script>
 
 <template>

@@ -1,6 +1,6 @@
 ---
 import AdminShell from '../../../components/AdminShell.astro'
-import EntryForm from '../../../components/EntryForm.vue'
+import EntryEditorWithPreview from '../../../components/EntryEditorWithPreview.vue'
 import { createDb } from '../../../../core/db.js'
 import { registryForRequest } from '../../../../core/blueprints/load.js'
 import { fieldDescriptorsFromBlueprint } from '../../../client/form-from-zod.js'
@@ -37,6 +37,7 @@ const initial = {
 }
 
 const previewTemplate = bp.preview?.path ?? '/{slug}'
+const livePreviewEnabled = (bp.preview as { live?: boolean } | undefined)?.live !== false
 const previewPath = previewTemplate.replace('{slug}', encodeURIComponent(row.slug))
 ---
 <AdminShell title={`Edit ${bp.label}`} activePath={`/admin/collections/${bp.name}`}>
@@ -44,7 +45,7 @@ const previewPath = previewTemplate.replace('{slug}', encodeURIComponent(row.slu
     <a href={`/admin/collections/${bp.name}/${Astro.params.id}/revisions`} class="text-sm text-zinc-600 underline">View history</a>
     <a href={`/api/vulse/preview/start?to=${encodeURIComponent(previewPath)}`} class="rounded border border-zinc-300 px-3 py-1 text-sm hover:bg-zinc-50">Preview</a>
   </div>
-  <EntryForm
+  <EntryEditorWithPreview
     client:load
     collection={bp.name}
     entryId={Astro.params.id!}
@@ -54,5 +55,7 @@ const previewPath = previewTemplate.replace('{slug}', encodeURIComponent(row.slu
     tree={bp.tree === true}
     hasUnpublishedChanges={row.hasUnpublishedChanges}
     titleField={bp.admin.titleField}
+    previewPath={previewTemplate}
+    enabled={livePreviewEnabled}
   />
 </AdminShell>
