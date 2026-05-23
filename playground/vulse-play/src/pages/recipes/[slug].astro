@@ -1,6 +1,7 @@
 ---
 import SessionGuard from 'vulse/client/components/SessionGuard.astro'
 import BlockRenderer from 'vulse/client/BlockRenderer.astro'
+import SiteLayout from '../../layouts/SiteLayout.astro'
 import { getRuntimeEnv, getRuntime, createDb, registryForRequest } from 'vulse/server'
 
 const slug = Astro.params.slug!
@@ -15,9 +16,12 @@ if (!recipe) return new Response(null, { status: 404, statusText: 'Not found' })
 
 const content = recipe.content as { title: string; body?: unknown }
 ---
-<SessionGuard requireRole="member" redirectTo={`/sign-in?next=/recipes/${slug}`}>
-  <article>
-    <h1>{content.title}</h1>
-    <BlockRenderer blocks={content.body ?? []} />
-  </article>
-</SessionGuard>
+<SiteLayout title={`${content.title} · Recipe`}>
+  <SessionGuard requireRole="member" redirectTo={`/sign-in?next=/recipes/${slug}`}>
+    <article class="prose-content">
+      <p class="hero__eyebrow" style="margin-bottom: 0.5rem;">Members only</p>
+      <h1>{content.title}</h1>
+      <BlockRenderer blocks={content.body ?? []} mediaUrl={(id) => `/api/vulse/media/${id}/file`} />
+    </article>
+  </SessionGuard>
+</SiteLayout>

@@ -1,5 +1,6 @@
 ---
 import { getCollection } from 'astro:content'
+import SiteLayout from '../layouts/SiteLayout.astro'
 import BlockRenderer from 'vulse/client/BlockRenderer.astro'
 
 const { slug } = Astro.params
@@ -7,13 +8,10 @@ const pages = await getCollection('page')
 const page = pages.find((p) => p.data.slug === slug)
 if (!page) return new Response(null, { status: 404, statusText: 'Not found' })
 ---
-<html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <title>{page.data.title}</title>
-  </head>
-  <body>
+<SiteLayout title={`${page.data.title} · Vulse Playground`}>
+  <article class="prose-content">
+    <p class="hero__eyebrow" style="margin-bottom: 0.5rem;">Page</p>
     <h1>{page.data.title}</h1>
-    <BlockRenderer blocks={page.data.body ?? []} />
-  </body>
-</html>
+    <BlockRenderer blocks={page.data.body ?? []} mediaUrl={(id) => `/api/vulse/media/${id}/file`} />
+  </article>
+</SiteLayout>

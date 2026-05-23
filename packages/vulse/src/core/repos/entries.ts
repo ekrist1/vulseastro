@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, isNull, sql } from 'drizzle-orm'
+import { and, asc, desc, eq, gte, isNull, lte, sql } from 'drizzle-orm'
 import { nanoid } from 'nanoid'
 import type { VulseDb } from '../db.js'
 import { entries, entryRevisions } from '../schema.js'
@@ -28,12 +28,19 @@ export interface EntryNode extends EntryRow {
   children: EntryNode[]
 }
 
+export type EntryOrderBy = 'sortOrder' | 'publishedAt' | 'updatedAt' | 'createdAt'
+
 export interface ListOptions {
   collection: string
   status?: 'draft' | 'published'
   parentId?: string | null
   limit?: number
   offset?: number
+  createdBy?: string
+  publishedAfter?: Date
+  publishedBefore?: Date
+  orderBy?: EntryOrderBy
+  order?: 'asc' | 'desc'
 }
 
 function rowToEntry(row: typeof entries.$inferSelect): EntryRow {
@@ -181,9 +188,22 @@ export class EntriesRepo {
     if (opts.parentId !== undefined) {
       conditions.push(opts.parentId === null ? isNull(entries.parentId) : eq(entries.parentId, opts.parentId))
     }
+    if (opts.createdBy) conditions.push(eq(entries.createdBy, opts.createdBy))
+    if (opts.publishedAfter) conditions.push(gte(entries.publishedAt, opts.publishedAfter))
+    if (opts.publishedBefore) conditions.push(lte(entries.publishedAt, opts.publishedBefore))
 
-    const base = this.db.select().from(entries).where(and(...conditions))
-      .orderBy(asc(entries.sortOrder), desc(entries.updatedAt))
+    const orderCol =
+      opts.orderBy === 'publishedAt' ? entries.publishedAt
+      : opts.orderBy === 'createdAt' ? entries.createdAt
+      : opts.orderBy === 'updatedAt' ? entries.updatedAt
+      : entries.sortOrder
+    const direction = opts.order === 'asc' ? asc : desc
+    const order =
+      opts.orderBy === undefined || opts.orderBy === 'sortOrder'
+        ? [asc(entries.sortOrder), desc(entries.updatedAt)] as const
+        : [direction(orderCol)] as const
+
+    const base = this.db.select().from(entries).where(and(...conditions)).orderBy(...order)
     const limited = opts.limit !== undefined ? base.limit(opts.limit) : base
     const paged = opts.offset !== undefined ? limited.offset(opts.offset) : limited
     const rows = await paged

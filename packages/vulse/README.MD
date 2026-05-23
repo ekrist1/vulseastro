@@ -259,6 +259,8 @@ const post = posts.find((p) => p.data.slug === Astro.params.slug)
 
 The loader reads **published** entries from D1 at sync/build time. In dev, D1 is resolved via wrangler’s platform proxy (no extra config).
 
+For **filtering, pagination, or author archives**, use the runtime SDK (`rt.sdk.collections.find`) instead of `getCollection` — the loader intentionally syncs the full published set for static generation.
+
 ### Content delivery — SSR / dynamic path
 
 Use the runtime SDK in server-rendered pages:
@@ -273,6 +275,17 @@ const session = await rt.auth.api.getSession({ headers: Astro.request.headers })
 
 const post = await rt.sdk.collections.findBySlug('post', slug, {
   audience: session?.user ?? null,
+})
+
+// Filtered / paginated listing (SSR archives, author pages)
+const archive = await rt.sdk.collections.find('post', {
+  audience: session?.user ?? null,
+  orderBy: 'publishedAt',
+  order: 'desc',
+  limit: 20,
+  offset: 0,
+  createdBy: userId,              // optional — filter by author
+  publishedAfter: '2026-01-01',   // optional — ISO date string
 })
 
 const results = await rt.sdk.search.query('astro', { collections: ['post'], limit: 10 })
@@ -340,7 +353,104 @@ import BlockRenderer from 'vulse/client/BlockRenderer.astro'
 
 Legacy flat block arrays are also supported.
 
-### End-user auth (browser)
+#### Styling built-in blocks
+
+Built-in block nodes render with stable `data-vulse-*` hooks you can target in CSS:
+
+```css
+[data-vulse-accordion] { border: 1px solid #e4e4e7; border-radius: 0.5rem; }
+[data-vulse-accordion] summary { font-weight: 600; padding: 0.75rem 1rem; cursor: pointer; }
+[data-vulse-callout][data-tone="warning"] { background: #fef3c7; padding: 1rem; }
+.vulse-heading { margin-top: 2rem; }
+```
+
+The admin preview and public Vue renderer share the same class names and data attributes.
+
+#### Custom block sets (Vue)
+
+Reusable sets defined under **Admin → Settings → Sets** appear in the editor as `vulseSet` nodes. On the public site, register a Vue component per set handle:
+
+```vue
+<script setup lang="ts">
+import BlockRenderer from 'vulse/client/BlockRenderer.vue'
+import QuoteSet from '../components/sets/QuoteSet.vue'
+
+defineProps<{ body: unknown }>()
+</script>
+
+<template>
+  <BlockRenderer
+    :blocks="body"
+    :components="{ 'set:quote': QuoteSet }"
+    :media-url="(id) => `/api/vulse/media/${id}/file`"
+  />
+</template>
+```
+
+Each set component receives a `data` prop with the set’s field values (matching the set schema).
+
+> **Note:** `BlockRenderer.astro` renders built-in blocks server-side. Custom sets output a placeholder unless you use the Vue renderer or map sets to your own Astro components manually.
+
+### Replicator fields
+
+A **replicator** is a collection-level field (not part of the rich-text body). It stores an ordered list of typed blocks defined in the blueprint:
+
+```json
+[
+  { "set": "hero", "content": { "title": "Welcome", "image": "media-id" } },
+  { "set": "cta", "content": { "label": "Get started", "url": "/signup" } }
+]
+```
+
+Define it in a blueprint via the schema editor (**kind: replicator**) or in code when using programmatic definitions. On the frontend, loop and dispatch to your own components — `BlockRenderer` is not used:
+
+```astro
+---
+import Hero from '../components/sections/Hero.astro'
+import Cta from '../components/sections/Cta.astro'
+
+const sections = entry.data.sections ?? []
+---
+{sections.map((item) => {
+  if (item.set === 'hero') return <Hero {...item.content} />
+  if (item.set === 'cta') return <Cta {...item.content} />
+})}
+```
+
+Use a `switch` or a component map keyed by `item.set` for larger sites.
+
+### End-user auth pages (opt-in)
+
+Sign-up is **disabled by default**. To offer public registration:
+
+1. Enable **Admin → Settings → Auth → Allow member sign-up** (or set `allowMemberSignUp` in D1).
+2. Add a sign-in page using the headless forms (see playground `src/pages/sign-in.astro`):
+
+```astro
+---
+import SignInForm from 'vulse/client/components/SignInForm.astro'
+import SignUpForm from 'vulse/client/components/SignUpForm.astro'
+const next = Astro.url.searchParams.get('next') ?? '/'
+---
+<h1>Sign in</h1>
+<SignInForm redirectTo={next}>
+  <input name="email" type="email" required />
+  <input name="password" type="password" required />
+  <button type="submit">Sign in</button>
+</SignInForm>
+
+<h2>Create account</h2>
+<SignUpForm redirectTo={next}>
+  <input name="name" type="text" />
+  <input name="email" type="email" required />
+  <input name="password" type="password" required />
+  <button type="submit">Sign up</button>
+</SignUpForm>
+```
+
+Hide the sign-up block when registration is off, or rely on the API returning 403. Forms emit `vulse:sign-in:success`, `vulse:sign-up:error`, etc. for custom toast handling.
+
+### End-user auth (browser SDK)
 
 ```ts
 import { auth as vulseAuth } from 'vulse/client/auth'

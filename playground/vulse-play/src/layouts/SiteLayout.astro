@@ -1,0 +1,46 @@
+---
+import '../styles/site.css'
+
+interface Props {
+  title?: string
+  description?: string
+  activeNav?: 'home' | 'examples' | 'admin'
+}
+
+const { title = 'Vulse Playground', description = 'Demo site for the Vulse Astro CMS', activeNav } = Astro.props
+const pathname = Astro.url.pathname
+---
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" href="/favicon.ico" />
+    <meta name="viewport" content="width=device-width" />
+    <meta name="description" content={description} />
+    <meta name="generator" content={Astro.generator} />
+    <title>{title}</title>
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="site-header__inner">
+        <a href="/" class="site-logo">Vulse <span>Play</span></a>
+        <nav class="site-nav" aria-label="Main">
+          <a href="/" class:list={{ 'is-active': activeNav === 'home' || pathname === '/' }}>Home</a>
+          <a href="/examples/accordion" class:list={{ 'is-active': activeNav === 'examples' || pathname.startsWith('/examples') }}>Examples</a>
+          <a href="/sign-in">Sign in</a>
+          <a href="/admin" class:list={{ 'is-active': activeNav === 'admin' }}>Admin</a>
+        </nav>
+      </div>
+    </header>
+    <main class="site-main">
+      <slot />
+    </main>
+    <footer class="site-footer">
+      <div class="site-footer__inner">
+        <span>Vulse playground — Astro + Cloudflare D1</span>
+        <a href="https://github.com/ekrist1/vulseastro">View source</a>
+      </div>
+    </footer>
+  </body>
+</html>

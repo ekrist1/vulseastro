@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import type { Block } from '../core/blocks/schema'
+import type { BlockComponentMap } from './pm-types.js'
 import ProseMirrorRenderer from './ProseMirrorRenderer.vue'
 
 const props = defineProps<{
   blocks: Block[] | Record<string, unknown> | null | undefined
   mediaUrl?: (id: string, variant?: string) => string
+  components?: BlockComponentMap
 }>()
 
 function isProseMirrorDoc(v: unknown): v is Record<string, unknown> {
@@ -17,7 +19,7 @@ const legacyBlocks = computed(() => (Array.isArray(props.blocks) ? props.blocks 
 </script>
 
 <template>
-  <ProseMirrorRenderer v-if="doc" :doc="doc" />
+  <ProseMirrorRenderer v-if="doc" :doc="doc" :components="components" />
   <div v-else class="vulse-blocks">
     <template v-for="(b, i) in legacyBlocks" :key="(b as Block).id ?? i">
       <h1 v-if="b.type === 'heading' && b.level === 1">{{ b.text }}</h1>

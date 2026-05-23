@@ -1,0 +1,71 @@
+---
+import SiteLayout from '../../layouts/SiteLayout.astro'
+import BlockRenderer from 'vulse/client/BlockRenderer.astro'
+import BlockRendererDemo from '../../components/examples/BlockRendererDemo.vue'
+
+/** Static sample — mirrors ProseMirror output from the block editor (Astro / no-JS path). */
+const staticAccordionDoc = {
+  type: 'doc',
+  content: [
+    {
+      type: 'vulseAccordion',
+      attrs: { summary: 'Built-in accordion (Astro BlockRenderer)', open: true },
+      content: [
+        {
+          type: 'paragraph',
+          content: [{
+            type: 'text',
+            text: 'This renders server-side via BlockRenderer.astro. Style it with CSS targeting [data-vulse-accordion] — see src/styles/site.css.',
+          }],
+        },
+      ],
+    },
+    {
+      type: 'vulseAccordion',
+      attrs: { summary: 'Another panel', open: false },
+      content: [
+        {
+          type: 'paragraph',
+          content: [{ type: 'text', text: 'Add accordions in the admin block editor under the accordion block type.' }],
+        },
+      ],
+    },
+  ],
+}
+---
+<SiteLayout
+  title="Accordion example · Vulse Playground"
+  description="How to style Vulse accordion blocks and custom FAQ sets on the frontend."
+  activeNav="examples"
+>
+  <div style="max-width: 42rem; margin: 0 auto;">
+    <p class="hero__eyebrow" style="margin-bottom: 0.75rem;">Developer example</p>
+    <h1 class="hero__title" style="font-size: 2.25rem; max-width: none; margin-bottom: 0.75rem;">
+      Accordion blocks
+    </h1>
+    <p class="hero__lead" style="margin-bottom: 2.5rem;">
+      Two ways to render accordions: style built-in editor blocks with CSS, or register a Vue component for custom sets.
+    </p>
+
+    <div class="example-panel">
+      <p class="example-panel__label">1 · Astro (server-rendered)</p>
+      <BlockRenderer blocks={staticAccordionDoc} />
+      <p class="code-hint">
+        Import <code>src/styles/site.css</code> and customize the
+        <code>[data-vulse-accordion]</code> rules. Used on public pages with
+        <code>BlockRenderer.astro</code>.
+      </p>
+    </div>
+
+    <div class="example-panel">
+      <p class="example-panel__label">2 · Vue (custom sets + live preview)</p>
+      <BlockRendererDemo client:load />
+      <p class="code-hint">
+        See <code>src/components/examples/BlockRendererDemo.vue</code> and
+        <code>src/components/sets/FaqSet.vue</code>. Register custom sets on
+        <code>BlockRenderer.vue</code> via the <code>components</code> prop
+        (key format: <code>set:faq</code>).
+      </p>
+    </div>
+  </div>
+</SiteLayout>

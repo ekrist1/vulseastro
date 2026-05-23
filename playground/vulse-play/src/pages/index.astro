@@ -1,17 +1,82 @@
 ---
+import { getCollection } from 'astro:content'
+import SiteLayout from '../layouts/SiteLayout.astro'
 
+const pages = (await getCollection('page')).sort((a, b) =>
+  a.data.title.localeCompare(b.data.title),
+)
 ---
+<SiteLayout
+  title="Vulse Playground"
+  description="Demo site showcasing Vulse CMS content delivery, blocks, and member auth."
+  activeNav="home"
+>
+  <section class="hero">
+    <p class="hero__eyebrow">Astro · Cloudflare D1 · R2</p>
+    <h1 class="hero__title">Headless CMS, one deploy</h1>
+    <p class="hero__lead">
+      This playground loads published pages from D1 via the Vulse content loader.
+      Edit content in the admin, preview drafts, and render blocks on the public site.
+    </p>
+    <div class="hero__actions">
+      <a href="/admin" class="btn btn--primary">Open admin</a>
+      <a href="/examples/accordion" class="btn btn--ghost">Block examples</a>
+    </div>
+  </section>
 
-<html lang="en">
-	<head>
-		<meta charset="utf-8" />
-		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-		<link rel="icon" href="/favicon.ico" />
-		<meta name="viewport" content="width=device-width" />
-		<meta name="generator" content={Astro.generator} />
-		<title>Astro</title>
-	</head>
-	<body>
-		<h1>Astro</h1>
-	</body>
-</html>
+  <section style="margin-bottom: 3.5rem;">
+    <h2 class="section-title">Published pages</h2>
+    <p class="section-desc">
+      Entries from the <code style="font-size:0.85em;background:rgba(255,255,255,0.06);padding:0.15rem 0.4rem;border-radius:0.25rem;">page</code> collection.
+      Create more in Admin → Collections → Page.
+    </p>
+    {pages.length === 0 ? (
+      <div class="example-panel">
+        <p style="margin:0;color:var(--text-muted);">
+          No published pages yet.
+          <a href="/admin/collections/page/new">Create your first page</a> in the admin.
+        </p>
+      </div>
+    ) : (
+      <ul class="card-grid">
+        {pages.map((page, i) => (
+          <li class="card" style={`animation-delay: ${i * 0.06}s`}>
+            <a href={`/${page.data.slug}`} style="color:inherit;text-decoration:none;display:block;">
+              <span class="card__badge">Page</span>
+              <h3 class="card__title">{page.data.title}</h3>
+              <p class="card__meta">/{page.data.slug}</p>
+            </a>
+          </li>
+        ))}
+      </ul>
+    )}
+  </section>
+
+  <section style="margin-bottom: 3.5rem;">
+    <h2 class="section-title">Examples &amp; patterns</h2>
+    <p class="section-desc">Reference implementations for frontend developers.</p>
+    <ul class="card-grid">
+      <li class="card" style="animation-delay: 0.05s">
+        <a href="/examples/accordion" style="color:inherit;text-decoration:none;display:block;">
+          <span class="card__badge">Blocks</span>
+          <h3 class="card__title">Accordion styling</h3>
+          <p class="card__meta">Built-in blocks + custom FAQ set</p>
+        </a>
+      </li>
+      <li class="card card--locked" style="animation-delay: 0.1s">
+        <a href="/sign-in?next=/recipes" style="color:inherit;text-decoration:none;display:block;">
+          <span class="card__badge">Auth</span>
+          <h3 class="card__title">Member recipes</h3>
+          <p class="card__meta">Sign in to view gated content</p>
+        </a>
+      </li>
+      <li class="card" style="animation-delay: 0.15s">
+        <a href="/sign-in" style="color:inherit;text-decoration:none;display:block;">
+          <span class="card__badge">Auth</span>
+          <h3 class="card__title">Sign in / register</h3>
+          <p class="card__meta">Headless auth forms</p>
+        </a>
+      </li>
+    </ul>
+  </section>
+</SiteLayout>
