@@ -8,7 +8,7 @@ export interface MigrateOptions { remote?: boolean }
 
 export async function runMigrate(opts: MigrateOptions): Promise<void> {
   const flag = opts.remote ? '--remote' : '--local'
-  const cmd = `wrangler d1 migrations apply DB ${flag} --migrations-dir "${MIGRATIONS_DIR}"`
+  const cmd = `wrangler d1 migrations apply DB ${flag}`
   console.log(`> ${cmd}`)
   execSync(cmd, { stdio: 'inherit' })
 }

@@ -1,0 +1,18 @@
+name = "vulse-play"
+compatibility_date = "2025-01-01"
+compatibility_flags = ["nodejs_compat"]
+
+# vulse:d1
+[[d1_databases]]
+binding = "DB"
+database_name = "vulse-db"
+database_id = "local-dev"
+migrations_dir = "node_modules/vulse/migrations"
+
+# vulse:r2
+[[r2_buckets]]
+binding = "BUCKET"
+bucket_name = "vulse-media"
+
+[vars]
+BETTER_AUTH_SECRET = "dev-secret-change-me-in-production-32chars"
