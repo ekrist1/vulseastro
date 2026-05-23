@@ -316,6 +316,8 @@ Admin deletes do a soft-delete on the `media` row (`deleted_at`). A daily Cron T
 
 After step 5, `astro dev` works. The postinstall message is the "first 5 minutes" UX — it must be tight, copy-pasteable, and survive common failures (e.g., wrangler not installed → message tells the user how to fix).
 
+**Stretch / v1.x:** an interactive `create-vulse` (or extended `astro add` flow) that prompts for the D1 name and R2 bucket name, shells out to wrangler, and writes the resulting IDs back into `wrangler.toml` automatically. Eliminates the manual paste step. Deferred from v1 because solid docs cover the same ground; revisit once the rest of the surface is stable.
+
 ### 5.5 Migrations CLI
 
 `npx vulse migrate` runs Drizzle migrations against whichever D1 the current wrangler context points at (local miniflare in dev, prod with `--remote`). Idempotent. Runs as part of the deploy build command.
