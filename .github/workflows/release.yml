@@ -7,6 +7,7 @@ on:
 
 permissions:
   contents: write
+  id-token: write # Recommended for modern NPM publishing / provenance
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
@@ -23,17 +24,21 @@ jobs:
         with:
           node-version: 22
           cache: pnpm
-          registry-url: https://registry.npmjs.org
+          registry-url: 'https://registry.npmjs.org'
 
       - run: pnpm install --frozen-lockfile
       - run: pnpm --filter vulse test
       - run: pnpm --filter vulse test:integration
       - run: pnpm --filter vulse build
 
+      # Extra safety: Ensure .npmrc points to the registry token env variable
+      - name: Configure NPM Auth
+        run: echo "//registry.npmjs.org/:_authToken=\${NODE_AUTH_TOKEN}" > .npmrc
+
       - name: Publish to npm
         working-directory: packages/vulse
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }} # Ensure this secret holds the new token
         run: |
           VERSION="${GITHUB_REF_NAME#v}"
           if [[ "$VERSION" == *-* ]]; then
