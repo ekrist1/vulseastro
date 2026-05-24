@@ -37,7 +37,7 @@ export async function readLocalesConfig(db: VulseDb): Promise<LocalesConfig> {
 /** Validate a locale param against site configuration; throws if unknown. */
 export async function resolveLocale(db: VulseDb, candidate: string | null | undefined): Promise<string> {
   const cfg = await readLocalesConfig(db)
-  if (!candidate) return cfg.defaultLocale
+  if (!candidate || candidate === DEFAULT_LOCALE) return cfg.defaultLocale
   if (!cfg.locales.includes(candidate)) {
     throw new Error(`Unknown locale '${candidate}'. Supported: ${cfg.locales.join(', ')}`)
   }

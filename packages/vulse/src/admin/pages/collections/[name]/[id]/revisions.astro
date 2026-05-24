@@ -1,10 +1,27 @@
 ---
 import AdminShell from '../../../../components/AdminShell.astro'
 import RevisionList from '../../../../components/RevisionList.vue'
+import { createDb } from '../../../../../core/db.js'
+import { getRuntimeEnv } from '../../../../../server/env.js'
+import { readLocalesConfig } from '../../../../../core/locales.js'
+
 const name = Astro.params.name!
 const id = Astro.params.id!
+
+const env = getRuntimeEnv()
+const db = createDb(env.DB)
+const localesCfg = await readLocalesConfig(db)
+const requested = Astro.url.searchParams.get('locale')
+const activeLocale = requested && localesCfg.locales.includes(requested) ? requested : localesCfg.defaultLocale
 ---
 <AdminShell title="Revisions" activePath={`/admin/collections/${name}`}>
   <h1 class="text-2xl font-semibold mb-4">Revisions</h1>
-  <RevisionList client:load collection={name} entryId={id} />
+  <RevisionList
+    client:load
+    collection={name}
+    entryId={id}
+    entryLocale={activeLocale}
+    supportedLocales={localesCfg.locales}
+    defaultLocale={localesCfg.defaultLocale}
+  />
 </AdminShell>

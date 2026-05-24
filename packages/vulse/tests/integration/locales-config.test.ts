@@ -43,6 +43,14 @@ describe('locales config', () => {
     await expect(resolveLocale(createDb(env.DB), 'xx-YY')).rejects.toThrow(/Unknown locale/)
   })
 
+  it('resolveLocale maps legacy "default" to the configured default locale', async () => {
+    const db = createDb(env.DB)
+    const settings = new SettingsRepo(db)
+    await settings.set('locales', ['en', 'nb-NO'])
+    await settings.set('defaultLocale', 'en')
+    await expect(resolveLocale(db, 'default')).resolves.toBe('en')
+  })
+
   it('isValidLocaleCode accepts BCP-47 forms and "default"', () => {
     expect(isValidLocaleCode('en')).toBe(true)
     expect(isValidLocaleCode('nb-NO')).toBe(true)

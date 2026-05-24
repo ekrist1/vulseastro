@@ -21,6 +21,7 @@ import {
 } from '../../scaffold/collection.js'
 import { formatSelectOptionsText, parseSelectOptionsText } from '../../core/blueprints/select-helpers.js'
 import { defaultPreviewPath } from '../../core/blueprints/preview-path.js'
+import type { SeoFieldMapping } from '../../core/blueprints/seo.js'
 
 const props = defineProps<{ handle: string | null; isAdmin?: boolean }>()
 const { sets, hydrate: hydrateSets } = useSets()
@@ -95,6 +96,10 @@ const label = ref('');
 const singleton = ref(false);
 const tree = ref(false);
 const drafts = ref(false);
+const seo = ref(false);
+const seoMetaTitleField = ref('');
+const seoMetaDescriptionField = ref('');
+const seoOgImageField = ref('');
 const maxDepth = ref<number | null>(null);
 const previewPath = ref('');
 const previewRootSelector = ref('');
@@ -104,6 +109,22 @@ const fields = reactive<EditorField[]>([]);
 const expandedIndex = ref<number | null>(null);
 const expandedReplicatorSets = reactive<Set<string>>(new Set());
 const originalDrafts = ref(false);
+
+const seoTitleFieldOptions = computed(() =>
+  fields.filter((f) => f.ui.kind === 'text' || f.ui.kind === 'textarea'),
+)
+const seoDescriptionFieldOptions = computed(() =>
+  fields.filter((f) => f.ui.kind === 'text' || f.ui.kind === 'textarea' || f.ui.kind === 'blocks'),
+)
+const seoImageFieldOptions = computed(() => fields.filter((f) => f.ui.kind === 'asset'))
+
+function buildSeoMappingPayload(): SeoFieldMapping | undefined {
+  const mapping: SeoFieldMapping = {}
+  if (seoMetaTitleField.value) mapping.metaTitle = seoMetaTitleField.value
+  if (seoMetaDescriptionField.value) mapping.metaDescription = seoMetaDescriptionField.value
+  if (seoOgImageField.value) mapping.ogImage = seoOgImageField.value
+  return Object.keys(mapping).length ? mapping : undefined
+}
 
 function setKey(fieldIndex: number, setIndex: number): string {
   return `${fieldIndex}:${setIndex}`;
@@ -261,6 +282,10 @@ async function load() {
     singleton.value = false;
     tree.value = false;
     drafts.value = false;
+    seo.value = false;
+    seoMetaTitleField.value = '';
+    seoMetaDescriptionField.value = '';
+    seoOgImageField.value = '';
     maxDepth.value = null;
     previewPath.value = defaultPreviewPath('');
     previewRootSelector.value = '';
@@ -277,6 +302,10 @@ async function load() {
   singleton.value = bp.singleton;
   tree.value = bp.tree ?? false;
   drafts.value = bp.drafts ?? false;
+  seo.value = bp.seo ?? false;
+  seoMetaTitleField.value = bp.seoMapping?.metaTitle ?? '';
+  seoMetaDescriptionField.value = bp.seoMapping?.metaDescription ?? '';
+  seoOgImageField.value = bp.seoMapping?.ogImage ?? '';
   maxDepth.value = bp.maxDepth ?? null;
   if (bp.preview) {
     previewPath.value = bp.preview.path
@@ -615,7 +644,7 @@ async function confirmRemoval() {
       break;
     case 'blueprint':
       await adminApi.delete(`/api/vulse/blueprints/${target.name}`)
-      window.location.href = '/admin/schema'
+      window.location.href = '/admin'
       break
   }
   closeRemovalDialog();
@@ -741,6 +770,7 @@ async function save() {
   // Skip draft-disable warning for now (requires entry list with draft flags)
   saving.value = true
   try {
+    const seoMappingPayload = seo.value ? buildSeoMappingPayload() : undefined
     const payload = {
       handle: handle.value,
       label: label.value,
@@ -748,6 +778,8 @@ async function save() {
       ...(tree.value ? { tree: true } : {}),
       ...(tree.value && maxDepth.value !== null && maxDepth.value > 0 ? { maxDepth: maxDepth.value } : {}),
       ...(drafts.value ? { drafts: true } : {}),
+      ...(seo.value ? { seo: true } : {}),
+      ...(seoMappingPayload ? { seoMapping: seoMappingPayload } : {}),
       ...(props.isAdmin
         ? {
             preview: {
@@ -868,6 +900,49 @@ async function save() {
             Enable drafts (Save changes without affecting the live site)
           </span>
         </label>
+        <label class="flex items-center gap-2">
+          <input
+            v-model="seo"
+            type="checkbox"
+            class="rounded border-zinc-300"
+            data-testid="blueprint-seo"
+          />
+          <span class="text-sm font-medium text-zinc-700">
+            Enable SEO (meta title, description, and OG image per entry)
+          </span>
+        </label>
+        <div v-if="seo" class="space-y-3 rounded border border-zinc-200 bg-zinc-50 p-3">
+          <p class="text-xs text-zinc-600">
+            Map content fields to SEO defaults. Leave blank to use inferred defaults (title field, first image, etc.).
+          </p>
+          <label class="block">
+            <span class="block text-xs font-medium text-zinc-600">Meta title source</span>
+            <select v-model="seoMetaTitleField" class="mt-1 w-full rounded border border-zinc-300 px-2 py-1.5 text-sm">
+              <option value="">Default (title field)</option>
+              <option v-for="f in seoTitleFieldOptions" :key="f.name" :value="f.name">
+                {{ f.label || f.name }}
+              </option>
+            </select>
+          </label>
+          <label class="block">
+            <span class="block text-xs font-medium text-zinc-600">Meta description source</span>
+            <select v-model="seoMetaDescriptionField" class="mt-1 w-full rounded border border-zinc-300 px-2 py-1.5 text-sm">
+              <option value="">Inferred default</option>
+              <option v-for="f in seoDescriptionFieldOptions" :key="f.name" :value="f.name">
+                {{ f.label || f.name }}
+              </option>
+            </select>
+          </label>
+          <label class="block">
+            <span class="block text-xs font-medium text-zinc-600">OG image source</span>
+            <select v-model="seoOgImageField" class="mt-1 w-full rounded border border-zinc-300 px-2 py-1.5 text-sm">
+              <option value="">Inferred default</option>
+              <option v-for="f in seoImageFieldOptions" :key="f.name" :value="f.name">
+                {{ f.label || f.name }}
+              </option>
+            </select>
+          </label>
+        </div>
         <label v-if="tree" class="block">
           <span class="block text-xs font-medium text-zinc-600">
             Max nesting depth <span class="text-zinc-400">(optional — leave blank for unlimited)</span>
@@ -1587,7 +1662,7 @@ async function save() {
           {{ saving ? 'Saving…' : 'Save' }}
         </button>
         <a
-          href="/admin/schema"
+          href="/admin"
           class="rounded border border-zinc-300 bg-white px-4 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50"
           data-testid="blueprint-cancel"
         >

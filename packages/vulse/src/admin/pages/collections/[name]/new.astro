@@ -26,6 +26,8 @@ const activeLocale = requested && localesCfg.locales.includes(requested) ? reque
     fields={fields}
     initial={{}}
     draftsEnabled={bp.drafts === true}
+    seoEnabled={bp.seo === true}
+    seoMapping={bp.admin.seoMapping}
     tree={bp.tree === true}
     parentId={parentId}
     titleField={bp.admin.titleField}

@@ -201,7 +201,7 @@ function describe(path: string, sch: ZodTypeAny): FieldDescriptor {
   return { path, widget: 'text', required }
 }
 
-const RESERVED_FIELD_NAMES = new Set(['slug', 'status'])
+const RESERVED_FIELD_NAMES = new Set(['slug', 'status', 'seo'])
 
 export function fieldDescriptorsFromDefinitions(fields: FieldDefinition[]): FieldDescriptor[] {
   return fields.map(fieldDefinitionToDescriptor)

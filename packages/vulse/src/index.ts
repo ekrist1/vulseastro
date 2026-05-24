@@ -4,6 +4,8 @@ export { blocks, media, ref, entry, entries, link, grid } from './core/blueprint
 export type { LinkValue, SelectOption } from './core/blueprints/definition.js'
 export { definePlugin } from './core/plugins/definition.js'
 export type { Blueprint, Role, AuthContext, AccessArgs, AccessFn } from './core/blueprints/types.js'
+export type { SeoContent, SeoFieldMapping, ResolvedSeo } from './core/blueprints/seo.js'
+export { resolveEffectiveSeo, resolvedSeoSummary } from './core/blueprints/seo.js'
 export type { Block, BlockType } from './core/blocks/schema.js'
 export type {
   AuthUserBeforeCreateResult,

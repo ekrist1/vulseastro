@@ -15,6 +15,8 @@ const props = defineProps<{
   initial: Record<string, unknown>
   titleField?: string
   draftsEnabled?: boolean
+  seoEnabled?: boolean
+  seoMapping?: import('../../core/blueprints/seo.js').SeoFieldMapping
   tree?: boolean
   parentId?: string | null
   hasUnpublishedChanges?: boolean
@@ -101,6 +103,8 @@ function togglePreview() {
         :initial="initial"
         :title-field="titleField"
         :drafts-enabled="draftsEnabled"
+        :seo-enabled="seoEnabled"
+        :seo-mapping="seoMapping"
         :tree="tree"
         :parent-id="parentId"
         :has-unpublished-changes="hasUnpublishedChanges"

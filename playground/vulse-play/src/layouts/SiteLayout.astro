@@ -6,10 +6,11 @@ import { getRuntimeEnv, createDb, getRuntime, registryForRequest } from 'vulse/s
 interface Props {
   title?: string
   description?: string
+  ogImage?: string
   activeNav?: 'home' | 'examples' | 'admin'
 }
 
-const { title = 'Vulse Playground', description = 'Demo site for the Vulse Astro CMS', activeNav } = Astro.props
+const { title = 'Vulse Playground', description = 'Demo site for the Vulse Astro CMS', ogImage, activeNav } = Astro.props
 const pathname = Astro.url.pathname
 
 type SessionUser = {
@@ -45,6 +46,13 @@ const userLabel =
     <link rel="icon" href="/favicon.ico" />
     <meta name="viewport" content="width=device-width" />
     <meta name="description" content={description} />
+    {ogImage && (
+      <>
+        <meta property="og:title" content={title} />
+        <meta property="og:description" content={description} />
+        <meta property="og:image" content={ogImage} />
+      </>
+    )}
     <meta name="generator" content={Astro.generator} />
     <title>{title}</title>
   </head>

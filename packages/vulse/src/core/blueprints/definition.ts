@@ -1,4 +1,5 @@
 import { z } from 'astro/zod'
+import { SeoFieldMappingSchema } from './seo.js'
 
 export const SelectOptionSchema = z.union([
   z.string().min(1),
@@ -135,6 +136,8 @@ const BlueprintDefinitionObjectSchema = z.object({
   tree: z.boolean().optional(),
   maxDepth: z.number().int().positive().optional(),
   drafts: z.boolean().optional(),
+  seo: z.boolean().optional(),
+  seoMapping: SeoFieldMappingSchema.optional(),
   preview: PreviewDefinitionSchema.optional(),
   fields: z.array(FieldDefinitionSchema).min(1),
 })

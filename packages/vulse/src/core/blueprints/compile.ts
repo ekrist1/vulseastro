@@ -9,6 +9,7 @@ import type {
   ReplicatorSetDefinition,
 } from './definition.js'
 import { LinkValueSchema } from './definition.js'
+import { seoZodSchema } from './seo.js'
 import { selectOptionKeys } from './select-helpers.js'
 
 export interface CompileBlueprintOptions {
@@ -22,6 +23,9 @@ export function compileBlueprintSchema(
   const shape: Record<string, z.ZodTypeAny> = {}
   for (const f of def.fields) {
     shape[f.name] = compileField(f, options.sets)
+  }
+  if (def.seo) {
+    shape.seo = seoZodSchema()
   }
   return z.object(shape)
 }
@@ -157,6 +161,8 @@ export function hashDefinition(def: BlueprintDefinition): string {
     tree: def.tree ?? false,
     maxDepth: def.maxDepth ?? null,
     drafts: def.drafts ?? false,
+    seo: def.seo ?? false,
+    seoMapping: def.seoMapping ?? null,
     fields: def.fields.map((f) => ({
       name: f.name,
       label: f.label ?? null,

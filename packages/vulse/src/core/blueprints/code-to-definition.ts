@@ -12,6 +12,11 @@ export function blueprintToDefinition(bp: Blueprint): BlueprintDefinition {
     handle: bp.name,
     label: bp.label,
     singleton: bp.singleton ?? false,
+    ...(bp.seo ? { seo: true } : {}),
+    ...(bp.drafts ? { drafts: true } : {}),
+    ...(bp.tree ? { tree: true } : {}),
+    ...(bp.maxDepth !== undefined ? { maxDepth: bp.maxDepth } : {}),
+    ...(bp.admin.seoMapping ? { seoMapping: bp.admin.seoMapping } : {}),
     preview: {
       path: previewPath,
       ...(bp.preview?.rootSelector ? { rootSelector: bp.preview.rootSelector } : {}),

@@ -25,7 +25,7 @@ const paramsById = z.object({ collection: z.string(), id: z.string() })
 
 async function resolveLocaleParam(db: VulseDb, raw: string | null | undefined): Promise<string> {
   const cfg = await readLocalesConfig(db)
-  if (!raw) return cfg.defaultLocale
+  if (!raw || raw === DEFAULT_LOCALE) return cfg.defaultLocale
   if (!isValidLocaleCode(raw)) throw new ValidationError(`Invalid locale code: ${raw}`)
   if (!cfg.locales.includes(raw)) {
     throw new ValidationError(`Locale '${raw}' is not enabled for this site.`, {
@@ -61,12 +61,12 @@ export function entriesRoutes(db: VulseDb, auth: Auth, reg: BlueprintRegistry) {
       })
     }),
 
-    tree: defineHandler(auth, { params: paramsByCollection }, async ({ params, url, auth: authCtx }) => {
+    tree: defineHandler(auth, {
+      params: paramsByCollection,
+      requireRole: ['admin', 'editor'],
+    }, async ({ params, url }) => {
       const bp = blueprintFor(params.collection)
       if (!bp.tree) throw new ValidationError('Collection does not support tree structure')
-      if (!(await evaluate(bp, 'read', { user: authCtx.user }))) {
-        throw new AccessDeniedError('Cannot read tree')
-      }
       const locale = await resolveLocaleParam(db, url.searchParams.get('locale'))
       return await entries.tree(params.collection, locale)
     }),
@@ -84,11 +84,11 @@ export function entriesRoutes(db: VulseDb, auth: Auth, reg: BlueprintRegistry) {
       return row
     }),
 
-    listLocales: defineHandler(auth, { params: paramsById }, async ({ params, auth: authCtx }) => {
-      const bp = blueprintFor(params.collection)
-      if (!(await evaluate(bp, 'read', { user: authCtx.user }))) {
-        throw new AccessDeniedError('Cannot read entry locales')
-      }
+    listLocales: defineHandler(auth, {
+      params: paramsById,
+      requireRole: ['admin', 'editor'],
+    }, async ({ params }) => {
+      blueprintFor(params.collection)
       return await entries.listLocales(params.id)
     }),
 

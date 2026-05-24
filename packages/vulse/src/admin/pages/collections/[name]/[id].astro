@@ -75,6 +75,8 @@ const previewPath = previewTemplate.replace('{slug}', encodeURIComponent(row?.sl
     fields={fields}
     initial={initial}
     draftsEnabled={bp.drafts === true}
+    seoEnabled={bp.seo === true}
+    seoMapping={bp.admin.seoMapping}
     tree={bp.tree === true}
     hasUnpublishedChanges={row?.hasUnpublishedChanges ?? false}
     titleField={bp.admin.titleField}

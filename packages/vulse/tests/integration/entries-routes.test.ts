@@ -94,4 +94,35 @@ describe('entries routes', () => {
     const payload = await second.json() as { ok: true; data: { slug: string } }
     expect(payload.data.slug).toBe('hello-2')
   })
+
+  it('GET tree returns entries for admin even when read access requires a published entry', async () => {
+    const { db, auth, reg } = await makeContext()
+    const page = defineCollection({
+      name: 'page', label: 'Page', tree: true,
+      schema: z.object({ title: z.string(), slug: z.string() }),
+      admin: { titleField: 'title' },
+      access: {
+        read: ({ user, entry }) => entry?.status === 'published' && !!user,
+        create: ({ user }) => user?.role === 'admin' || user?.role === 'editor',
+        update: ({ user }) => user?.role === 'admin' || user?.role === 'editor',
+        delete: ({ user }) => user?.role === 'admin',
+      },
+    })
+    reg.register(page)
+    const routes = entriesRoutes(db, auth, reg)
+    const cookie = await signUpAsAdmin(env, auth)
+
+    const created = await routes.create(new Request('http://localhost', {
+      method: 'POST', headers: { 'content-type': 'application/json', cookie },
+      body: JSON.stringify({ slug: 'home', content: { title: 'Home', slug: 'home' }, status: 'draft' }),
+    }), { collection: 'page' })
+    expect(created.status).toBe(200)
+
+    const treeRes = await routes.tree(new Request('http://localhost', { headers: { cookie } }), {
+      collection: 'page',
+    })
+    expect(treeRes.status).toBe(200)
+    const treeBody = await treeRes.json() as { data: Array<{ slug: string }> }
+    expect(treeBody.data.map((n) => n.slug)).toEqual(['home'])
+  })
 })

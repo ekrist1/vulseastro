@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { onMounted, ref, watch } from 'vue'
 import { adminApi } from '../client/api.js'
 import type { EntryNode } from '../../core/repos/entries.js'
 import TreeRow from './TreeRow.vue'
@@ -31,6 +31,8 @@ async function load() {
 }
 
 onMounted(load)
+
+watch(() => props.entryLocale, () => { void load() })
 
 function toggle(id: string) {
   if (expanded.value.has(id)) expanded.value.delete(id)

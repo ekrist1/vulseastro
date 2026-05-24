@@ -13,9 +13,13 @@ export interface AccessArgs<T = unknown> extends AuthContext {
 
 export type AccessFn<T = unknown> = (args: AccessArgs<T>) => boolean | Promise<boolean>
 
+import type { SeoFieldMapping } from './seo.js'
+
 export interface AdminConfig {
   titleField: string
   listColumns?: string[]
+  /** Maps content fields to SEO defaults in the entry editor. */
+  seoMapping?: SeoFieldMapping
 }
 
 export interface PreviewConfig {
@@ -49,6 +53,7 @@ export interface Blueprint<S extends z.ZodTypeAny = z.ZodTypeAny> {
   tree?: boolean
   maxDepth?: number
   drafts?: boolean
+  seo?: boolean
   fields?: FieldDefinition[]
   definition?: BlueprintDefinition
 }

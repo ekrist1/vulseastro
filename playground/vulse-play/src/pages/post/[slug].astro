@@ -5,55 +5,64 @@ import {
   createDb,
   registryForRequest,
   resolvePreviewContent,
-} from "vulse/server";
-import BlockRenderer from "vulse/client/BlockRenderer.astro";
-import SiteLayout from "../../layouts/SiteLayout.astro";
+} from 'vulse/server'
+import { resolveEffectiveSeo } from 'vulse'
+import type { SeoContent } from 'vulse'
+import BlockRenderer from 'vulse/client/BlockRenderer.astro'
+import SiteLayout from '../../layouts/SiteLayout.astro'
 
-const slug = Astro.params.slug!;
-const env = getRuntimeEnv();
-const db = createDb(env.DB);
-const rt = await getRuntime(
-  env,
-  await registryForRequest(db),
-  Astro.url.origin,
-);
+const slug = Astro.params.slug!
+const env = getRuntimeEnv()
+const db = createDb(env.DB)
+const reg = await registryForRequest(db)
+const rt = await getRuntime(env, reg, Astro.url.origin)
 const session = await rt.auth.api.getSession({
   headers: Astro.request.headers,
-});
+})
 
-const entry = await rt.sdk.collections.findBySlug("post", slug, {
+const entry = await rt.sdk.collections.findBySlug('post', slug, {
   ...(session?.user ? { audience: session.user } : {}),
-});
-if (!entry) return new Response(null, { status: 404, statusText: "Not found" });
+})
+if (!entry) return new Response(null, { status: 404, statusText: 'Not found' })
 
-const content = resolvePreviewContent(entry, Astro.locals) as Record<
-  string,
-  unknown
->;
-const title = String(content.title ?? slug);
-const mainImageId =
-  typeof content.main_image === "string" ? content.main_image : null;
-const mediaUrl = (id: string) => `/api/vulse/media/${id}/file`;
+const bp = reg.get('post')
+const content = resolvePreviewContent(entry, Astro.locals) as Record<string, unknown>
+const seo = resolveEffectiveSeo(
+  content,
+  content.seo as SeoContent | undefined,
+  [],
+  bp?.admin.titleField ?? 'title',
+  bp?.admin.seoMapping,
+)
+const title = seo.metaTitle.value ?? String(content.title ?? slug)
+const description = seo.metaDescription.value
+const ogImageId = seo.ogImage.value
+const mainImageId = typeof content.main_image === 'string' ? content.main_image : null
+const mediaUrl = (id: string) => new URL(`/api/vulse/media/${id}/file`, Astro.url.origin).href
 ---
 
-<SiteLayout title={`${title} · Post`}>
-<article>
-  {
-    mainImageId && (
-      <figure style="margin: 0 0 1.5rem;">
-        <img
-          src={mediaUrl(mainImageId)}
-          alt={title}
-          loading="eager"
-          style="width: 100%; height: auto; border-radius: var(--radius);"
-        />
-      </figure>
-    )
-  }
-  <h1>{title}</h1>
-  <BlockRenderer
-    blocks={content.body ?? []}
-    mediaUrl={(id) => `/api/vulse/media/${id}/file`}
-  />
-</article>
+<SiteLayout
+  title={`${title} · Post`}
+  description={description}
+  ogImage={ogImageId ? mediaUrl(ogImageId) : undefined}
+>
+  <article>
+    {
+      mainImageId && (
+        <figure style="margin: 0 0 1.5rem;">
+          <img
+            src={mediaUrl(mainImageId)}
+            alt={title}
+            loading="eager"
+            style="width: 100%; height: auto; border-radius: var(--radius);"
+          />
+        </figure>
+      )
+    }
+    <h1>{title}</h1>
+    <BlockRenderer
+      blocks={content.body ?? []}
+      mediaUrl={(id) => `/api/vulse/media/${id}/file`}
+    />
+  </article>
 </SiteLayout>

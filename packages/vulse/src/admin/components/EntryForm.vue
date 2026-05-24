@@ -7,6 +7,8 @@ import { normalizeSlug } from '../../core/slug.js'
 import { useToast } from '../composables/toast.js'
 import FieldRenderer from './fields/FieldRenderer.vue'
 import EntryStatusBadge from './EntryStatusBadge.vue'
+import SeoFields from './SeoFields.vue'
+import type { SeoContent } from '../../core/blueprints/seo.js'
 
 const props = defineProps<{
   collection: string
@@ -15,6 +17,8 @@ const props = defineProps<{
   initial: Record<string, unknown>
   titleField?: string
   draftsEnabled?: boolean
+  seoEnabled?: boolean
+  seoMapping?: import('../../core/blueprints/seo.js').SeoFieldMapping
   tree?: boolean
   parentId?: string | null
   hasUnpublishedChanges?: boolean
@@ -130,6 +134,11 @@ function syncSlugFromResponse(nextSlug: string, requestedSlug: string) {
   slug.value = nextSlug
   slugNotice.value = `URL slug was adjusted to "${nextSlug}" because "${requestedSlug}" is already in use.`
   slugExpanded.value = true
+}
+
+function onSeoUpdate(value: SeoContent) {
+  content.value = { ...content.value, seo: value }
+  emitPreview()
 }
 
 function onFieldUpdate(path: string, value: unknown) {
@@ -295,6 +304,17 @@ onMounted(() => emitPreview())
       :field-errors="fieldErrors"
       :tree="tree"
       @update:modelValue="onFieldUpdate(f.path, $event)"
+    />
+
+    <SeoFields
+      v-if="seoEnabled"
+      :model-value="content.seo as SeoContent | undefined"
+      :content="content"
+      :fields="fields"
+      :title-field="titleField"
+      :seo-mapping="seoMapping"
+      :field-labels="fieldLabelByPath"
+      @update:modelValue="onSeoUpdate"
     />
 
     <details

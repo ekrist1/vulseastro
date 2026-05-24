@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { onMounted, ref, watch } from 'vue'
-import logoUrl from '../assets/logo-mark.svg'
 import CollectionKindIcon from './CollectionKindIcon.vue'
+
+const logoUrl = new URL('../assets/logo-mark.svg', import.meta.url).href
 
 const props = defineProps<{
   collections: { name: string; label: string; singleton?: boolean }[]

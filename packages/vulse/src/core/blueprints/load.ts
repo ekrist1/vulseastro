@@ -1,3 +1,4 @@
+import type { z } from 'astro/zod'
 import { BlueprintRegistry } from './registry.js'
 import type { Blueprint } from './types.js'
 import type { VulseDb } from '../db.js'
@@ -7,6 +8,7 @@ import { listBlueprintDefinitions } from './mutations.js'
 import { seedCodeBlueprints } from './seed.js'
 import { loadCompiledSets } from '../sets/service.js'
 import { toPreviewConfig } from './preview-path.js'
+import { applySeoToSchema, type SeoFieldMapping } from './seo.js'
 
 let registryCache: BlueprintRegistry | null = null
 let seededBlueprints: Blueprint[] | null = null
@@ -21,15 +23,45 @@ async function loadBlueprintModules(): Promise<Blueprint[]> {
   }
 }
 
+function finalizeBlueprint(bp: Blueprint): Blueprint {
+  const seo = bp.seo === true
+  if (!seo) return bp
+  return {
+    ...bp,
+    seo: true,
+    schema: applySeoToSchema(bp.schema as z.ZodObject<z.ZodRawShape>),
+  }
+}
+
+function normalizeSeoMapping(
+  mapping: Partial<Record<keyof SeoFieldMapping, string | undefined>> | undefined,
+): SeoFieldMapping | undefined {
+  if (!mapping) return undefined
+  const out: SeoFieldMapping = {}
+  if (mapping.metaTitle !== undefined) out.metaTitle = mapping.metaTitle
+  if (mapping.metaDescription !== undefined) out.metaDescription = mapping.metaDescription
+  if (mapping.ogImage !== undefined) out.ogImage = mapping.ogImage
+  return Object.keys(out).length ? out : undefined
+}
+
+function mergeAdmin(compiled: Blueprint, code?: Blueprint): Blueprint['admin'] {
+  const admin = code?.admin ?? compiled.admin
+  const seoMapping = normalizeSeoMapping(code?.admin?.seoMapping ?? compiled.definition?.seoMapping)
+  if (!seoMapping) return admin
+  return { ...admin, seoMapping }
+}
+
 function mergeBlueprint(compiled: Blueprint, code?: Blueprint): Blueprint {
   const rawPreview = code?.preview ?? compiled.preview
   const preview = rawPreview ? toPreviewConfig(rawPreview) : undefined
-  return {
+  const seo = code?.seo ?? compiled.seo
+  return finalizeBlueprint({
     ...compiled,
-    admin: code?.admin ?? compiled.admin,
+    admin: mergeAdmin(compiled, code),
     ...(code?.access ? { access: code.access } : {}),
     ...(preview ? { preview } : {}),
-  }
+    ...(seo ? { seo: true } : {}),
+  })
 }
 
 function inferAdmin(def: Blueprint['definition']): Blueprint['admin'] {
@@ -59,13 +91,14 @@ export async function registryFromDb(db: VulseDb): Promise<BlueprintRegistry> {
       ...(def.tree !== undefined ? { tree: def.tree } : {}),
       ...(def.maxDepth !== undefined ? { maxDepth: def.maxDepth } : {}),
       ...(def.drafts !== undefined ? { drafts: def.drafts } : {}),
+      ...(def.seo !== undefined ? { seo: def.seo } : {}),
       ...(def.preview ? { preview: toPreviewConfig(def.preview) } : {}),
     }, code)
     reg.register(bp)
   }
 
   for (const code of codeBlueprints) {
-    if (!reg.has(code.name)) reg.register(code)
+    if (!reg.has(code.name)) reg.register(finalizeBlueprint(code))
   }
 
   return reg
@@ -93,7 +126,7 @@ export async function registryFromUserCollections(db?: VulseDb): Promise<Bluepri
   if (registryCache) return registryCache
   const reg = new BlueprintRegistry()
   for (const bp of await loadBlueprintModules()) {
-    reg.register(bp)
+    reg.register(finalizeBlueprint(bp))
   }
   registryCache = reg
   return reg
