@@ -27,6 +27,7 @@ jobs:
           registry-url: 'https://registry.npmjs.org'
 
       - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @ekrist1/vulse exec node scripts/sync-version.mjs
       - run: pnpm --filter @ekrist1/vulse test
       - run: pnpm --filter @ekrist1/vulse test:integration
       - run: pnpm --filter @ekrist1/vulse build

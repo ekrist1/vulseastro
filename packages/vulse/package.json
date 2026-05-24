@@ -1,6 +1,6 @@
 {
   "name": "@ekrist1/vulse",
-  "version": "0.1.6-alpha.2",
+  "version": "0.1.6-alpha.3",
   "description": "Astro-native headless CMS for Cloudflare (D1, R2, Workers)",
   "license": "MIT",
   "repository": {
@@ -80,8 +80,10 @@
     "prepublishOnly": "pnpm run build",
     "build": "pnpm run build:bridge && node scripts/sync-version.mjs && tsc -p tsconfig.json",
     "build:bridge": "esbuild src/client/live-preview-bridge.ts --bundle --format=esm --outfile=src/server/assets/live-preview-bridge.js --platform=browser && node scripts/embed-bridge.mjs",
+    "pretest": "node scripts/sync-version.mjs",
     "test": "vitest run",
     "test:watch": "vitest",
+    "pretest:integration": "node scripts/sync-version.mjs",
     "test:integration": "vitest run -c vitest.integration.config.ts",
     "typecheck": "tsc --noEmit",
     "drizzle:generate": "drizzle-kit generate"
