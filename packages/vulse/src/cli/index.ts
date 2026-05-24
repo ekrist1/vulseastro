@@ -5,6 +5,25 @@ const program = new Command()
 program.name('vulse').description('Vulse CMS command-line tools').version('0.0.0')
 
 program
+  .command('setup')
+  .description('Interactive first-run setup: configure D1, R2, secrets, run migrations, seed admin')
+  .option('-y, --yes', 'Accept all defaults and skip prompts', false)
+  .option('--email <email>', 'Admin email for the seeded user')
+  .option('--password <password>', 'Admin password (generated if omitted)')
+  .option('--skip-migrate', 'Skip running migrations', false)
+  .option('--skip-seed', 'Skip seeding the first admin user', false)
+  .action(async (opts) => {
+    const { runSetup } = await import('./setup.js')
+    await runSetup({
+      yes: !!opts.yes,
+      ...(opts.email !== undefined ? { email: opts.email } : {}),
+      ...(opts.password !== undefined ? { password: opts.password } : {}),
+      skipMigrate: !!opts.skipMigrate,
+      skipSeed: !!opts.skipSeed,
+    })
+  })
+
+program
   .command('migrate')
   .description('Apply Drizzle migrations to the configured D1 database')
   .option('--remote', 'Run against the remote D1 instead of local miniflare', false)

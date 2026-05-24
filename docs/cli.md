@@ -8,6 +8,44 @@ npx vulse <command> [options]
 
 All commands shell out to `wrangler` for D1 access. Make sure `wrangler` is logged in and `wrangler.toml` has a `DB` binding.
 
+## `vulse setup`
+
+Interactive first-run setup. Walks you through configuring D1, R2, and the local secrets needed to bring Vulse up — without hand-editing `wrangler.toml` or `.dev.vars`.
+
+```bash
+npx vulse setup
+```
+
+What it does, in order:
+
+1. Patches `wrangler.toml` with the D1 (`DB`) and R2 (`BUCKET`) bindings (uses the same logic as the `astro add vulse` install hook).
+2. Optionally runs `wrangler d1 create <name>` and splices the returned `database_id` into `wrangler.toml`. If the create call fails or you already have a database, you can paste the id manually.
+3. Optionally runs `wrangler r2 bucket create <name>`. Existing buckets are detected and reused.
+4. Generates `BETTER_AUTH_SECRET` and `VULSE_PREVIEW_SECRET` (32 random bytes each, hex-encoded) and writes them to `.dev.vars`. Existing values in `.dev.vars` are preserved.
+5. Adds `.dev.vars` to `.gitignore` if not already ignored.
+6. Runs `vulse migrate` against local D1.
+7. Prompts for an admin email and runs `vulse seed:admin`, printing the generated password.
+
+| Flag | Purpose |
+|------|---------|
+| `-y`, `--yes` | Accept all defaults and skip prompts (CI-friendly). |
+| `--email <addr>` | Admin email — skips the prompt in step 7. |
+| `--password <pw>` | Admin password — otherwise a random one is generated and printed. |
+| `--skip-migrate` | Skip step 6. |
+| `--skip-seed` | Skip step 7. |
+
+The wizard is **local-development only**. It does not push secrets to Cloudflare — for production secrets, use `wrangler secret put` (see [`deployment.md`](deployment.md)).
+
+The wizard is idempotent: re-running it on a configured project is safe. Existing `database_id`, secrets, and bindings are kept; only missing pieces are filled in.
+
+### Non-interactive example
+
+```bash
+npx vulse setup --yes --email admin@example.com --password 'your-secure-password'
+```
+
+This uses `vulse-db` and `vulse-media` as default names, generates secrets, and seeds the admin without any prompts.
+
 ## `vulse migrate`
 
 Apply bundled migrations to D1.
@@ -95,6 +133,7 @@ Restart your dev server after scaffolding so Astro picks up the new pages and lo
 
 ```bash
 npx vulse --help
+npx vulse setup --help
 npx vulse migrate --help
 npx vulse seed:admin --help
 npx vulse collection:scaffold --help

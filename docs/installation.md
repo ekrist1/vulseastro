@@ -53,7 +53,21 @@ export default defineConfig({
 
 The `platformProxy: { enabled: true }` flag is required so the dev server can resolve D1 and R2 bindings against your local wrangler state.
 
-## 2. Create the Cloudflare resources
+## 2. Run the setup wizard (recommended)
+
+If you'd rather not edit `wrangler.toml` and `.dev.vars` by hand, the setup wizard does sections 2–4 of this guide in one go:
+
+```bash
+npx vulse setup
+```
+
+It will create the D1 database and splice the `database_id` into `wrangler.toml`, create the R2 bucket, generate `BETTER_AUTH_SECRET` and `VULSE_PREVIEW_SECRET` into `.dev.vars` (and add it to `.gitignore`), apply migrations, and seed your first admin user.
+
+Skip ahead to [section 5](#5-verify-the-install) once it finishes. For non-interactive use (`--yes`, `--email`, `--password`), see [`cli.md`](cli.md#vulse-setup).
+
+The sections below describe the same steps performed manually — useful if you prefer full control or need to recover a partial setup.
+
+## 2b. Create the Cloudflare resources (manual)
 
 ```bash
 wrangler d1 create vulse-db
@@ -79,7 +93,7 @@ BETTER_AUTH_SECRET = "dev-secret-change-me-in-production-32chars"
 
 In production, swap `BETTER_AUTH_SECRET` to a wrangler secret — see [`deployment.md`](deployment.md).
 
-## 3. Run migrations
+## 3. Run migrations (manual)
 
 Apply the bundled SQL migrations to local D1 (miniflare):
 
@@ -89,7 +103,7 @@ npx vulse migrate
 
 The full list of migrations and their purposes is in [`directory-structure.md`](directory-structure.md#migrations).
 
-## 4. Seed your first admin
+## 4. Seed your first admin (manual)
 
 Vulse is shipped **with public sign-up disabled**. Pick one of the three flows below to create your first admin.
 
