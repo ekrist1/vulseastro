@@ -1,43 +1,47 @@
-# Astro Starter Kit: Minimal
+# vulse-play
 
-```sh
-pnpm create astro@latest -- --template minimal
+A working Astro project that consumes the local `vulse` package via `workspace:*`. Use it to develop and exercise changes to Vulse end-to-end.
+
+## First run
+
+From the repo root:
+
+```bash
+pnpm install
+pnpm --filter vulse build      # compile vulse so the workspace symlink points at a real dist
+cd playground/vulse-play
+npx vulse migrate              # apply migrations to local miniflare D1
+pnpm dev
 ```
 
-> 🧑‍🚀 **Seasoned astronaut?** Delete this file. Have fun!
+Open the URL printed by Astro (usually `http://localhost:4321`).
 
-## 🚀 Project Structure
+## Seeding an admin
 
-Inside of your Astro project, you'll see the following folders and files:
-
-```text
-/
-├── public/
-├── src/
-│   └── pages/
-│       └── index.astro
-└── package.json
+```bash
+npx vulse seed:admin --email admin@example.com
 ```
 
-Astro looks for `.astro` or `.md` files in the `src/pages/` directory. Each page is exposed as a route based on its file name.
+A random password is generated and printed once. Sign in at `/admin/login`.
 
-There's nothing special about `src/components/`, but that's where we like to put any Astro/React/Vue/Svelte/Preact components.
+## Iterating on changes to Vulse
 
-Any static assets, like images, can be placed in the `public/` directory.
+When you change something in `packages/vulse/src/`:
 
-## 🧞 Commands
+```bash
+pnpm --filter vulse build
+```
 
-All commands are run from the root of the project, from a terminal:
+Then restart `pnpm dev` in this directory. The integration is only re-evaluated on dev-server start, so HMR doesn't pick up changes to the package automatically.
 
-| Command                   | Action                                           |
-| :------------------------ | :----------------------------------------------- |
-| `pnpm install`             | Installs dependencies                            |
-| `pnpm dev`             | Starts local dev server at `localhost:4321`      |
-| `pnpm build`           | Build your production site to `./dist/`          |
-| `pnpm preview`         | Preview your build locally, before deploying     |
-| `pnpm astro ...`       | Run CLI commands like `astro add`, `astro check` |
-| `pnpm astro -- --help` | Get help using the Astro CLI                     |
+For test-driven development you usually don't need the playground:
 
-## 👀 Want to learn more?
+```bash
+pnpm --filter vulse test               # unit tests
+pnpm --filter vulse test:integration   # D1 + Workers runtime tests
+```
 
-Feel free to check [our documentation](https://docs.astro.build) or jump into our [Discord server](https://astro.build/chat).
+## More
+
+- [Vulse documentation](../../docs/)
+- [Repository README](../../README.md)
