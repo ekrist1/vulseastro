@@ -1,4 +1,6 @@
 export { VULSE_VERSION } from './version.js'
+export { default } from './integration/index.js'
+export type { VulseOptions } from './integration/index.js'
 export { defineCollection, z } from './core/blueprints/define.js'
 export { blocks, media, ref, entry, entries, link, grid } from './core/blueprints/zod-helpers.js'
 export type { LinkValue, SelectOption } from './core/blueprints/definition.js'

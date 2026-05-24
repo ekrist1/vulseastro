@@ -1,6 +1,6 @@
 {
   "name": "@ekrist1/vulse",
-  "version": "0.1.0-alpha.0",
+  "version": "0.1.4-alpha.0",
   "description": "Astro-native headless CMS for Cloudflare (D1, R2, Workers)",
   "license": "MIT",
   "repository": {
@@ -12,6 +12,9 @@
   "homepage": "https://github.com/ekrist1/vulseastro#readme",
   "keywords": [
     "astro",
+    "astro-integration",
+    "withastro",
+    "astro-loader",
     "cms",
     "cloudflare",
     "headless-cms",

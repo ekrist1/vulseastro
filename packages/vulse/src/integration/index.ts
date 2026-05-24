@@ -10,6 +10,24 @@ import { initLoaderBinding } from './loader-binding.js'
 import { setVulsePlugins } from '../server/plugins.js'
 import type { VulsePlugin } from '../core/plugins/definition.js'
 
+/** Packages that break Vite dep pre-bundling (native bindings, dev-only tools). */
+const OPTIMIZE_DEPS_EXCLUDE = [
+  'better-auth',
+  'better-auth/adapters/drizzle',
+  'drizzle-orm',
+  'drizzle-orm/d1',
+  'drizzle-orm/sqlite-core',
+  'nanoid',
+  'astro/zod',
+  '@tailwindcss/vite',
+  '@tailwindcss/oxide',
+  '@tailwindcss/node',
+  'tailwindcss',
+  '@babel/core',
+  '@babel/preset-typescript',
+  'blake3-wasm',
+] as const
+
 export interface VulseOptions {
   /** Override the admin route prefix. Defaults to `/admin`. */
   adminPath?: string
@@ -36,20 +54,15 @@ export default function vulse(opts: VulseOptions = {}): AstroIntegration {
           integrations: [vue()],
           vite: {
             plugins: [tailwindcss(), vulseBlueprintsPlugin(root)],
+            optimizeDeps: {
+              exclude: [...OPTIMIZE_DEPS_EXCLUDE],
+            },
             ssr: {
-              // Bundle SSR graph in-process; skip dep pre-bundling for server libs that
-              // trigger staggered optimizeDeps reloads under Cloudflare's module runner.
-              noExternal: true,
+              // Bundle vulse in-process for Cloudflare's module runner; avoid
+              // noExternal: true — it pulls native dev deps (tailwind oxide, babel) into SSR.
+              noExternal: ['@ekrist1/vulse'],
               optimizeDeps: {
-                exclude: [
-                  'better-auth',
-                  'better-auth/adapters/drizzle',
-                  'drizzle-orm',
-                  'drizzle-orm/d1',
-                  'drizzle-orm/sqlite-core',
-                  'nanoid',
-                  'astro/zod',
-                ],
+                exclude: [...OPTIMIZE_DEPS_EXCLUDE],
               },
             },
           },
