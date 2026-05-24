@@ -1,5 +1,5 @@
 import type { VulseDb } from '../../core/db.js'
-import { EntriesRepo, type EntryOrderBy, type EntryRow } from '../../core/repos/entries.js'
+import { DEFAULT_LOCALE, EntriesRepo, type EntryOrderBy, type EntryRow } from '../../core/repos/entries.js'
 import { evaluate } from '../../core/access.js'
 import type { BlueprintRegistry } from '../../core/blueprints/registry.js'
 import type { AuthContext } from '../../core/blueprints/types.js'
@@ -7,6 +7,7 @@ import type { AuthContext } from '../../core/blueprints/types.js'
 export interface CollectionSdkOptions {
   audience?: AuthContext['user'] | null
   includeDrafts?: boolean
+  locale?: string
 }
 
 export interface CollectionFindOptions extends CollectionSdkOptions {
@@ -55,6 +56,7 @@ export function collectionsSdk(db: VulseDb, reg: BlueprintRegistry) {
       const publishedAfter = parseDate(opts.publishedAfter)
       const publishedBefore = parseDate(opts.publishedBefore)
       return gatedRows(collection, opts.audience ?? null, {
+        locale: opts.locale ?? DEFAULT_LOCALE,
         ...(opts.limit !== undefined ? { limit: opts.limit } : {}),
         ...(opts.offset !== undefined ? { offset: opts.offset } : {}),
         ...(opts.createdBy !== undefined ? { createdBy: opts.createdBy } : {}),
@@ -67,7 +69,7 @@ export function collectionsSdk(db: VulseDb, reg: BlueprintRegistry) {
     findById: async (collection: string, id: string, opts: CollectionSdkOptions = {}) => {
       const bp = reg.get(collection)
       if (!bp) throw new Error(`Unknown collection: ${collection}`)
-      const r = await entries.findById(id)
+      const r = await entries.findById(id, opts.locale ?? DEFAULT_LOCALE)
       if (!r) return null
       const allowed = await evaluate(bp, 'read', {
         user: opts.audience ?? null,
@@ -78,7 +80,7 @@ export function collectionsSdk(db: VulseDb, reg: BlueprintRegistry) {
     findBySlug: async (collection: string, slug: string, opts: CollectionSdkOptions = {}) => {
       const bp = reg.get(collection)
       if (!bp) throw new Error(`Unknown collection: ${collection}`)
-      const r = await entries.findBySlug(collection, slug)
+      const r = await entries.findBySlug(collection, slug, opts.locale ?? DEFAULT_LOCALE)
       if (!r) return null
       const allowed = await evaluate(bp, 'read', {
         user: opts.audience ?? null,

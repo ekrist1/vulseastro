@@ -76,7 +76,15 @@ export class FormsRepo {
       })
       .from(vulseForms)
       .orderBy(vulseForms.createdAt)
-    return rows.map((r) => ({ ...parseRow(r as typeof vulseForms.$inferSelect), submissionCount: r.submissionCount }))
+    return rows.map((r) => ({
+      ...parseRow({
+        ...r,
+        // The list query intentionally omits schemaVersion; supply the default
+        // so parseRow's type-cast remains accurate without an over-broad `as`.
+        schemaVersion: 1,
+      } as typeof vulseForms.$inferSelect),
+      submissionCount: r.submissionCount,
+    }))
   }
 
   async update(handle: string, input: FormDefinition): Promise<FormRow> {

@@ -4,7 +4,7 @@ import { adminApi } from '../client/api.js'
 import type { EntryNode } from '../../core/repos/entries.js'
 import TreeRow from './TreeRow.vue'
 
-const props = defineProps<{ handle: string }>()
+const props = defineProps<{ handle: string; locale?: string }>()
 
 const tree = ref<EntryNode[]>([])
 const loading = ref(false)
@@ -17,7 +17,8 @@ async function load() {
   loading.value = true
   error.value = null
   try {
-    tree.value = await adminApi.get<EntryNode[]>(`/api/vulse/entries/${props.handle}/tree`)
+    const qs = props.locale ? `?locale=${encodeURIComponent(props.locale)}` : ''
+    tree.value = await adminApi.get<EntryNode[]>(`/api/vulse/entries/${props.handle}/tree${qs}`)
     for (const root of tree.value) {
       expanded.value.add(root.id)
       for (const child of root.children) expanded.value.add(child.id)

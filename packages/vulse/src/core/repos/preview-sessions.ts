@@ -2,6 +2,7 @@ import { nanoid } from 'nanoid'
 import { eq, lt } from 'drizzle-orm'
 import type { VulseDb } from '../db.js'
 import { vulsePreviewSessions } from '../schema.js'
+import { DEFAULT_LOCALE } from './entries.js'
 
 const DEFAULT_TTL_MS = 60 * 60 * 1000
 
@@ -10,6 +11,7 @@ export interface PreviewSessionRow {
   userId: string
   entryId: string | null
   collection: string
+  locale: string
   slug: string
   content: unknown
   expiresAt: Date
@@ -23,6 +25,7 @@ function mapRow(row: typeof vulsePreviewSessions.$inferSelect): PreviewSessionRo
     userId: row.userId,
     entryId: row.entryId ?? null,
     collection: row.collection,
+    locale: row.locale,
     slug: row.slug,
     content: row.content,
     expiresAt: row.expiresAt,
@@ -39,6 +42,7 @@ export class PreviewSessionsRepo {
     collection: string
     slug: string
     content: unknown
+    locale?: string
     entryId?: string | null
     ttlMs?: number
   }): Promise<PreviewSessionRow> {
@@ -50,6 +54,7 @@ export class PreviewSessionsRepo {
       userId: input.userId,
       entryId: input.entryId ?? null,
       collection: input.collection,
+      locale: input.locale ?? DEFAULT_LOCALE,
       slug: input.slug,
       content: input.content,
       expiresAt: new Date(now.getTime() + ttl),
@@ -69,13 +74,14 @@ export class PreviewSessionsRepo {
     return mapRow(row)
   }
 
-  async update(id: string, userId: string, patch: { slug?: string; content?: unknown }): Promise<PreviewSessionRow | null> {
+  async update(id: string, userId: string, patch: { slug?: string; content?: unknown; locale?: string }): Promise<PreviewSessionRow | null> {
     const existing = await this.findById(id)
     if (!existing || existing.userId !== userId) return null
     const now = new Date()
     const next = {
       slug: patch.slug ?? existing.slug,
       content: patch.content ?? existing.content,
+      locale: patch.locale ?? existing.locale,
       expiresAt: new Date(now.getTime() + DEFAULT_TTL_MS),
       updatedAt: now,
     }

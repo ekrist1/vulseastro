@@ -6,6 +6,8 @@ import { registryForRequest } from '../../../../core/blueprints/load.js'
 import { fieldDescriptorsFromBlueprint } from '../../../client/form-from-zod.js'
 import { getRuntime } from '../../../../server/runtime.js'
 import { getRuntimeEnv } from '../../../../server/env.js'
+import { readLocalesConfig } from '../../../../core/locales.js'
+import { EntriesRepo } from '../../../../core/repos/entries.js'
 
 const env = getRuntimeEnv()
 const db = createDb(env.DB)
@@ -14,8 +16,17 @@ const bp = reg.get(Astro.params.name!)
 if (!bp) return Astro.redirect('/admin')
 const fields = fieldDescriptorsFromBlueprint(bp)
 
+const localesCfg = await readLocalesConfig(db)
+const requested = Astro.url.searchParams.get('locale')
+const activeLocale = requested && localesCfg.locales.includes(requested) ? requested : localesCfg.defaultLocale
+
+const entryId = Astro.params.id!
+const entriesRepo = new EntriesRepo(db)
+const existingLocales = (await entriesRepo.listLocales(entryId)).map((l) => l.locale)
+
 const rt = await getRuntime(env, reg, new URL(Astro.request.url).origin)
-const res = await rt.routes.entries.findById(new Request(Astro.request.url, { headers: Astro.request.headers }), { collection: bp.name, id: Astro.params.id! })
+const findUrl = `${Astro.request.url.split('?')[0]}?locale=${encodeURIComponent(activeLocale)}`
+const res = await rt.routes.entries.findById(new Request(findUrl, { headers: Astro.request.headers }), { collection: bp.name, id: entryId })
 const body = await res.json() as {
   ok: true
   data: {
@@ -26,36 +37,50 @@ const body = await res.json() as {
     hasUnpublishedChanges: boolean
   }
 } | { ok: false }
-if (!body.ok) return new Response('Not found', { status: 404 })
-const row = body.data
-const editContent = bp.drafts && row.draftContent ? row.draftContent : row.content
-const initial = {
-  ...(editContent as Record<string, unknown>),
-  slug: row.slug,
-  status: row.status,
-  hasUnpublishedChanges: row.hasUnpublishedChanges,
-}
+
+// If the entry has no rows at all (none of its locales exist), 404. Otherwise,
+// the requested locale just doesn't have a translation yet — show an empty form
+// so the editor can author one.
+if (!body.ok && existingLocales.length === 0) return new Response('Not found', { status: 404 })
+
+const hasTranslation = body.ok
+const row = hasTranslation ? body.data : null
+const editContent = bp.drafts && row?.draftContent ? row.draftContent : (row?.content ?? {})
+const initial = hasTranslation
+  ? {
+      ...(editContent as Record<string, unknown>),
+      slug: row!.slug,
+      status: row!.status,
+      hasUnpublishedChanges: row!.hasUnpublishedChanges,
+    }
+  : { status: 'draft' }
 
 const previewTemplate = bp.preview?.path ?? '/{slug}'
 const livePreviewEnabled = (bp.preview as { live?: boolean } | undefined)?.live !== false
-const previewPath = previewTemplate.replace('{slug}', encodeURIComponent(row.slug))
+const previewPath = previewTemplate.replace('{slug}', encodeURIComponent(row?.slug ?? ''))
 ---
 <AdminShell title={`Edit ${bp.label}`} activePath={`/admin/collections/${bp.name}`}>
   <div class="mb-4 flex items-center gap-4">
-    <a href={`/admin/collections/${bp.name}/${Astro.params.id}/revisions`} class="text-sm text-zinc-600 underline">View history</a>
-    <a href={`/api/vulse/preview/start?to=${encodeURIComponent(previewPath)}`} class="rounded border border-zinc-300 px-3 py-1 text-sm hover:bg-zinc-50">Preview</a>
+    <a href={`/admin/collections/${bp.name}/${entryId}/revisions?locale=${encodeURIComponent(activeLocale)}`} class="text-sm text-zinc-600 underline">View history</a>
+    {hasTranslation && (
+      <a href={`/api/vulse/preview/start?to=${encodeURIComponent(previewPath)}`} class="rounded border border-zinc-300 px-3 py-1 text-sm hover:bg-zinc-50">Preview</a>
+    )}
   </div>
   <EntryEditorWithPreview
     client:load
     collection={bp.name}
-    entryId={Astro.params.id!}
+    entryId={entryId}
     fields={fields}
     initial={initial}
     draftsEnabled={bp.drafts === true}
     tree={bp.tree === true}
-    hasUnpublishedChanges={row.hasUnpublishedChanges}
+    hasUnpublishedChanges={row?.hasUnpublishedChanges ?? false}
     titleField={bp.admin.titleField}
     previewPath={previewTemplate}
     livePreviewAllowed={livePreviewEnabled}
+    locale={activeLocale}
+    defaultLocale={localesCfg.defaultLocale}
+    supportedLocales={localesCfg.locales}
+    existingLocales={existingLocales}
   />
 </AdminShell>

@@ -14,6 +14,7 @@ describe('applyMigrations', () => {
       'vulse_collections',
       'vulse_entries',
       'vulse_entries_fts',
+      'vulse_entry_locales',
       'vulse_entry_revisions',
       'vulse_form_rate_limits',
       'vulse_form_submissions',

@@ -20,6 +20,10 @@ const props = defineProps<{
   previewPath: string
   /** When false, hides live preview for this collection. Avoid prop name `enabled` (Astro/HTML coercion). */
   livePreviewAllowed?: boolean
+  locale?: string
+  defaultLocale?: string
+  supportedLocales?: string[]
+  existingLocales?: string[]
 }>()
 
 const allowLivePreview = computed(() => isLivePreviewEnabled(props.livePreviewAllowed))
@@ -94,16 +98,21 @@ function togglePreview() {
         :parent-id="parentId"
         :has-unpublished-changes="hasUnpublishedChanges"
         :wide="!previewVisible || !allowLivePreview"
+        :locale="locale"
+        :default-locale="defaultLocale"
+        :supported-locales="supportedLocales"
+        :existing-locales="existingLocales"
         @preview-change="onPreviewChange"
       />
       <LivePreviewPanel
         v-if="previewVisible && allowLivePreview"
-        :key="entryId ?? previewSlug"
+        :key="(entryId ?? previewSlug) + ':' + (locale ?? 'default')"
         :collection="collection"
         :entry-id="entryId"
         :preview-path="previewPath"
         :slug="previewSlug"
         :content="previewContent"
+        :locale="locale"
       />
     </div>
   </div>

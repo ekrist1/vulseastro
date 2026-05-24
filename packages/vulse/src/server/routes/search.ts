@@ -14,6 +14,7 @@ export function searchRoutes(db: VulseDb, auth: Auth) {
         collections: z.array(z.string()).optional(),
         limit: z.number().optional(),
         includeDrafts: z.boolean().optional(),
+        locale: z.string().optional(),
       }),
     }, async ({ body, auth: authCtx }) => {
       const role = authCtx.user?.role
@@ -22,6 +23,7 @@ export function searchRoutes(db: VulseDb, auth: Auth) {
       return sdk.query(body.q, {
         ...(body.collections !== undefined ? { collections: body.collections } : {}),
         ...(body.limit !== undefined ? { limit: body.limit } : {}),
+        ...(body.locale !== undefined ? { locale: body.locale } : {}),
         includeDrafts,
       })
     }),

@@ -1,39 +1,55 @@
-import { sqliteTable, text, integer, index, uniqueIndex, type AnySQLiteColumn } from 'drizzle-orm/sqlite-core'
+import { sqliteTable, text, integer, index, uniqueIndex, primaryKey, type AnySQLiteColumn } from 'drizzle-orm/sqlite-core'
+import { sql } from 'drizzle-orm'
 
-// --- Vulse content ---
+// --- Vulse content (i18n model) ---
+//
+// `vulse_entries` is the single-identity shell: one row per logical entry, holding
+// only locale-independent data (tree position, ownership). Per-locale data
+// (slug, status, content, drafts) lives in `vulse_entry_locales`, keyed by
+// (entry_id, locale). Slug uniqueness is per (collection, locale).
 
 export const entries = sqliteTable('vulse_entries', {
   id: text('id').primaryKey(),
   collection: text('collection').notNull(),
   parentId: text('parent_id').references((): AnySQLiteColumn => entries.id, { onDelete: 'cascade' }),
   sortOrder: integer('sort_order').notNull().default(0),
+  createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
+  updatedAt: integer('updated_at', { mode: 'timestamp_ms' }).notNull(),
+  createdBy: text('created_by'),
+}, (t) => ({
+  byCollection: index('vulse_entries_collection').on(t.collection),
+  byTree: index('vulse_entries_tree').on(t.collection, t.parentId, t.sortOrder),
+}))
+
+export const entryLocales = sqliteTable('vulse_entry_locales', {
+  entryId: text('entry_id').notNull().references(() => entries.id, { onDelete: 'cascade' }),
+  collection: text('collection').notNull(),
+  locale: text('locale').notNull(),
   slug: text('slug').notNull(),
   status: text('status', { enum: ['draft', 'published'] }).notNull().default('draft'),
-  locale: text('locale').notNull().default('default'),
   version: integer('version').notNull().default(1),
   content: text('content', { mode: 'json' }).notNull(),
   draftContent: text('draft_content', { mode: 'json' }),
   publishedAt: integer('published_at', { mode: 'timestamp_ms' }),
-  createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
   updatedAt: integer('updated_at', { mode: 'timestamp_ms' }).notNull(),
-  createdBy: text('created_by'),
   updatedBy: text('updated_by'),
 }, (t) => ({
-  uniqSlug: uniqueIndex('vulse_entries_collection_slug_locale').on(t.collection, t.slug, t.locale),
-  byStatus: index('vulse_entries_collection_status_published').on(t.collection, t.status, t.publishedAt),
-  byTree: index('vulse_entries_tree').on(t.collection, t.parentId, t.sortOrder),
+  pk: primaryKey({ columns: [t.entryId, t.locale] }),
+  uniqSlug: uniqueIndex('vulse_entry_locales_collection_locale_slug').on(t.collection, t.locale, t.slug),
+  byStatus: index('vulse_entry_locales_status_published').on(t.collection, t.locale, t.status, t.publishedAt),
 }))
 
 export const entryRevisions = sqliteTable('vulse_entry_revisions', {
   id: text('id').primaryKey(),
   entryId: text('entry_id').notNull().references(() => entries.id, { onDelete: 'cascade' }),
+  locale: text('locale').notNull(),
   version: integer('version').notNull(),
   content: text('content', { mode: 'json' }).notNull(),
   authorId: text('author_id'),
   changeSummary: text('change_summary'),
   createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
 }, (t) => ({
-  byEntry: index('vulse_entry_revisions_entry_version').on(t.entryId, t.version),
+  byEntry: index('vulse_entry_revisions_entry_locale_version').on(t.entryId, t.locale, t.version),
 }))
 
 export const media = sqliteTable('vulse_media', {
@@ -48,14 +64,22 @@ export const media = sqliteTable('vulse_media', {
   uploadedBy: text('uploaded_by'),
   createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
   deletedAt: integer('deleted_at', { mode: 'timestamp_ms' }),
-})
+}, (t) => ({
+  // Partial index on active rows: every list query reads `WHERE deleted_at IS NULL`.
+  active: index('vulse_media_active').on(t.createdAt).where(sql`${t.deletedAt} IS NULL`),
+}))
 
 export const vulseCollections = sqliteTable('vulse_collections', {
   handle: text('handle').primaryKey(),
   label: text('label').notNull(),
   definition: text('definition', { mode: 'json' }).notNull(),
   blueprintHash: text('blueprint_hash').notNull(),
+  // `schema_version` lets future definition-shape changes migrate row-by-row
+  // without a destructive table rewrite.
+  schemaVersion: integer('schema_version').notNull().default(1),
   singleton: integer('singleton', { mode: 'boolean' }).notNull().default(false),
+  tree: integer('tree', { mode: 'boolean' }).notNull().default(false),
+  drafts: integer('drafts', { mode: 'boolean' }).notNull().default(false),
   createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
   updatedAt: integer('updated_at', { mode: 'timestamp_ms' }).notNull(),
 })
@@ -64,6 +88,7 @@ export const vulseSets = sqliteTable('vulse_sets', {
   handle: text('handle').primaryKey(),
   label: text('label').notNull(),
   definition: text('definition', { mode: 'json' }).notNull(),
+  schemaVersion: integer('schema_version').notNull().default(1),
   createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
   updatedAt: integer('updated_at', { mode: 'timestamp_ms' }).notNull(),
 })
@@ -80,6 +105,7 @@ export const vulseForms = sqliteTable('vulse_forms', {
   handle: text('handle').primaryKey(),
   label: text('label').notNull(),
   definition: text('definition', { mode: 'json' }).notNull(),
+  schemaVersion: integer('schema_version').notNull().default(1),
   enabled: integer('enabled', { mode: 'boolean' }).notNull().default(true),
   createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
   updatedAt: integer('updated_at', { mode: 'timestamp_ms' }).notNull(),
@@ -96,11 +122,12 @@ export const vulseFormSubmissions = sqliteTable('vulse_form_submissions', {
   createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
 }, (t) => ({
   byFormCreated: index('vulse_form_submissions_form_created').on(t.formHandle, t.createdAt),
+  byFormStatus: index('vulse_form_submissions_form_status').on(t.formHandle, t.status),
 }))
 
 export const vulseFormUploadDrafts = sqliteTable('vulse_form_upload_drafts', {
   id: text('id').primaryKey(),
-  formHandle: text('form_handle').notNull(),
+  formHandle: text('form_handle').notNull().references(() => vulseForms.handle, { onDelete: 'cascade' }),
   fieldName: text('field_name').notNull(),
   mediaId: text('media_id').notNull().references(() => media.id, { onDelete: 'cascade' }),
   expiresAt: integer('expires_at', { mode: 'timestamp_ms' }).notNull(),
@@ -110,13 +137,14 @@ export const vulseFormUploadDrafts = sqliteTable('vulse_form_upload_drafts', {
 }))
 
 export const vulseFormUniqueValues = sqliteTable('vulse_form_unique_values', {
-  formHandle: text('form_handle').notNull(),
+  formHandle: text('form_handle').notNull().references(() => vulseForms.handle, { onDelete: 'cascade' }),
   fieldName: text('field_name').notNull(),
   valueHash: text('value_hash').notNull(),
-  submissionId: text('submission_id').notNull(),
+  submissionId: text('submission_id').notNull().references(() => vulseFormSubmissions.id, { onDelete: 'cascade' }),
   createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
 }, (t) => ({
   pk: uniqueIndex('vulse_form_unique_values_pk').on(t.formHandle, t.fieldName, t.valueHash),
+  bySubmission: index('vulse_form_unique_values_submission').on(t.submissionId),
 }))
 
 export const vulseFormRateLimits = sqliteTable('vulse_form_rate_limits', {
@@ -135,6 +163,7 @@ export const vulseGlobalSets = sqliteTable('vulse_global_sets', {
   label: text('label').notNull(),
   definition: text('definition', { mode: 'json' }).notNull(),
   blueprintHash: text('blueprint_hash').notNull().default(''),
+  schemaVersion: integer('schema_version').notNull().default(1),
   createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
   updatedAt: integer('updated_at', { mode: 'timestamp_ms' }).notNull(),
 })
@@ -153,6 +182,7 @@ export const vulsePreviewSessions = sqliteTable('vulse_preview_sessions', {
   userId: text('user_id').notNull(),
   entryId: text('entry_id'),
   collection: text('collection').notNull(),
+  locale: text('locale').notNull().default('default'),
   slug: text('slug').notNull(),
   content: text('content', { mode: 'json' }).notNull(),
   expiresAt: integer('expires_at', { mode: 'timestamp_ms' }).notNull(),

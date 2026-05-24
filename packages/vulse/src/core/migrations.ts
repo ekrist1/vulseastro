@@ -1,6 +1,5 @@
 import initSql from '../../migrations/0000_init.sql?raw'
 import collectionsSetsSql from '../../migrations/0001_collections_sets.sql?raw'
-import treeDraftsSql from '../../migrations/0002_tree_drafts.sql?raw'
 import ftsSql from '../../migrations/0003_fts.sql?raw'
 import formsSql from '../../migrations/0004_forms.sql?raw'
 import globalsSql from '../../migrations/0005_globals.sql?raw'
@@ -9,7 +8,8 @@ import previewSessionsSql from '../../migrations/0006_preview_sessions.sql?raw'
 const MIGRATIONS = [
   { id: '0000_init', sql: initSql },
   { id: '0001_collections_sets', sql: collectionsSetsSql },
-  { id: '0002_tree_drafts', sql: treeDraftsSql },
+  // 0002_tree_drafts was folded into 0000_init when the schema was reshaped for
+  // i18n. The ID is intentionally skipped so the ledger remains forward-only.
   { id: '0003_fts', sql: ftsSql },
   { id: '0004_forms', sql: formsSql },
   { id: '0005_globals', sql: globalsSql },
