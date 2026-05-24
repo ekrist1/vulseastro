@@ -1,4 +1,14 @@
+import type { PreviewDefinition } from './definition.js'
 import type { PreviewConfig } from './types.js'
+
+/** Normalize preview config for Blueprint types (`exactOptionalPropertyTypes`). */
+export function toPreviewConfig(preview: PreviewDefinition | PreviewConfig): PreviewConfig {
+  return {
+    path: preview.path,
+    ...(preview.rootSelector !== undefined ? { rootSelector: preview.rootSelector } : {}),
+    ...(preview.live !== undefined ? { live: preview.live } : {}),
+  }
+}
 
 /** Default public URL template for a collection's entry pages. */
 export function defaultPreviewPath(collectionHandle: string): string {

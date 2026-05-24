@@ -1,25 +1,40 @@
 ---
-import { getCollection } from "astro:content";
-import SiteLayout from "../../layouts/SiteLayout.astro";
+import {
+  getRuntimeEnv,
+  getRuntime,
+  createDb,
+  registryForRequest,
+} from 'vulse/server'
+import SiteLayout from '../../layouts/SiteLayout.astro'
 
-const entries = (await getCollection("post")).sort((a, b) =>
-  String(a.data.title ?? a.data.slug ?? "").localeCompare(
-    String(b.data.title ?? b.data.slug ?? ""),
+const env = getRuntimeEnv()
+const db = createDb(env.DB)
+const rt = await getRuntime(env, await registryForRequest(db), Astro.url.origin)
+const session = await rt.auth.api.getSession({ headers: Astro.request.headers })
+
+const rows = await rt.sdk.collections.find('post', {
+  ...(session?.user ? { audience: session.user } : {}),
+})
+
+const entries = rows.sort((a, b) =>
+  String((a.content as { title?: string }).title ?? a.slug).localeCompare(
+    String((b.content as { title?: string }).title ?? b.slug),
   ),
-);
+)
 ---
 
 <SiteLayout title="Posts">
   <h1>Posts</h1>
   <ul>
     {
-      entries.map((entry) => (
-        <li>
-          <a href={`/post/${entry.data.slug}`}>
-            {String(entry.data.title ?? entry.data.slug)}
-          </a>
-        </li>
-      ))
+      entries.map((entry) => {
+        const title = String((entry.content as { title?: string }).title ?? entry.slug)
+        return (
+          <li>
+            <a href={`/post/${entry.slug}`}>{title}</a>
+          </li>
+        )
+      })
     }
   </ul>
 </SiteLayout>

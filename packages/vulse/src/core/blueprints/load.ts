@@ -6,6 +6,7 @@ import { compileBlueprintSchema } from './compile.js'
 import { listBlueprintDefinitions } from './mutations.js'
 import { seedCodeBlueprints } from './seed.js'
 import { loadCompiledSets } from '../sets/service.js'
+import { toPreviewConfig } from './preview-path.js'
 
 let registryCache: BlueprintRegistry | null = null
 let seededBlueprints: Blueprint[] | null = null
@@ -21,7 +22,8 @@ async function loadBlueprintModules(): Promise<Blueprint[]> {
 }
 
 function mergeBlueprint(compiled: Blueprint, code?: Blueprint): Blueprint {
-  const preview = code?.preview ?? compiled.preview
+  const rawPreview = code?.preview ?? compiled.preview
+  const preview = rawPreview ? toPreviewConfig(rawPreview) : undefined
   return {
     ...compiled,
     admin: code?.admin ?? compiled.admin,
@@ -57,7 +59,7 @@ export async function registryFromDb(db: VulseDb): Promise<BlueprintRegistry> {
       ...(def.tree !== undefined ? { tree: def.tree } : {}),
       ...(def.maxDepth !== undefined ? { maxDepth: def.maxDepth } : {}),
       ...(def.drafts !== undefined ? { drafts: def.drafts } : {}),
-      ...(def.preview ? { preview: def.preview } : {}),
+      ...(def.preview ? { preview: toPreviewConfig(def.preview) } : {}),
     }, code)
     reg.register(bp)
   }
