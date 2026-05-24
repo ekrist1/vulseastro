@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import BlockRenderer from 'vulse/client/BlockRenderer.vue'
+import BlockRenderer from '@ekrist1/vulse/client/BlockRenderer.vue'
 import FaqSet from '../sets/FaqSet.vue'
 
 /** Sample ProseMirror doc — same shape the admin block editor saves. */

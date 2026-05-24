@@ -27,9 +27,9 @@ jobs:
           registry-url: 'https://registry.npmjs.org'
 
       - run: pnpm install --frozen-lockfile
-      - run: pnpm --filter vulse test
-      - run: pnpm --filter vulse test:integration
-      - run: pnpm --filter vulse build
+      - run: pnpm --filter @ekrist1/vulse test
+      - run: pnpm --filter @ekrist1/vulse test:integration
+      - run: pnpm --filter @ekrist1/vulse build
 
       # Extra safety: Ensure .npmrc points to the registry token env variable
       - name: Configure NPM Auth
@@ -42,9 +42,9 @@ jobs:
         run: |
           VERSION="${GITHUB_REF_NAME#v}"
           if [[ "$VERSION" == *-* ]]; then
-            npm publish --tag alpha
+            npm publish --access=public --tag alpha
           else
-            npm publish
+            npm publish --access=public
           fi
 
       - name: Create GitHub release

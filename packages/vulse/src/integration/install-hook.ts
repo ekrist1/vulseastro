@@ -1,8 +1,9 @@
 import { readFile, writeFile, mkdir, access } from 'node:fs/promises'
 import { join } from 'node:path'
+import { VULSE_PACKAGE } from '../package-name.js'
 import { patchWranglerToml } from './wrangler-patch.js'
 
-const STARTER_BLUEPRINT = `import { defineCollection, z } from 'vulse'
+const STARTER_BLUEPRINT = `import { defineCollection, z } from '${VULSE_PACKAGE}'
 
 export default defineCollection({
   name: 'page',
@@ -17,7 +18,7 @@ export default defineCollection({
 `
 
 const CONTENT_CONFIG = `import { defineCollection, z } from 'astro:content'
-import { vulseLoader } from 'vulse/loader'
+import { vulseLoader } from '${VULSE_PACKAGE}/loader'
 
 export const collections = {
   page: defineCollection({

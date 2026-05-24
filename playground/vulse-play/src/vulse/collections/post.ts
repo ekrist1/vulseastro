@@ -1,4 +1,4 @@
-import { defineCollection, z } from 'vulse'
+import { defineCollection, z } from '@ekrist1/vulse'
 
 export default defineCollection({
   name: 'post',

@@ -33,7 +33,7 @@ import {
   createDb,
   registryForRequest,
   resolvePreviewContent,
-} from 'vulse/server'
+} from '@ekrist1/vulse/server'
 
 const env = getRuntimeEnv()
 const db = createDb(env.DB)

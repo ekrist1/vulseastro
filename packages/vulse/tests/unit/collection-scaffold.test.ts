@@ -49,7 +49,7 @@ describe('collection scaffold', () => {
 
   it('patches content.config.ts without duplicating collection', () => {
     const existing = `import { defineCollection, z } from 'astro:content'
-import { vulseLoader } from 'vulse/loader'
+import { vulseLoader } from '@ekrist1/vulse/loader'
 
 export const collections = {
   page: defineCollection({

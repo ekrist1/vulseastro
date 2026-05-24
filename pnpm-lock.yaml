@@ -92,12 +92,12 @@ importers:
 
   playground/vulse-play:
     dependencies:
+      '@ekrist1/vulse':
+        specifier: workspace:*
+        version: link:../../packages/vulse
       astro:
         specifier: ^6.3.7
         version: 6.3.7(@types/node@22.19.19)(jiti@2.7.0)(lightningcss@1.32.0)(rollup@4.60.4)(tsx@4.22.3)
-      vulse:
-        specifier: workspace:*
-        version: link:../../packages/vulse
     devDependencies:
       '@astrojs/cloudflare':
         specifier: ^13.5.4

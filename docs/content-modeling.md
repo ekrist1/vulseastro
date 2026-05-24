@@ -10,7 +10,7 @@ A blueprint defines a collection of entries (think Post, Page, Product). It is a
 
 ```ts
 // src/vulse/collections/post.ts
-import { defineCollection, z, blocks, media } from 'vulse'
+import { defineCollection, z, blocks, media } from '@ekrist1/vulse'
 
 export default defineCollection({
   name: 'post',
@@ -62,7 +62,7 @@ A blueprint cannot be both `singleton` and `tree`.
 Use the re-exported `z` from Vulse:
 
 ```ts
-import { z, blocks, media, ref } from 'vulse'
+import { z, blocks, media, ref } from '@ekrist1/vulse'
 ```
 
 | Helper | Returns |
@@ -136,7 +136,7 @@ To render that JSON in your Astro pages:
 
 ```astro
 ---
-import BlockRenderer from 'vulse/client/BlockRenderer.astro'
+import BlockRenderer from '@ekrist1/vulse/client/BlockRenderer.astro'
 ---
 <BlockRenderer
   blocks={entry.data.body ?? []}

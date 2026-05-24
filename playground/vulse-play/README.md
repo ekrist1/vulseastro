@@ -1,6 +1,6 @@
 # vulse-play
 
-A working Astro project that consumes the local `vulse` package via `workspace:*`. Use it to develop and exercise changes to Vulse end-to-end.
+A working Astro project that consumes the local `@ekrist1/vulse` package via `workspace:*`. Use it to develop and exercise changes to Vulse end-to-end.
 
 ## First run
 
@@ -8,7 +8,7 @@ From the repo root:
 
 ```bash
 pnpm install
-pnpm --filter vulse build      # compile vulse so the workspace symlink points at a real dist
+pnpm --filter @ekrist1/vulse build      # compile vulse so the workspace symlink points at a real dist
 cd playground/vulse-play
 npx vulse migrate              # apply migrations to local miniflare D1
 pnpm dev
@@ -33,7 +33,7 @@ Public sign-up is enabled via `VULSE_ALLOW_MEMBER_SIGNUP=true` in `wrangler.toml
 When you change something in `packages/vulse/src/`:
 
 ```bash
-pnpm --filter vulse build
+pnpm --filter @ekrist1/vulse build
 ```
 
 Then restart `pnpm dev` in this directory. The integration is only re-evaluated on dev-server start, so HMR doesn't pick up changes to the package automatically.
@@ -41,8 +41,8 @@ Then restart `pnpm dev` in this directory. The integration is only re-evaluated 
 For test-driven development you usually don't need the playground:
 
 ```bash
-pnpm --filter vulse test               # unit tests
-pnpm --filter vulse test:integration   # D1 + Workers runtime tests
+pnpm --filter @ekrist1/vulse test               # unit tests
+pnpm --filter @ekrist1/vulse test:integration   # D1 + Workers runtime tests
 ```
 
 ## More

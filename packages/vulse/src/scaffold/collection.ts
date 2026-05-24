@@ -1,3 +1,5 @@
+import { VULSE_PACKAGE } from '../package-name.js'
+
 export interface ScaffoldField {
   name: string
   ui: { kind: string }
@@ -111,7 +113,7 @@ export function generateCodeBlueprint(input: CollectionScaffoldInput): string {
     : `'${titleField}', 'slug'`
   const schemaLines = buildCodeSchemaLines(fields).join('\n')
 
-  return `import { defineCollection, z, blocks } from 'vulse'
+  return `import { defineCollection, z, blocks } from '${VULSE_PACKAGE}'
 
 export default defineCollection({
   name: '${input.handle}',
@@ -135,14 +137,14 @@ export function generateShowPage(input: CollectionScaffoldInput): string {
   const titleField = resolveTitleField(input)
   const hasBlocks = (input.fields ?? []).some((f) => f.ui.kind === 'blocks')
   const blockImport = hasBlocks || (input.fields ?? []).length === 0
-    ? "import BlockRenderer from 'vulse/client/BlockRenderer.astro'\n"
+    ? `import BlockRenderer from '${VULSE_PACKAGE}/client/BlockRenderer.astro'\n`
     : ''
   const blockRender = hasBlocks || (input.fields ?? []).length === 0
     ? `\n  <BlockRenderer blocks={content.body ?? []} mediaUrl={(id) => \`/api/vulse/media/\${id}/file\`} />`
     : ''
 
   return `---
-import { getRuntimeEnv, getRuntime, createDb, registryForRequest, resolvePreviewContent } from 'vulse/server'
+import { getRuntimeEnv, getRuntime, createDb, registryForRequest, resolvePreviewContent } from '${VULSE_PACKAGE}/server'
 ${blockImport}
 const slug = Astro.params.slug!
 const env = getRuntimeEnv()
@@ -210,7 +212,7 @@ ${schemaLines}
   }
 
   return `import { defineCollection, z } from 'astro:content'
-import { vulseLoader } from 'vulse/loader'
+import { vulseLoader } from '${VULSE_PACKAGE}/loader'
 
 export const collections = {${entry}
 }

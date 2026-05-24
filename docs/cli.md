@@ -18,7 +18,7 @@ npx vulse setup
 
 What it does, in order:
 
-1. Patches `wrangler.toml` with the D1 (`DB`) and R2 (`BUCKET`) bindings (uses the same logic as the `astro add vulse` install hook).
+1. Patches `wrangler.toml` with the D1 (`DB`) and R2 (`BUCKET`) bindings (uses the same logic as the `astro add @ekrist1/vulse` install hook).
 2. Optionally runs `wrangler d1 create <name>` and splices the returned `database_id` into `wrangler.toml`. If the create call fails or you already have a database, you can paste the id manually.
 3. Optionally runs `wrangler r2 bucket create <name>`. Existing buckets are detected and reused.
 4. Generates `BETTER_AUTH_SECRET` and `VULSE_PREVIEW_SECRET` (32 random bytes each, hex-encoded) and writes them to `.dev.vars`. Existing values in `.dev.vars` are preserved.

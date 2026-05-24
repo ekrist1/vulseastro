@@ -6,7 +6,7 @@ Vulse includes a first-party form builder. Define forms in **Admin → Forms**, 
 
 ```astro
 ---
-import FormRenderer from 'vulse/client/components/FormRenderer.astro'
+import FormRenderer from '@ekrist1/vulse/client/components/FormRenderer.astro'
 ---
 <FormRenderer form="contact">
   <input name="name" type="text" required />
@@ -103,7 +103,7 @@ Export the consumer from your worker entry:
 
 ```ts
 // src/worker.ts (or wherever your worker entry is)
-import { vulseFormQueue } from 'vulse/server'
+import { vulseFormQueue } from '@ekrist1/vulse/server'
 
 export default {
   async queue(batch, env) {
@@ -166,7 +166,7 @@ The renderer uploads the file first, then submits the JSON with the resulting me
 
 ```ts
 // astro.config.mjs
-import { definePlugin } from 'vulse'
+import { definePlugin } from '@ekrist1/vulse'
 
 vulse({
   plugins: [

@@ -6,7 +6,7 @@ This monorepo contains:
 
 | Path | What it is |
 |------|------------|
-| `packages/vulse/` | The Vulse package (published to npm) |
+| `packages/vulse/` | The `@ekrist1/vulse` npm package |
 | `playground/vulse-play/` | A working reference Astro project that consumes Vulse |
 | `docs/` | User-facing documentation |
 | `docs/superpowers/` | Internal design specs and implementation plans |
@@ -15,7 +15,7 @@ This monorepo contains:
 
 ```bash
 pnpm install
-pnpm --filter vulse build
+pnpm --filter @ekrist1/vulse build
 cd playground/vulse-play
 npx vulse migrate
 pnpm dev
@@ -46,10 +46,10 @@ Open the URL printed in the terminal (usually `http://localhost:4321`). Admin: `
 
 ```bash
 pnpm install
-pnpm --filter vulse test              # unit tests
-pnpm --filter vulse test:integration  # D1/miniflare integration tests
-pnpm --filter vulse typecheck
-pnpm --filter vulse build
+pnpm --filter @ekrist1/vulse test              # unit tests
+pnpm --filter @ekrist1/vulse test:integration  # D1/miniflare integration tests
+pnpm --filter @ekrist1/vulse typecheck
+pnpm --filter @ekrist1/vulse build
 ```
 
 The playground (`playground/vulse-play`) is the easiest way to exercise changes end-to-end.

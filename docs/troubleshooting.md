@@ -176,7 +176,7 @@ Regenerate by restarting dev — the integration writes types on `astro:config:s
 Confirm `vulse` is in your dependencies and you re-ran `pnpm install` after upgrading. If you're using a monorepo with `workspace:*`, you may also need:
 
 ```bash
-pnpm --filter vulse build
+pnpm --filter @ekrist1/vulse build
 ```
 
 to rebuild the `dist/` files the package exports.

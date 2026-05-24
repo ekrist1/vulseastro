@@ -27,7 +27,7 @@ This guide walks through installing Vulse into a fresh or existing Astro project
 ## 1. Add Vulse to your Astro project
 
 ```bash
-pnpm astro add vulse
+pnpm astro add @ekrist1/vulse
 ```
 
 The install hook will:
@@ -42,7 +42,7 @@ Your `astro.config.mjs` should look like this:
 ```js
 import { defineConfig } from 'astro/config'
 import cloudflare from '@astrojs/cloudflare'
-import vulse from 'vulse/integration'
+import vulse from '@ekrist1/vulse/integration'
 
 export default defineConfig({
   output: 'server',
@@ -81,7 +81,7 @@ Copy the `database_id` printed by the D1 command into `wrangler.toml`. A minimal
 binding = "DB"
 database_name = "vulse-db"
 database_id = "<your-database-id>"
-migrations_dir = "node_modules/vulse/migrations"
+migrations_dir = "node_modules/@ekrist1/vulse/migrations"
 
 [[r2_buckets]]
 binding = "BUCKET"

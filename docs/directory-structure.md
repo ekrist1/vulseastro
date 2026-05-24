@@ -4,7 +4,7 @@ This page describes what each file and folder means — both inside a Vulse-powe
 
 ## In a Vulse-powered Astro project
 
-After running `pnpm astro add vulse` and `pnpm astro add cloudflare`, your project looks roughly like:
+After running `pnpm astro add @ekrist1/vulse` and `pnpm astro add cloudflare`, your project looks roughly like:
 
 ```
 my-site/
@@ -33,7 +33,7 @@ my-site/
 ```js
 import { defineConfig } from 'astro/config'
 import cloudflare from '@astrojs/cloudflare'
-import vulse from 'vulse/integration'
+import vulse from '@ekrist1/vulse/integration'
 
 export default defineConfig({
   output: 'server',
@@ -63,7 +63,7 @@ Wires the Astro Content Layer loader for collections you want available via `get
 
 ```ts
 import { defineCollection, z } from 'astro:content'
-import { vulseLoader } from 'vulse/loader'
+import { vulseLoader } from '@ekrist1/vulse/loader'
 
 export const collections = {
   post: defineCollection({
@@ -83,7 +83,7 @@ One file per code-defined blueprint. The integration scans this directory and me
 
 ```ts
 // src/vulse/collections/post.ts
-import { defineCollection, z, blocks, media } from 'vulse'
+import { defineCollection, z, blocks, media } from '@ekrist1/vulse'
 
 export default defineCollection({
   name: 'post',
@@ -261,7 +261,7 @@ A working Astro project that depends on the local `vulse` package via `workspace
 
 ```bash
 pnpm install
-pnpm --filter vulse build
+pnpm --filter @ekrist1/vulse build
 cd playground/vulse-play
 npx vulse migrate
 pnpm dev

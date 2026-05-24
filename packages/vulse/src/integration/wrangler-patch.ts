@@ -1,3 +1,5 @@
+import { VULSE_PACKAGE } from '../package-name.js'
+
 export interface PatchOptions {
   d1Name: string
   r2Bucket: string
@@ -12,7 +14,7 @@ export function patchWranglerToml(input: string, opts: PatchOptions): string {
 
   let out = input
   if (!hasD1) {
-    out += `\n${D1_MARKER}\n[[d1_databases]]\nbinding = "DB"\ndatabase_name = "${opts.d1Name}"\ndatabase_id = "TODO_PASTE_ID_FROM_WRANGLER_OUTPUT"\nmigrations_dir = "node_modules/vulse/migrations"\n`
+    out += `\n${D1_MARKER}\n[[d1_databases]]\nbinding = "DB"\ndatabase_name = "${opts.d1Name}"\ndatabase_id = "TODO_PASTE_ID_FROM_WRANGLER_OUTPUT"\nmigrations_dir = "node_modules/${VULSE_PACKAGE}/migrations"\n`
   }
   if (!hasR2) {
     out += `\n${R2_MARKER}\n[[r2_buckets]]\nbinding = "BUCKET"\nbucket_name = "${opts.r2Bucket}"\n`

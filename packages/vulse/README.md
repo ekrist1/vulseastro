@@ -18,10 +18,10 @@
 
 > **Alpha:** install the `alpha` dist-tag until 1.0:
 >
-> `pnpm astro add vulse@alpha`
+> `pnpm astro add @ekrist1/vulse@alpha`
 
 ```bash
-pnpm astro add vulse@alpha
+pnpm astro add @ekrist1/vulse@alpha
 pnpm astro add cloudflare
 wrangler d1 create vulse-db
 wrangler r2 bucket create vulse-media
@@ -59,7 +59,7 @@ Vulse's documentation lives on GitHub:
 
 ```ts
 // src/vulse/collections/post.ts
-import { defineCollection, z, blocks, media } from 'vulse'
+import { defineCollection, z, blocks, media } from '@ekrist1/vulse'
 
 export default defineCollection({
   name: 'post',
@@ -82,7 +82,7 @@ export default defineCollection({
 ---
 // src/pages/blog/[slug].astro
 import { getCollection } from 'astro:content'
-import BlockRenderer from 'vulse/client/BlockRenderer.astro'
+import BlockRenderer from '@ekrist1/vulse/client/BlockRenderer.astro'
 
 const posts = await getCollection('post')
 const post = posts.find((p) => p.data.slug === Astro.params.slug)

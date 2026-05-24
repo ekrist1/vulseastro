@@ -1,8 +1,8 @@
 ---
-import SessionGuard from 'vulse/client/components/SessionGuard.astro'
-import BlockRenderer from 'vulse/client/BlockRenderer.astro'
+import SessionGuard from '@ekrist1/vulse/client/components/SessionGuard.astro'
+import BlockRenderer from '@ekrist1/vulse/client/BlockRenderer.astro'
 import SiteLayout from '../../layouts/SiteLayout.astro'
-import { getRuntimeEnv, getRuntime, createDb, registryForRequest } from 'vulse/server'
+import { getRuntimeEnv, getRuntime, createDb, registryForRequest } from '@ekrist1/vulse/server'
 
 const slug = Astro.params.slug!
 const env = getRuntimeEnv()

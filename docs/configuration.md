@@ -19,7 +19,7 @@ Vulse is configured in three places:
 binding = "DB"
 database_name = "vulse-db"
 database_id = "<your-database-id>"
-migrations_dir = "node_modules/vulse/migrations"
+migrations_dir = "node_modules/@ekrist1/vulse/migrations"
 
 [[r2_buckets]]
 binding = "BUCKET"
@@ -59,7 +59,7 @@ Pass options to `vulse()` in `astro.config.mjs`:
 
 ```js
 import { defineConfig } from 'astro/config'
-import vulse from 'vulse/integration'
+import vulse from '@ekrist1/vulse/integration'
 import { spamFilterPlugin } from './src/vulse/plugins/spam-filter'
 
 export default defineConfig({
