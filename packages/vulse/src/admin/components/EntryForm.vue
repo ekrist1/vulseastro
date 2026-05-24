@@ -18,7 +18,16 @@ const props = defineProps<{
   parentId?: string | null
   hasUnpublishedChanges?: boolean
   wide?: boolean
+  locale?: string
+  supportedLocales?: string[]
+  /** Locales that already have a translation for this entry. */
+  existingLocales?: string[]
+  defaultLocale?: string
 }>()
+
+const activeLocale = computed(() => props.locale ?? props.defaultLocale ?? 'default')
+const knownLocales = computed(() => props.supportedLocales ?? [activeLocale.value])
+const hasTranslation = computed(() => (props.existingLocales ?? []).includes(activeLocale.value))
 
 const emit = defineEmits<{
   previewChange: [{ content: Record<string, unknown>; slug: string }]
@@ -169,6 +178,7 @@ async function save(publish = false) {
     const body: Record<string, unknown> = {
       content: content.value,
       slug: slug.value,
+      locale: activeLocale.value,
     }
     if (props.draftsEnabled) {
       body.publish = publish
@@ -176,6 +186,17 @@ async function save(publish = false) {
       body.status = status.value
     }
     if (props.entryId) {
+      // If the entry exists but doesn't yet have a row for the active locale,
+      // first create that locale translation; subsequent edits use PUT.
+      if (!hasTranslation.value) {
+        const created = await adminApi.post<{ slug: string }>(
+          `/api/vulse/entries/${props.collection}/${props.entryId}/locales`,
+          { locale: activeLocale.value, slug: slug.value, content: content.value, status: status.value },
+        )
+        syncSlugFromResponse(created.slug, requestedSlug)
+        window.location.href = `/admin/collections/${props.collection}/${props.entryId}?locale=${encodeURIComponent(activeLocale.value)}`
+        return
+      }
       const updated = await adminApi.put<{ slug: string }>(`/api/vulse/entries/${props.collection}/${props.entryId}`, body)
       syncSlugFromResponse(updated.slug, requestedSlug)
       hasChanges.value = props.draftsEnabled && !publish
@@ -191,7 +212,7 @@ async function save(publish = false) {
       else body.status = status.value
       const created = await adminApi.post<{ id: string; slug: string }>(`/api/vulse/entries/${props.collection}`, body)
       syncSlugFromResponse(created.slug, requestedSlug)
-      window.location.href = `/admin/collections/${props.collection}/${created.id}`
+      window.location.href = `/admin/collections/${props.collection}/${created.id}?locale=${encodeURIComponent(activeLocale.value)}`
       return
     }
   } catch (e) {
@@ -200,6 +221,13 @@ async function save(publish = false) {
   } finally {
     saving.value = false
   }
+}
+
+function switchLocale(next: string) {
+  if (next === activeLocale.value) return
+  const params = new URLSearchParams(window.location.search)
+  params.set('locale', next)
+  window.location.search = params.toString()
 }
 
 async function publishNow() {
@@ -229,10 +257,30 @@ onMounted(() => emitPreview())
     :class="wide ? 'max-w-none' : 'max-w-3xl'"
     @submit.prevent="draftsEnabled ? save(false) : save()"
   >
-    <div v-if="entryId" class="flex items-center gap-3">
+    <div v-if="entryId" class="flex flex-wrap items-center gap-3">
       <h2 class="text-lg font-semibold text-zinc-900">Entry details</h2>
       <EntryStatusBadge v-if="draftsEnabled" :status="status" :has-unpublished-changes="hasChanges" />
+      <div v-if="knownLocales.length > 1" class="ml-auto flex items-center gap-2 text-sm">
+        <span class="text-zinc-500">Locale</span>
+        <select
+          :value="activeLocale"
+          class="rounded border border-zinc-300 bg-white px-2 py-1 font-mono"
+          @change="switchLocale(($event.target as HTMLSelectElement).value)"
+        >
+          <option
+            v-for="loc in knownLocales"
+            :key="loc"
+            :value="loc"
+            :disabled="loc === activeLocale"
+          >
+            {{ loc }}{{ (existingLocales ?? []).includes(loc) ? '' : ' (no translation)' }}
+          </option>
+        </select>
+      </div>
     </div>
+    <p v-if="entryId && !hasTranslation" class="rounded border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+      No <code>{{ activeLocale }}</code> translation yet — saving will create one.
+    </p>
 
     <FieldRenderer
       v-for="f in fields"

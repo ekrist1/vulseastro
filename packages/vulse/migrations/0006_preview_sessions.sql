@@ -3,6 +3,7 @@ CREATE TABLE vulse_preview_sessions (
   user_id TEXT NOT NULL,
   entry_id TEXT,
   collection TEXT NOT NULL,
+  locale TEXT NOT NULL DEFAULT 'default',
   slug TEXT NOT NULL,
   content TEXT NOT NULL,
   expires_at INTEGER NOT NULL,

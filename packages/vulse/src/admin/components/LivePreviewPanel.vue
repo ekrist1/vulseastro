@@ -8,6 +8,7 @@ const props = defineProps<{
   previewPath: string
   slug: string
   content: Record<string, unknown>
+  locale?: string
 }>()
 
 const iframeRef = ref<HTMLIFrameElement | null>(null)
@@ -45,6 +46,7 @@ async function startSession() {
         entryId: props.entryId ?? null,
         slug: props.slug,
         content: props.content,
+        ...(props.locale ? { locale: props.locale } : {}),
       },
     )
     sessionId.value = created.id
@@ -65,6 +67,7 @@ async function updateSession() {
     await adminApi.put(`/api/vulse/preview/sessions/${sessionId.value}`, {
       content: props.content,
       slug: props.slug,
+      ...(props.locale ? { locale: props.locale } : {}),
     })
     if (props.slug !== lastSlug.value) {
       iframeSrc.value = buildPreviewUrl(props.slug)

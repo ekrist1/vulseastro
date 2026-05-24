@@ -25,6 +25,8 @@ export async function createBlueprint(
     definition: def,
     blueprintHash: hashDefinition(def),
     singleton: def.singleton,
+    tree: def.tree === true,
+    drafts: def.drafts === true,
     createdAt: new Date(now),
     updatedAt: new Date(now),
   })
@@ -57,8 +59,10 @@ export async function updateBlueprint(
   const canonical = stripRenames(parsed)
 
   for (const [oldName, newName] of renames) {
+    // Per-locale content lives in `vulse_entry_locales`. Rename keys in both
+    // the live `content` and the in-flight `draft_content` when present.
     await db.run(sql`
-      UPDATE vulse_entries
+      UPDATE vulse_entry_locales
       SET content = json_set(
         json_remove(content, '$.' || ${oldName}),
         '$.' || ${newName},
@@ -67,12 +71,25 @@ export async function updateBlueprint(
       WHERE collection = ${handle}
         AND json_extract(content, '$.' || ${oldName}) IS NOT NULL
     `)
+    await db.run(sql`
+      UPDATE vulse_entry_locales
+      SET draft_content = json_set(
+        json_remove(draft_content, '$.' || ${oldName}),
+        '$.' || ${newName},
+        json_extract(draft_content, '$.' || ${oldName})
+      )
+      WHERE collection = ${handle}
+        AND draft_content IS NOT NULL
+        AND json_extract(draft_content, '$.' || ${oldName}) IS NOT NULL
+    `)
   }
   await db.update(vulseCollections).set({
     label: canonical.label,
     definition: canonical,
     blueprintHash: hashDefinition(canonical),
     singleton: canonical.singleton,
+    tree: canonical.tree === true,
+    drafts: canonical.drafts === true,
     updatedAt: new Date(),
   }).where(eq(vulseCollections.handle, handle))
 

@@ -3,6 +3,7 @@ import type { VulseDb } from '../../core/db.js'
 export interface SearchResult {
   entryId: string
   collection: string
+  locale: string
   slug: string
   title: string
   snippet: string
@@ -12,6 +13,7 @@ export interface SearchOptions {
   collections?: string[]
   limit?: number
   includeDrafts?: boolean
+  locale?: string
 }
 
 function safeCollection(name: string): string {
@@ -41,15 +43,21 @@ export function searchSdk(db: VulseDb) {
       if (!match) return []
 
       const parts = [
-        `SELECT f.entry_id, f.collection, f.slug, f.title,`,
+        `SELECT f.entry_id, f.collection, f.locale, f.slug, f.title,`,
         `snippet(vulse_entries_fts, 4, '<mark>', '</mark>', '…', 8) AS snippet`,
         `FROM vulse_entries_fts f`,
-        `INNER JOIN vulse_entries e ON e.id = f.entry_id`,
+        `INNER JOIN vulse_entry_locales el`,
+        `  ON el.entry_id = f.entry_id AND el.locale = f.locale`,
         `WHERE vulse_entries_fts MATCH ?`,
       ]
       const binds: unknown[] = [match]
 
-      if (!opts.includeDrafts) parts.push(`AND e.status = 'published'`)
+      if (opts.locale) {
+        parts.push(`AND f.locale = ?`)
+        binds.push(opts.locale)
+      }
+
+      if (!opts.includeDrafts) parts.push(`AND el.status = 'published'`)
 
       if (opts.collections && opts.collections.length > 0) {
         const collections = opts.collections.map(safeCollection)
@@ -63,6 +71,7 @@ export function searchSdk(db: VulseDb) {
       const { results } = await d1.prepare(parts.join(' ')).bind(...binds).all<{
         entry_id: string
         collection: string
+        locale: string
         slug: string
         title: string | null
         snippet: string
@@ -71,6 +80,7 @@ export function searchSdk(db: VulseDb) {
       return results.map((r) => ({
         entryId: r.entry_id,
         collection: r.collection,
+        locale: r.locale,
         slug: r.slug,
         title: r.title ?? r.slug,
         snippet: r.snippet,

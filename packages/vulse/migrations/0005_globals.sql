@@ -3,6 +3,7 @@ CREATE TABLE vulse_global_sets (
   label TEXT NOT NULL,
   definition TEXT NOT NULL,
   blueprint_hash TEXT NOT NULL DEFAULT '',
+  schema_version INTEGER NOT NULL DEFAULT 1,
   created_at INTEGER NOT NULL,
   updated_at INTEGER NOT NULL
 );

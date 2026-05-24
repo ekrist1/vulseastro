@@ -1,49 +1,89 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { adminApi, AdminApiError } from '../client/api'
 
-const values = ref<Record<string, string>>({ siteName: '', deployHookUrl: '' })
-const initial = ref<Record<string, string>>({ siteName: '', deployHookUrl: '' })
+interface Values {
+  siteName: string
+  deployHookUrl: string
+  defaultLocale: string
+  locales: string[]
+}
+
+const values = ref<Values>({ siteName: '', deployHookUrl: '', defaultLocale: 'default', locales: ['default'] })
+const initial = ref<Values>({ siteName: '', deployHookUrl: '', defaultLocale: 'default', locales: ['default'] })
 const loading = ref(true)
 const saving = ref(false)
 const saved = ref(false)
 const error = ref<string | null>(null)
+const localesText = ref('default')
+
+const LOCALE_RE = /^[a-z]{2,3}(-[A-Z]{2})?$|^default$/
+
+const localesValid = computed(() => {
+  const codes = parseLocales(localesText.value)
+  if (codes.length === 0) return 'Add at least one locale.'
+  for (const c of codes) {
+    if (!LOCALE_RE.test(c)) return `Invalid locale code: ${c}`
+  }
+  if (!codes.includes(values.value.defaultLocale)) return `Default locale "${values.value.defaultLocale}" must appear in the supported list.`
+  return null
+})
+
+function parseLocales(text: string): string[] {
+  return text.split(',').map((s) => s.trim()).filter(Boolean)
+}
 
 async function load() {
   loading.value = true
   try {
     const all = await adminApi.get<Record<string, unknown>>('/api/vulse/settings')
-    const next = {
+    const locales = Array.isArray(all.locales) && all.locales.length
+      ? (all.locales as string[])
+      : ['default']
+    const defaultLocale = typeof all.defaultLocale === 'string' ? all.defaultLocale : 'default'
+    const next: Values = {
       siteName: String(all.siteName ?? ''),
       deployHookUrl: String(all.deployHookUrl ?? ''),
+      defaultLocale,
+      locales,
     }
     values.value = { ...next }
-    initial.value = { ...next }
+    initial.value = { ...next, locales: [...next.locales] }
+    localesText.value = locales.join(', ')
   } finally {
     loading.value = false
   }
 }
 
-function isDirty(key: keyof typeof values.value): boolean {
+function dirty(key: keyof Values): boolean {
+  if (key === 'locales') {
+    const a = values.value.locales
+    const b = initial.value.locales
+    return a.length !== b.length || a.some((v, i) => v !== b[i])
+  }
   return values.value[key] !== initial.value[key]
 }
 
 function anyDirty(): boolean {
-  return (Object.keys(values.value) as Array<keyof typeof values.value>).some(isDirty)
+  return dirty('siteName') || dirty('deployHookUrl') || dirty('defaultLocale') || dirty('locales')
 }
 
 async function save() {
   if (!anyDirty()) return
+  if (localesValid.value) {
+    error.value = localesValid.value
+    return
+  }
   saving.value = true
   saved.value = false
   error.value = null
   try {
-    for (const key of Object.keys(values.value) as Array<keyof typeof values.value>) {
-      if (isDirty(key)) {
-        await adminApi.put(`/api/vulse/settings/${key}`, { value: values.value[key] })
-      }
-    }
-    initial.value = { ...values.value }
+    values.value.locales = parseLocales(localesText.value)
+    if (dirty('siteName')) await adminApi.put('/api/vulse/settings/siteName', { value: values.value.siteName })
+    if (dirty('deployHookUrl')) await adminApi.put('/api/vulse/settings/deployHookUrl', { value: values.value.deployHookUrl })
+    if (dirty('defaultLocale')) await adminApi.put('/api/vulse/settings/defaultLocale', { value: values.value.defaultLocale })
+    if (dirty('locales')) await adminApi.put('/api/vulse/settings/locales', { value: values.value.locales })
+    initial.value = { ...values.value, locales: [...values.value.locales] }
     saved.value = true
   } catch (e) {
     error.value = e instanceof AdminApiError ? e.message : 'Save failed'
@@ -84,12 +124,40 @@ onMounted(load)
           Called after publishing entries to trigger a rebuild (e.g. a Cloudflare Pages deploy hook).
         </span>
       </label>
+
+      <fieldset class="space-y-3 rounded border border-zinc-200 bg-white p-4">
+        <legend class="text-sm font-semibold text-zinc-700">Locales</legend>
+        <p class="text-xs text-zinc-500">
+          Each entry can be authored once per supported locale. The default locale is used when callers don't pass one.
+        </p>
+        <label class="block">
+          <span class="text-sm font-medium text-zinc-700">Supported locales</span>
+          <input
+            v-model="localesText"
+            class="mt-1 w-full rounded border border-zinc-300 px-3 py-2 font-mono text-sm"
+            placeholder="default, en, nb-NO"
+            @input="onInput"
+          />
+          <span class="mt-1 block text-xs text-zinc-500">
+            Comma-separated BCP-47 codes (e.g. <code>en</code>, <code>nb-NO</code>). The literal <code>default</code> is allowed for sites that don't ship multilingual content.
+          </span>
+        </label>
+        <label class="block">
+          <span class="text-sm font-medium text-zinc-700">Default locale</span>
+          <input
+            v-model="values.defaultLocale"
+            class="mt-1 w-full rounded border border-zinc-300 px-3 py-2 font-mono text-sm"
+            @input="onInput"
+          />
+        </label>
+      </fieldset>
+
       <p v-if="error" class="rounded bg-red-50 px-3 py-2 text-sm text-red-700">{{ error }}</p>
       <div class="flex items-center gap-3 pt-2">
         <button
           type="submit"
           class="vulse-button-primary rounded px-4 py-2 text-sm font-medium disabled:opacity-50"
-          :disabled="saving || !anyDirty()"
+          :disabled="saving || !anyDirty() || !!localesValid"
         >
           {{ saving ? 'Saving…' : 'Save' }}
         </button>

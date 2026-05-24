@@ -5,6 +5,7 @@ import { createDb } from '../../../../core/db.js'
 import { getRuntimeEnv } from '../../../../server/env.js'
 import { registryForRequest } from '../../../../core/blueprints/load.js'
 import { fieldDescriptorsFromBlueprint } from '../../../client/form-from-zod.js'
+import { readLocalesConfig } from '../../../../core/locales.js'
 
 const env = getRuntimeEnv()
 const db = createDb(env.DB)
@@ -13,6 +14,10 @@ const bp = reg.get(Astro.params.name!)
 if (!bp) return Astro.redirect('/admin')
 const fields = fieldDescriptorsFromBlueprint(bp)
 const parentId = Astro.url.searchParams.get('parent_id')
+
+const localesCfg = await readLocalesConfig(db)
+const requested = Astro.url.searchParams.get('locale')
+const activeLocale = requested && localesCfg.locales.includes(requested) ? requested : localesCfg.defaultLocale
 ---
 <AdminShell title={`New ${bp.label}`} activePath={`/admin/collections/${bp.name}`}>
   <EntryForm
@@ -24,5 +29,8 @@ const parentId = Astro.url.searchParams.get('parent_id')
     tree={bp.tree === true}
     parentId={parentId}
     titleField={bp.admin.titleField}
+    locale={activeLocale}
+    defaultLocale={localesCfg.defaultLocale}
+    supportedLocales={localesCfg.locales}
   />
 </AdminShell>

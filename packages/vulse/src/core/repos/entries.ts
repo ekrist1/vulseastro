@@ -1,9 +1,11 @@
 import { and, asc, desc, eq, gte, isNull, lte, sql } from 'drizzle-orm'
 import { nanoid } from 'nanoid'
 import type { VulseDb } from '../db.js'
-import { entries, entryRevisions } from '../schema.js'
+import { entries, entryLocales, entryRevisions } from '../schema.js'
 import { NotFoundError, ValidationError } from '../errors.js'
 import { isValidSlug, normalizeSlug } from '../slug.js'
+
+export const DEFAULT_LOCALE = 'default'
 
 export interface EntryRow {
   id: string
@@ -28,10 +30,20 @@ export interface EntryNode extends EntryRow {
   children: EntryNode[]
 }
 
+export interface EntryLocaleSummary {
+  locale: string
+  slug: string
+  status: 'draft' | 'published'
+  hasUnpublishedChanges: boolean
+  publishedAt: Date | null
+  updatedAt: Date
+}
+
 export type EntryOrderBy = 'sortOrder' | 'publishedAt' | 'updatedAt' | 'createdAt'
 
 export interface ListOptions {
   collection: string
+  locale?: string
   status?: 'draft' | 'published'
   parentId?: string | null
   limit?: number
@@ -43,24 +55,27 @@ export interface ListOptions {
   order?: 'asc' | 'desc'
 }
 
-function rowToEntry(row: typeof entries.$inferSelect): EntryRow {
+type EntryShell = typeof entries.$inferSelect
+type EntryLocale = typeof entryLocales.$inferSelect
+
+function joinToEntry(shell: EntryShell, locale: EntryLocale): EntryRow {
   return {
-    id: row.id,
-    collection: row.collection,
-    parentId: row.parentId ?? null,
-    sortOrder: row.sortOrder,
-    slug: row.slug,
-    status: row.status,
-    locale: row.locale,
-    version: row.version,
-    content: row.content,
-    draftContent: row.draftContent ?? null,
-    hasUnpublishedChanges: row.draftContent != null,
-    publishedAt: row.publishedAt,
-    createdAt: row.createdAt,
-    updatedAt: row.updatedAt,
-    createdBy: row.createdBy,
-    updatedBy: row.updatedBy,
+    id: shell.id,
+    collection: shell.collection,
+    parentId: shell.parentId ?? null,
+    sortOrder: shell.sortOrder,
+    slug: locale.slug,
+    status: locale.status,
+    locale: locale.locale,
+    version: locale.version,
+    content: locale.content,
+    draftContent: locale.draftContent ?? null,
+    hasUnpublishedChanges: locale.draftContent != null,
+    publishedAt: locale.publishedAt,
+    createdAt: shell.createdAt,
+    updatedAt: locale.updatedAt,
+    createdBy: shell.createdBy,
+    updatedBy: locale.updatedBy,
   }
 }
 
@@ -69,9 +84,9 @@ export class EntriesRepo {
 
   private async resolveUniqueSlug(
     collection: string,
-    desired: string,
     locale: string,
-    excludeId?: string,
+    desired: string,
+    excludeEntryId?: string,
   ): Promise<string> {
     const base = normalizeSlug(desired)
     if (!base || !isValidSlug(base)) {
@@ -84,8 +99,15 @@ export class EntriesRepo {
     let suffix = 1
     for (;;) {
       const candidate = suffix === 1 ? base : `${base}-${suffix}`
-      const existing = await this.findBySlug(collection, candidate, locale)
-      if (!existing || existing.id === excludeId) return candidate
+      const [existing] = await this.db.select({ entryId: entryLocales.entryId })
+        .from(entryLocales)
+        .where(and(
+          eq(entryLocales.collection, collection),
+          eq(entryLocales.locale, locale),
+          eq(entryLocales.slug, candidate),
+        ))
+        .limit(1)
+      if (!existing || existing.entryId === excludeEntryId) return candidate
       suffix++
     }
   }
@@ -104,6 +126,24 @@ export class EntriesRepo {
     return row?.max ?? 0
   }
 
+  /** True if the proposed parent would create a cycle (parent is a descendant of id). */
+  private async wouldCreateCycle(id: string, proposedParentId: string | null): Promise<boolean> {
+    if (proposedParentId === null) return false
+    if (proposedParentId === id) return true
+    // Walk parent chain upward from proposedParentId; if we hit `id`, it's a cycle.
+    const seen = new Set<string>()
+    let current: string | null = proposedParentId
+    while (current) {
+      if (seen.has(current)) return false // pre-existing cycle, but not caused by this move
+      seen.add(current)
+      if (current === id) return true
+      const [row] = await this.db.select({ parentId: entries.parentId })
+        .from(entries).where(eq(entries.id, current)).limit(1)
+      current = row?.parentId ?? null
+    }
+    return false
+  }
+
   async create(input: {
     collection: string
     slug: string
@@ -114,109 +154,199 @@ export class EntriesRepo {
     parentId?: string | null
     draftsEnabled?: boolean
   }): Promise<EntryRow> {
-    const locale = input.locale ?? 'default'
-    const slug = await this.resolveUniqueSlug(input.collection, input.slug, locale)
+    const locale = input.locale ?? DEFAULT_LOCALE
+    const slug = await this.resolveUniqueSlug(input.collection, locale, input.slug)
     const now = new Date()
     const sortOrder = (await this.maxSortOrder(input.collection, input.parentId ?? null)) + 1
     const publishNow = !input.draftsEnabled && (input.status ?? 'draft') === 'published'
-    const row = {
-      id: nanoid(),
+
+    const entryId = nanoid()
+    const shellRow = {
+      id: entryId,
       collection: input.collection,
       parentId: input.parentId ?? null,
       sortOrder,
+      createdAt: now,
+      updatedAt: now,
+      createdBy: input.createdBy,
+    }
+    const localeRow = {
+      entryId,
+      collection: input.collection,
+      locale,
       slug,
       status: publishNow ? 'published' as const : (input.status ?? 'draft'),
-      locale,
       version: 1,
       content: input.draftsEnabled && !publishNow ? {} : input.content,
       draftContent: input.draftsEnabled && !publishNow ? input.content : null,
       publishedAt: publishNow ? now : null,
-      createdAt: now,
       updatedAt: now,
-      createdBy: input.createdBy,
       updatedBy: input.createdBy,
     }
 
+    const insertStmts = () => [
+      this.db.insert(entries).values(shellRow),
+      this.db.insert(entryLocales).values(localeRow),
+      this.db.insert(entryRevisions).values({
+        id: nanoid(),
+        entryId,
+        locale,
+        version: 1,
+        content: input.content,
+        authorId: input.createdBy,
+        changeSummary: null,
+        createdAt: now,
+      }),
+    ] as const
+
     try {
-      await this.db.batch([
-        this.db.insert(entries).values(row),
-        this.db.insert(entryRevisions).values({
-          id: nanoid(),
-          entryId: row.id,
-          version: 1,
-          content: input.content,
-          authorId: input.createdBy,
-          changeSummary: null,
-          createdAt: now,
-        }),
-      ])
+      const [a, b, c] = insertStmts()
+      await this.db.batch([a, b, c])
     } catch (err) {
       if (!this.isSlugUniqueViolation(err)) throw err
-      row.slug = await this.resolveUniqueSlug(input.collection, slug, locale)
-      await this.db.batch([
-        this.db.insert(entries).values(row),
-        this.db.insert(entryRevisions).values({
-          id: nanoid(),
-          entryId: row.id,
-          version: 1,
-          content: input.content,
-          authorId: input.createdBy,
-          changeSummary: null,
-          createdAt: now,
-        }),
-      ])
+      localeRow.slug = await this.resolveUniqueSlug(input.collection, locale, slug)
+      const [a, b, c] = insertStmts()
+      await this.db.batch([a, b, c])
     }
 
-    return rowToEntry(row as typeof entries.$inferSelect)
+    return joinToEntry(shellRow as EntryShell, localeRow as EntryLocale)
   }
 
-  async findById(id: string): Promise<EntryRow | null> {
-    const [row] = await this.db.select().from(entries).where(eq(entries.id, id))
-    return row ? rowToEntry(row) : null
+  /** Add a new locale translation to an existing entry. */
+  async createLocale(entryId: string, input: {
+    locale: string
+    slug: string
+    content: unknown
+    updatedBy: string
+    status?: 'draft' | 'published'
+    draftsEnabled?: boolean
+  }): Promise<EntryRow> {
+    const shell = await this.findShellById(entryId)
+    if (!shell) throw new NotFoundError(`Entry ${entryId} not found`)
+    const slug = await this.resolveUniqueSlug(shell.collection, input.locale, input.slug)
+    const now = new Date()
+    const publishNow = !input.draftsEnabled && (input.status ?? 'draft') === 'published'
+    const localeRow = {
+      entryId,
+      collection: shell.collection,
+      locale: input.locale,
+      slug,
+      status: publishNow ? 'published' as const : (input.status ?? 'draft'),
+      version: 1,
+      content: input.draftsEnabled && !publishNow ? {} : input.content,
+      draftContent: input.draftsEnabled && !publishNow ? input.content : null,
+      publishedAt: publishNow ? now : null,
+      updatedAt: now,
+      updatedBy: input.updatedBy,
+    }
+    await this.db.batch([
+      this.db.insert(entryLocales).values(localeRow),
+      this.db.insert(entryRevisions).values({
+        id: nanoid(),
+        entryId,
+        locale: input.locale,
+        version: 1,
+        content: input.content,
+        authorId: input.updatedBy,
+        changeSummary: null,
+        createdAt: now,
+      }),
+      this.db.update(entries).set({ updatedAt: now }).where(eq(entries.id, entryId)),
+    ])
+    return joinToEntry({ ...shell, updatedAt: now }, localeRow as EntryLocale)
   }
 
-  async findBySlug(collection: string, slug: string, locale = 'default'): Promise<EntryRow | null> {
-    const [row] = await this.db.select().from(entries).where(
-      and(eq(entries.collection, collection), eq(entries.slug, slug), eq(entries.locale, locale)),
-    )
-    return row ? rowToEntry(row) : null
+  async findShellById(id: string): Promise<EntryShell | null> {
+    const [row] = await this.db.select().from(entries).where(eq(entries.id, id)).limit(1)
+    return row ?? null
+  }
+
+  async findById(id: string, locale: string = DEFAULT_LOCALE): Promise<EntryRow | null> {
+    const [shell] = await this.db.select().from(entries).where(eq(entries.id, id)).limit(1)
+    if (!shell) return null
+    const [loc] = await this.db.select().from(entryLocales)
+      .where(and(eq(entryLocales.entryId, id), eq(entryLocales.locale, locale)))
+      .limit(1)
+    if (!loc) return null
+    return joinToEntry(shell, loc)
+  }
+
+  /** Returns every locale row for an entry — used by the admin to render the locale picker. */
+  async listLocales(id: string): Promise<EntryLocaleSummary[]> {
+    const rows = await this.db.select({
+      locale: entryLocales.locale,
+      slug: entryLocales.slug,
+      status: entryLocales.status,
+      draftContent: entryLocales.draftContent,
+      publishedAt: entryLocales.publishedAt,
+      updatedAt: entryLocales.updatedAt,
+    }).from(entryLocales).where(eq(entryLocales.entryId, id))
+    return rows.map((r) => ({
+      locale: r.locale,
+      slug: r.slug,
+      status: r.status,
+      hasUnpublishedChanges: r.draftContent != null,
+      publishedAt: r.publishedAt,
+      updatedAt: r.updatedAt,
+    }))
+  }
+
+  async findBySlug(collection: string, slug: string, locale: string = DEFAULT_LOCALE): Promise<EntryRow | null> {
+    const [loc] = await this.db.select().from(entryLocales).where(
+      and(
+        eq(entryLocales.collection, collection),
+        eq(entryLocales.slug, slug),
+        eq(entryLocales.locale, locale),
+      ),
+    ).limit(1)
+    if (!loc) return null
+    const [shell] = await this.db.select().from(entries).where(eq(entries.id, loc.entryId)).limit(1)
+    if (!shell) return null
+    return joinToEntry(shell, loc)
   }
 
   async list(opts: ListOptions): Promise<EntryRow[]> {
-    const conditions = [eq(entries.collection, opts.collection)]
-    if (opts.status) conditions.push(eq(entries.status, opts.status))
+    const locale = opts.locale ?? DEFAULT_LOCALE
+    const conditions = [
+      eq(entries.collection, opts.collection),
+      eq(entryLocales.locale, locale),
+    ]
+    if (opts.status) conditions.push(eq(entryLocales.status, opts.status))
     if (opts.parentId !== undefined) {
       conditions.push(opts.parentId === null ? isNull(entries.parentId) : eq(entries.parentId, opts.parentId))
     }
     if (opts.createdBy) conditions.push(eq(entries.createdBy, opts.createdBy))
-    if (opts.publishedAfter) conditions.push(gte(entries.publishedAt, opts.publishedAfter))
-    if (opts.publishedBefore) conditions.push(lte(entries.publishedAt, opts.publishedBefore))
+    if (opts.publishedAfter) conditions.push(gte(entryLocales.publishedAt, opts.publishedAfter))
+    if (opts.publishedBefore) conditions.push(lte(entryLocales.publishedAt, opts.publishedBefore))
 
-    const orderCol =
-      opts.orderBy === 'publishedAt' ? entries.publishedAt
-      : opts.orderBy === 'createdAt' ? entries.createdAt
-      : opts.orderBy === 'updatedAt' ? entries.updatedAt
-      : entries.sortOrder
     const direction = opts.order === 'asc' ? asc : desc
     const order =
-      opts.orderBy === undefined || opts.orderBy === 'sortOrder'
-        ? [asc(entries.sortOrder), desc(entries.updatedAt)] as const
-        : [direction(orderCol)] as const
+      opts.orderBy === 'publishedAt' ? [direction(entryLocales.publishedAt)] as const
+      : opts.orderBy === 'createdAt' ? [direction(entries.createdAt)] as const
+      : opts.orderBy === 'updatedAt' ? [direction(entryLocales.updatedAt)] as const
+      : [asc(entries.sortOrder), desc(entryLocales.updatedAt)] as const
 
-    const base = this.db.select().from(entries).where(and(...conditions)).orderBy(...order)
+    const base = this.db.select({ shell: entries, loc: entryLocales })
+      .from(entries)
+      .innerJoin(entryLocales, eq(entryLocales.entryId, entries.id))
+      .where(and(...conditions))
+      .orderBy(...order)
     const limited = opts.limit !== undefined ? base.limit(opts.limit) : base
     const paged = opts.offset !== undefined ? limited.offset(opts.offset) : limited
     const rows = await paged
-    return rows.map(rowToEntry)
+    return rows.map((r) => joinToEntry(r.shell, r.loc))
   }
 
-  async tree(collection: string): Promise<EntryNode[]> {
-    const rows = await this.db.select().from(entries)
-      .where(eq(entries.collection, collection))
-      .orderBy(asc(entries.sortOrder), desc(entries.updatedAt))
+  async tree(collection: string, locale: string = DEFAULT_LOCALE): Promise<EntryNode[]> {
+    const rows = await this.db.select({ shell: entries, loc: entryLocales })
+      .from(entries)
+      .innerJoin(entryLocales, eq(entryLocales.entryId, entries.id))
+      .where(and(eq(entries.collection, collection), eq(entryLocales.locale, locale)))
+      .orderBy(asc(entries.sortOrder), desc(entryLocales.updatedAt))
+
     const byParent = new Map<string | null, EntryNode[]>()
-    for (const row of rows) {
-      const node: EntryNode = { ...rowToEntry(row), children: [] }
+    for (const r of rows) {
+      const node: EntryNode = { ...joinToEntry(r.shell, r.loc), children: [] }
       const bucket = byParent.get(node.parentId) ?? []
       bucket.push(node)
       byParent.set(node.parentId, bucket)
@@ -229,10 +359,12 @@ export class EntriesRepo {
     return attach(null)
   }
 
-  async move(collection: string, id: string, input: { parentId: string | null; sortOrder?: number }): Promise<EntryRow> {
-    const existing = await this.findById(id)
-    if (!existing || existing.collection !== collection) throw new NotFoundError(`Entry ${id} not found`)
-    if (input.parentId === id) throw new ValidationError('An entry cannot be its own parent')
+  async move(collection: string, id: string, input: { parentId: string | null; sortOrder?: number }): Promise<EntryShell> {
+    const shell = await this.findShellById(id)
+    if (!shell || shell.collection !== collection) throw new NotFoundError(`Entry ${id} not found`)
+    if (await this.wouldCreateCycle(id, input.parentId)) {
+      throw new ValidationError('An entry cannot be moved under itself or one of its descendants.')
+    }
     const sortOrder = input.sortOrder ?? (await this.maxSortOrder(collection, input.parentId)) + 1
     const now = new Date()
     await this.db.update(entries).set({
@@ -240,12 +372,13 @@ export class EntriesRepo {
       sortOrder,
       updatedAt: now,
     }).where(eq(entries.id, id))
-    const updated = await this.findById(id)
-    if (!updated) throw new NotFoundError(`Entry ${id} not found`)
-    return updated
+    const next = await this.findShellById(id)
+    if (!next) throw new NotFoundError(`Entry ${id} not found`)
+    return next
   }
 
   async updateWithRevision(id: string, patch: {
+    locale?: string
     content?: unknown
     status?: 'draft' | 'published'
     slug?: string
@@ -254,17 +387,21 @@ export class EntriesRepo {
     publish?: boolean
     draftsEnabled?: boolean
   }): Promise<EntryRow> {
-    const existing = await this.findById(id)
-    if (!existing) throw new NotFoundError(`Entry ${id} not found`)
+    const locale = patch.locale ?? DEFAULT_LOCALE
+    const existing = await this.findById(id, locale)
+    if (!existing) throw new NotFoundError(`Entry ${id} (${locale}) not found`)
+
     let nextSlug = existing.slug
     if (patch.slug !== undefined && patch.slug !== existing.slug) {
-      nextSlug = await this.resolveUniqueSlug(existing.collection, patch.slug, existing.locale, id)
+      nextSlug = await this.resolveUniqueSlug(existing.collection, locale, patch.slug, id)
     }
     const now = new Date()
     const nextVersion = existing.version + 1
     const workingContent = patch.content ?? (
       patch.draftsEnabled && existing.draftContent != null ? existing.draftContent : existing.content
     )
+
+    const localeWhere = and(eq(entryLocales.entryId, id), eq(entryLocales.locale, locale))
 
     if (patch.draftsEnabled) {
       const publishNow = patch.publish === true
@@ -292,48 +429,76 @@ export class EntriesRepo {
 
       await this.db.batch([
         this.db.insert(entryRevisions).values({
-          id: nanoid(), entryId: id, version: nextVersion, content: workingContent,
+          id: nanoid(), entryId: id, locale, version: nextVersion, content: workingContent,
           authorId: patch.updatedBy, changeSummary: patch.changeSummary ?? null, createdAt: now,
         }),
-        this.db.update(entries).set(next).where(eq(entries.id, id)),
+        this.db.update(entryLocales).set(next).where(localeWhere),
+        this.db.update(entries).set({ updatedAt: now }).where(eq(entries.id, id)),
       ])
-      return { ...existing, ...next, draftContent: next.draftContent ?? null, hasUnpublishedChanges: next.draftContent != null }
+      return {
+        ...existing,
+        slug: next.slug,
+        status: next.status,
+        version: next.version,
+        content: next.content,
+        draftContent: next.draftContent ?? null,
+        hasUnpublishedChanges: next.draftContent != null,
+        publishedAt: next.publishedAt,
+        updatedAt: next.updatedAt,
+        updatedBy: next.updatedBy,
+      }
     }
 
     const nextContent = patch.content ?? existing.content
+    const nextStatus = patch.status ?? existing.status
+    const nextPublishedAt = nextStatus === 'published' && !existing.publishedAt ? now : existing.publishedAt
     await this.db.batch([
       this.db.insert(entryRevisions).values({
-        id: nanoid(), entryId: id, version: nextVersion, content: nextContent,
+        id: nanoid(), entryId: id, locale, version: nextVersion, content: nextContent,
         authorId: patch.updatedBy, changeSummary: patch.changeSummary ?? null, createdAt: now,
       }),
-      this.db.update(entries).set({
+      this.db.update(entryLocales).set({
         content: nextContent,
         slug: nextSlug,
-        status: patch.status ?? existing.status,
+        status: nextStatus,
         version: nextVersion,
-        publishedAt: (patch.status ?? existing.status) === 'published' && !existing.publishedAt ? now : existing.publishedAt,
+        publishedAt: nextPublishedAt,
         updatedAt: now,
         updatedBy: patch.updatedBy,
-      }).where(eq(entries.id, id)),
+      }).where(localeWhere),
+      this.db.update(entries).set({ updatedAt: now }).where(eq(entries.id, id)),
     ])
     return {
       ...existing,
       content: nextContent,
       slug: nextSlug,
-      status: patch.status ?? existing.status,
+      status: nextStatus,
       version: nextVersion,
-      publishedAt: (patch.status ?? existing.status) === 'published' && !existing.publishedAt ? now : existing.publishedAt,
+      publishedAt: nextPublishedAt,
       updatedAt: now,
       updatedBy: patch.updatedBy,
       hasUnpublishedChanges: false,
     }
   }
 
-  async publish(id: string, updatedBy: string): Promise<EntryRow> {
-    return this.updateWithRevision(id, { publish: true, draftsEnabled: true, updatedBy })
+  async publish(id: string, updatedBy: string, locale: string = DEFAULT_LOCALE): Promise<EntryRow> {
+    return this.updateWithRevision(id, { publish: true, draftsEnabled: true, updatedBy, locale })
   }
 
   async delete(id: string): Promise<void> {
     await this.db.delete(entries).where(eq(entries.id, id))
+  }
+
+  /** Delete only one locale of an entry; the entry shell remains if other locales exist. */
+  async deleteLocale(id: string, locale: string): Promise<void> {
+    await this.db.delete(entryLocales).where(and(
+      eq(entryLocales.entryId, id),
+      eq(entryLocales.locale, locale),
+    ))
+    // Also remove revisions for that locale; entries cascade is broader than we want here.
+    await this.db.delete(entryRevisions).where(and(
+      eq(entryRevisions.entryId, id),
+      eq(entryRevisions.locale, locale),
+    ))
   }
 }

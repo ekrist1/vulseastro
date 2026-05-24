@@ -24,6 +24,7 @@ export function previewSessionsRoutes(db: VulseDb, auth: Auth, registry: Bluepri
         entryId: z.string().nullable().optional(),
         slug: z.string(),
         content: z.record(z.string(), z.unknown()),
+        locale: z.string().optional(),
       }),
     }, async ({ auth: ctx, body, url }) => {
       const bp = registry.get(body.collection)
@@ -34,6 +35,7 @@ export function previewSessionsRoutes(db: VulseDb, auth: Auth, registry: Bluepri
         slug: body.slug,
         content: body.content,
         entryId: body.entryId ?? null,
+        ...(body.locale !== undefined ? { locale: body.locale } : {}),
       })
       const previewPath = bp.preview?.path ?? '/{slug}'
       return {
@@ -49,11 +51,13 @@ export function previewSessionsRoutes(db: VulseDb, auth: Auth, registry: Bluepri
       body: z.object({
         slug: z.string().optional(),
         content: z.record(z.string(), z.unknown()).optional(),
+        locale: z.string().optional(),
       }),
     }, async ({ auth: ctx, params, body }) => {
-      const patch: { slug?: string; content?: unknown } = {}
+      const patch: { slug?: string; content?: unknown; locale?: string } = {}
       if (body.slug !== undefined) patch.slug = body.slug
       if (body.content !== undefined) patch.content = body.content
+      if (body.locale !== undefined) patch.locale = body.locale
       const updated = await repo.update(params.id, ctx.user!.id, patch)
       if (!updated) throw new AccessDeniedError('Session not found or not owned by you')
       return { expiresAt: updated.expiresAt.toISOString() }

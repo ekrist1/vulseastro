@@ -13,6 +13,7 @@ export function injectVulseRoutes({ injectRoute, logger }: InjectArgs) {
     { pattern: '/api/vulse/entries/[collection]', file: 'api-vulse-entries.js' },
     { pattern: '/api/vulse/entries/[collection]/tree', file: 'api-vulse-entries-tree.js' },
     { pattern: '/api/vulse/entries/[collection]/[id]', file: 'api-vulse-entries.js' },
+    { pattern: '/api/vulse/entries/[collection]/[id]/locales', file: 'api-vulse-entries-locales.js' },
     { pattern: '/api/vulse/entries/[collection]/[id]/move', file: 'api-vulse-entries-move.js' },
     { pattern: '/api/vulse/entries/[collection]/[id]/publish', file: 'api-vulse-entries-publish.js' },
     { pattern: '/api/vulse/entries/[collection]/[id]/revisions', file: 'api-vulse-revisions.js' },
