@@ -8,7 +8,12 @@ const { redirectTo = '/', class: cls } = Astro.props
 <script>
   document.querySelectorAll('[data-vulse-sign-out]').forEach((btn) => {
     btn.addEventListener('click', async () => {
-      const res = await fetch('/api/auth/sign-out', { method: 'POST', credentials: 'same-origin' })
+      const res = await fetch('/api/auth/sign-out', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'content-type': 'application/json' },
+        body: '{}',
+      })
       const event = new CustomEvent(res.ok ? 'vulse:sign-out:success' : 'vulse:sign-out:error', { detail: { status: res.status } })
       btn.dispatchEvent(event)
       if (res.ok) window.location.href = (btn as HTMLButtonElement).dataset.redirect || '/'

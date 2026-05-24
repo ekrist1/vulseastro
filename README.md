@@ -35,6 +35,7 @@ Open the URL printed in the terminal (usually `http://localhost:4321`). Admin: `
 | [Frontend](docs/frontend.md) | Wiring Vulse into Astro (loader, SSR SDK, blocks, auth) |
 | [Live preview](docs/live-preview.md) | Live preview and saved-draft preview |
 | [Forms](docs/forms.md) | Form builder, spam protection, queues, hooks |
+| [Plugins](docs/plugins.md) | Native Vulse plugins for forms, auth, CRM, and email workflows |
 | [API reference](docs/api-reference.md) | REST endpoints |
 | [CLI reference](docs/cli.md) | `vulse migrate`, `seed:admin`, `collection:scaffold` |
 | [Deployment](docs/deployment.md) | Cloudflare Workers / Pages, secrets, cron |

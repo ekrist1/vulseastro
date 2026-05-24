@@ -29,7 +29,8 @@ describe('member journey', () => {
 
     const signOut = await auth.handler(new Request('http://x/api/auth/sign-out', {
       method: 'POST',
-      headers: { cookie, origin: 'http://x' },
+      headers: { cookie, origin: 'http://x', 'content-type': 'application/json' },
+      body: '{}',
     }))
     expect([200, 204]).toContain(signOut.status)
   })

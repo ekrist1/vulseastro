@@ -1,6 +1,10 @@
 ---
 import AdminShell from '../../components/AdminShell.astro'
+import UserEditor from '../../components/UserEditor.vue'
+
+const { id } = Astro.params
+if (!id) return Astro.redirect('/admin/users')
 ---
-<AdminShell title="User" activePath="/admin/users">
-  <p class="text-sm text-zinc-600">Per-user detail page — invite/reset flows arrive in Plan 7.</p>
+<AdminShell title="Edit user" activePath="/admin/users">
+  <UserEditor client:load userId={id} />
 </AdminShell>

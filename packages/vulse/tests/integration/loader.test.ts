@@ -25,6 +25,27 @@ describe('vulseLoader', () => {
     const items = await runLoader('post', { dbBinding: env.DB, includeDrafts: true })
     expect(items.length).toBe(1)
   })
+
+  it('loads entries for the configured default locale', async () => {
+    const db = createDb(env.DB)
+    const repo = new EntriesRepo(db)
+    const { SettingsRepo } = await import('../../src/core/repos/settings')
+    const settings = new SettingsRepo(db)
+    await settings.set('defaultLocale', 'en')
+    await settings.set('locales', ['en'])
+
+    await repo.create({
+      collection: 'post',
+      slug: 'en-only',
+      content: { title: 'EN', slug: 'en-only', body: [] },
+      createdBy: 'u',
+      status: 'published',
+      locale: 'en',
+    })
+
+    const items = await runLoader('post', { dbBinding: env.DB })
+    expect(items.map((i) => i.slug)).toEqual(['en-only'])
+  })
 })
 
 async function runLoader(collection: string, opts: { dbBinding: D1Database; includeDrafts?: boolean }) {

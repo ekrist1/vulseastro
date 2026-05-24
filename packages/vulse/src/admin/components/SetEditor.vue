@@ -116,6 +116,9 @@ async function destroy() {
               <option value="boolean">boolean</option>
               <option value="select">select</option>
               <option value="relationship">relationship</option>
+              <option value="entry">entry</option>
+              <option value="entries">entries</option>
+              <option value="link">link</option>
               <option value="asset">asset</option>
             </select>
             <label class="flex items-center gap-1 text-xs"><input v-model="f.optional" type="checkbox" /> optional</label>

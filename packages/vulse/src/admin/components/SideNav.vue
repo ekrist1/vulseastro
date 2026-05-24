@@ -39,7 +39,12 @@ function subNavClass(href: string, exact = false) {
 }
 
 async function signOut() {
-  await fetch('/api/auth/sign-out', { method: 'POST', credentials: 'same-origin' })
+  await fetch('/api/auth/sign-out', {
+    method: 'POST',
+    credentials: 'same-origin',
+    headers: { 'content-type': 'application/json' },
+    body: '{}',
+  })
   window.location.href = '/admin/login'
 }
 </script>

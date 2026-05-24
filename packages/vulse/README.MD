@@ -44,6 +44,7 @@ Vulse's documentation lives on GitHub:
 | [Frontend](https://github.com/ekrist1/vulseastro/blob/main/docs/frontend.md) | Wiring Vulse into Astro |
 | [Live preview](https://github.com/ekrist1/vulseastro/blob/main/docs/live-preview.md) | Live preview and saved-draft preview |
 | [Forms](https://github.com/ekrist1/vulseastro/blob/main/docs/forms.md) | Form builder, spam, queues, hooks |
+| [Plugins](https://github.com/ekrist1/vulseastro/blob/main/docs/plugins.md) | Native Vulse plugins for forms, auth, CRM, and email workflows |
 | [API reference](https://github.com/ekrist1/vulseastro/blob/main/docs/api-reference.md) | REST endpoints |
 | [CLI reference](https://github.com/ekrist1/vulseastro/blob/main/docs/cli.md) | `vulse migrate`, `seed:admin`, `collection:scaffold` |
 | [Deployment](https://github.com/ekrist1/vulseastro/blob/main/docs/deployment.md) | Cloudflare deploy + production checklist |

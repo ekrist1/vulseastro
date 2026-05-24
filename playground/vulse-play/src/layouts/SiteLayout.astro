@@ -1,5 +1,7 @@
 ---
 import '../styles/site.css'
+import SignOutButton from 'vulse/client/components/SignOutButton.astro'
+import { getRuntimeEnv, createDb, getRuntime, registryForRequest } from 'vulse/server'
 
 interface Props {
   title?: string
@@ -9,6 +11,31 @@ interface Props {
 
 const { title = 'Vulse Playground', description = 'Demo site for the Vulse Astro CMS', activeNav } = Astro.props
 const pathname = Astro.url.pathname
+
+type SessionUser = {
+  email: string
+  name?: string | null
+  displayName?: string | null
+  role?: string | null
+}
+
+let sessionUser: SessionUser | null = null
+
+try {
+  const env = getRuntimeEnv()
+  const db = createDb(env.DB)
+  const rt = await getRuntime(env, await registryForRequest(db), Astro.url.origin)
+  const session = await rt.auth.api.getSession({ headers: Astro.request.headers })
+  sessionUser = (session?.user as SessionUser | undefined) ?? null
+} catch {
+  // Runtime unavailable outside Cloudflare (e.g. static analysis)
+}
+
+const userLabel =
+  sessionUser?.displayName?.trim() ||
+  sessionUser?.name?.trim() ||
+  sessionUser?.email ||
+  null
 ---
 <!doctype html>
 <html lang="en">
@@ -28,9 +55,27 @@ const pathname = Astro.url.pathname
         <nav class="site-nav" aria-label="Main">
           <a href="/" class:list={{ 'is-active': activeNav === 'home' || pathname === '/' }}>Home</a>
           <a href="/examples/accordion" class:list={{ 'is-active': activeNav === 'examples' || pathname.startsWith('/examples') }}>Examples</a>
-          <a href="/sign-in">Sign in</a>
+          {!sessionUser && (
+            <>
+              <a href="/sign-in" class:list={{ 'is-active': pathname === '/sign-in' }}>Sign in</a>
+              <a href="/sign-up" class:list={{ 'is-active': pathname === '/sign-up' }}>Sign up</a>
+            </>
+          )}
           <a href="/admin" class:list={{ 'is-active': activeNav === 'admin' }}>Admin</a>
         </nav>
+        {sessionUser && (
+          <div class="site-session">
+            <div class="site-session__meta">
+              <span class="site-session__name">{userLabel}</span>
+              {sessionUser.role && (
+                <span class="site-session__role">{sessionUser.role}</span>
+              )}
+            </div>
+            <SignOutButton redirectTo="/" class="btn btn--ghost site-session__sign-out">
+              Sign out
+            </SignOutButton>
+          </div>
+        )}
       </div>
     </header>
     <main class="site-main">

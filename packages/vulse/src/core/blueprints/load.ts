@@ -21,11 +21,12 @@ async function loadBlueprintModules(): Promise<Blueprint[]> {
 }
 
 function mergeBlueprint(compiled: Blueprint, code?: Blueprint): Blueprint {
+  const preview = code?.preview ?? compiled.preview
   return {
     ...compiled,
     admin: code?.admin ?? compiled.admin,
     ...(code?.access ? { access: code.access } : {}),
-    ...(code?.preview ? { preview: code.preview } : {}),
+    ...(preview ? { preview } : {}),
   }
 }
 
@@ -56,6 +57,7 @@ export async function registryFromDb(db: VulseDb): Promise<BlueprintRegistry> {
       ...(def.tree !== undefined ? { tree: def.tree } : {}),
       ...(def.maxDepth !== undefined ? { maxDepth: def.maxDepth } : {}),
       ...(def.drafts !== undefined ? { drafts: def.drafts } : {}),
+      ...(def.preview ? { preview: def.preview } : {}),
     }, code)
     reg.register(bp)
   }

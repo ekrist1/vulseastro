@@ -14,6 +14,7 @@ Vulse is an Astro-native, Cloudflare-hosted headless CMS. This is the user-facin
 - [Frontend](frontend.md) — wiring Vulse into your Astro project (Content Layer loader, runtime SDK, block renderer, auth components).
 - [Live preview](live-preview.md) — live editor preview and the saved-draft Preview button.
 - [Forms](forms.md) — form builder, submissions, spam protection, file uploads, async processing.
+- [Plugins](plugins.md) — native Vulse plugins for form, auth, CRM, email, and registration workflows.
 
 ## Reference
 

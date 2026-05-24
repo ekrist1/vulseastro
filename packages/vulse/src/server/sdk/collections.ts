@@ -1,5 +1,6 @@
 import type { VulseDb } from '../../core/db.js'
-import { DEFAULT_LOCALE, EntriesRepo, type EntryOrderBy, type EntryRow } from '../../core/repos/entries.js'
+import { readLocalesConfig } from '../../core/locales.js'
+import { EntriesRepo, type EntryOrderBy, type EntryRow } from '../../core/repos/entries.js'
 import { evaluate } from '../../core/access.js'
 import type { BlueprintRegistry } from '../../core/blueprints/registry.js'
 import type { AuthContext } from '../../core/blueprints/types.js'
@@ -30,6 +31,11 @@ function parseDate(v: Date | string | undefined): Date | undefined {
 export function collectionsSdk(db: VulseDb, reg: BlueprintRegistry) {
   const entries = new EntriesRepo(db)
 
+  async function resolveLocale(explicit?: string): Promise<string> {
+    if (explicit) return explicit
+    return (await readLocalesConfig(db)).defaultLocale
+  }
+
   async function gatedRows(
     name: string,
     audience: AuthContext['user'] | null,
@@ -56,7 +62,7 @@ export function collectionsSdk(db: VulseDb, reg: BlueprintRegistry) {
       const publishedAfter = parseDate(opts.publishedAfter)
       const publishedBefore = parseDate(opts.publishedBefore)
       return gatedRows(collection, opts.audience ?? null, {
-        locale: opts.locale ?? DEFAULT_LOCALE,
+        locale: await resolveLocale(opts.locale),
         ...(opts.limit !== undefined ? { limit: opts.limit } : {}),
         ...(opts.offset !== undefined ? { offset: opts.offset } : {}),
         ...(opts.createdBy !== undefined ? { createdBy: opts.createdBy } : {}),
@@ -69,7 +75,7 @@ export function collectionsSdk(db: VulseDb, reg: BlueprintRegistry) {
     findById: async (collection: string, id: string, opts: CollectionSdkOptions = {}) => {
       const bp = reg.get(collection)
       if (!bp) throw new Error(`Unknown collection: ${collection}`)
-      const r = await entries.findById(id, opts.locale ?? DEFAULT_LOCALE)
+      const r = await entries.findById(id, await resolveLocale(opts.locale))
       if (!r) return null
       const allowed = await evaluate(bp, 'read', {
         user: opts.audience ?? null,
@@ -80,7 +86,7 @@ export function collectionsSdk(db: VulseDb, reg: BlueprintRegistry) {
     findBySlug: async (collection: string, slug: string, opts: CollectionSdkOptions = {}) => {
       const bp = reg.get(collection)
       if (!bp) throw new Error(`Unknown collection: ${collection}`)
-      const r = await entries.findBySlug(collection, slug, opts.locale ?? DEFAULT_LOCALE)
+      const r = await entries.findBySlug(collection, slug, await resolveLocale(opts.locale))
       if (!r) return null
       const allowed = await evaluate(bp, 'read', {
         user: opts.audience ?? null,

@@ -3,6 +3,7 @@ import type { Auth } from '../better-auth.js'
 import type { VulseDb } from '../../core/db.js'
 import type { BlueprintRegistry } from '../../core/blueprints/registry.js'
 import { defineHandler } from '../handler.js'
+import { resolvePreviewPath } from '../../core/blueprints/preview-path.js'
 import { PreviewSessionsRepo } from '../../core/repos/preview-sessions.js'
 import { AccessDeniedError, NotFoundError } from '../../core/errors.js'
 
@@ -37,7 +38,7 @@ export function previewSessionsRoutes(db: VulseDb, auth: Auth, registry: Bluepri
         entryId: body.entryId ?? null,
         ...(body.locale !== undefined ? { locale: body.locale } : {}),
       })
-      const previewPath = bp.preview?.path ?? '/{slug}'
+      const previewPath = resolvePreviewPath(bp)
       return {
         id: row.id,
         previewUrl: buildPreviewUrl(url.origin, previewPath, row.slug, row.id),

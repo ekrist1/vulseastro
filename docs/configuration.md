@@ -58,23 +58,26 @@ Without `CF_IMAGES_*`, media previews fall back to R2-proxied URLs (`/api/vulse/
 Pass options to `vulse()` in `astro.config.mjs`:
 
 ```js
+import { defineConfig } from 'astro/config'
 import vulse from 'vulse/integration'
+import { spamFilterPlugin } from './src/vulse/plugins/spam-filter'
 
 export default defineConfig({
   output: 'server',
   integrations: [
     vulse({
       adminPath: '/admin',              // default
-      forms: {
-        onSubmit: async ({ form, payload, submission }) => { /* webhook, Slack, etc. */ },
-        onAfterProcess: async ({ form, submission }) => { /* runs after built-in actions */ },
-      },
+      plugins: [
+        spamFilterPlugin(),
+      ],
     }),
   ],
 })
 ```
 
-Form hooks run in the queue consumer, not the submit handler. See [`forms.md`](forms.md#integration-hooks).
+Use `plugins` for form, auth, CRM, email, and registration extension points.
+Some plugin hooks run in the queue consumer; hooks such as `form:beforeSubmit`
+run in the submit handler before storage. See [`plugins.md`](plugins.md).
 
 ## Runtime settings (stored in D1)
 
@@ -113,6 +116,7 @@ The `value` column is JSON, so values must be JSON-encoded (strings are double-q
 | Import | Purpose |
 |--------|---------|
 | `vulse` | Blueprint helpers (`defineCollection`, `z`, `blocks`, `media`, `ref`) |
+| `definePlugin` from `vulse` | Native plugin helper for form/auth hooks |
 | `vulse/integration` | Astro integration |
 | `vulse/loader` | Content Layer `vulseLoader()` |
 | `vulse/server` | Runtime SDK (`getRuntime`, `createSdk`, `getRuntimeEnv`, `createDb`, `registryForRequest`, `resolvePreviewContent`) |

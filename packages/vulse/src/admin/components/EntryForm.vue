@@ -293,6 +293,7 @@ onMounted(() => emitPreview())
       :field="f"
       :model-value="content[f.path]"
       :field-errors="fieldErrors"
+      :tree="tree"
       @update:modelValue="onFieldUpdate(f.path, $event)"
     />
 

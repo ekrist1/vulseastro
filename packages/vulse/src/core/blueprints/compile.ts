@@ -8,6 +8,8 @@ import type {
   NestedFieldDefinition,
   ReplicatorSetDefinition,
 } from './definition.js'
+import { LinkValueSchema } from './definition.js'
+import { selectOptionKeys } from './select-helpers.js'
 
 export interface CompileBlueprintOptions {
   sets?: Map<string, CompiledSet>
@@ -33,7 +35,7 @@ function compileField(
 
 function compileFieldBase(
   f: FieldDefinition | NestedFieldDefinition,
-  allowReplicator: boolean,
+  allowMetaFields: boolean,
   sets: Map<string, CompiledSet> | undefined,
 ): z.ZodTypeAny {
   let s: z.ZodTypeAny = z.never()
@@ -52,9 +54,12 @@ function compileFieldBase(
     case 'boolean':
       s = z.boolean()
       break
-    case 'select':
-      s = z.enum(f.ui.options as [string, ...string[]])
+    case 'select': {
+      const keys = selectOptionKeys(f.ui.options)
+      const enumSchema = z.enum(keys)
+      s = f.ui.multiple ? z.array(enumSchema) : enumSchema
       break
+    }
     case 'blocks': {
       const declaredSets = f.ui.sets
       const tag = declaredSets?.length
@@ -73,15 +78,42 @@ function compileFieldBase(
     case 'relationship':
       s = z.string().describe(`vulse:ref:${f.ui.to}`)
       break
+    case 'entry':
+      s = z.string().min(1).describe(`vulse:entry:${f.ui.collections.join(',')}`)
+      break
+    case 'entries': {
+      let arr = z.array(z.string().min(1))
+      if (f.ui.max !== undefined) arr = arr.max(f.ui.max)
+      const tag =
+        f.ui.max !== undefined
+          ? `vulse:entries:${f.ui.collections.join(',')}:${f.ui.max}`
+          : `vulse:entries:${f.ui.collections.join(',')}`
+      s = arr.describe(tag)
+      break
+    }
+    case 'link': {
+      const tag = f.ui.collections?.length
+        ? `vulse:link:${f.ui.collections.join(',')}`
+        : 'vulse:link'
+      s = LinkValueSchema.describe(tag)
+      break
+    }
     case 'asset':
       s = z.string().describe('vulse:media')
       break
     case 'replicator':
-      if (!allowReplicator) {
+      if (!allowMetaFields) {
         s = z.never()
         break
       }
       s = compileReplicatorField(f.ui.sets)
+      break
+    case 'grid':
+      if (!allowMetaFields) {
+        s = z.never()
+        break
+      }
+      s = compileGridField(f.ui)
       break
   }
   if (f.default !== undefined) s = s.default(f.default)
@@ -100,6 +132,13 @@ function compileReplicatorField(sets: ReplicatorSetDefinition[]): z.ZodTypeAny {
   if (schemas.length === 1) return z.array(schemas[0]!)
   const [first, second, ...rest] = schemas
   return z.array(z.discriminatedUnion('set', [first!, second!, ...rest]))
+}
+
+function compileGridField(ui: Extract<FieldDefinition['ui'], { kind: 'grid' }>): z.ZodTypeAny {
+  let arr = z.array(compileFieldObject(ui.fields))
+  if (ui.minRows !== undefined) arr = arr.min(ui.minRows)
+  if (ui.maxRows !== undefined) arr = arr.max(ui.maxRows)
+  return arr.describe('vulse:grid')
 }
 
 export function compileFieldObject(fields: NestedFieldDefinition[]): z.ZodObject<z.ZodRawShape> {

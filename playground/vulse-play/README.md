@@ -24,6 +24,10 @@ npx vulse seed:admin --email admin@example.com
 
 A random password is generated and printed once. Sign in at `/admin/login`.
 
+## Member sign-up (playground)
+
+Public sign-up is enabled via `VULSE_ALLOW_MEMBER_SIGNUP=true` in `wrangler.toml`. Create a member account at `/sign-up`, or disable sign-up in **Admin → Settings → Auth** and remove that var for production-like behavior.
+
 ## Iterating on changes to Vulse
 
 When you change something in `packages/vulse/src/`:

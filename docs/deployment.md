@@ -139,7 +139,7 @@ The handler is idempotent and safe to run more frequently if you prefer.
 
 ## Queue consumer (forms)
 
-Form submissions are stored synchronously, but notifications, webhooks, and the integration's `onSubmit` / `onAfterProcess` hooks run in a queue consumer:
+Form submissions are stored synchronously, but notifications, webhooks, and queued plugin hooks run in a queue consumer:
 
 ```ts
 // src/worker.ts

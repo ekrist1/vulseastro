@@ -1,0 +1,36 @@
+---
+import SiteLayout from '../layouts/SiteLayout.astro'
+import SignUpForm from 'vulse/client/components/SignUpForm.astro'
+
+const next = Astro.url.searchParams.get('next') ?? '/'
+---
+<SiteLayout title="Create account · Vulse Playground" description="Create a member account on the Vulse playground.">
+  <div class="auth-page">
+    <div class="auth-card">
+      <p class="hero__eyebrow">Account</p>
+      <h1 class="auth-card__title">Create account</h1>
+      <p class="auth-card__lead">Register as a member to unlock gated demo content.</p>
+
+      <SignUpForm redirectTo={next} class="auth-form">
+        <label class="auth-field">
+          <span class="auth-label">Name</span>
+          <input name="name" type="text" autocomplete="name" placeholder="Optional" />
+        </label>
+        <label class="auth-field">
+          <span class="auth-label">Email</span>
+          <input name="email" type="email" required autocomplete="email" />
+        </label>
+        <label class="auth-field">
+          <span class="auth-label">Password</span>
+          <input name="password" type="password" required autocomplete="new-password" minlength="8" />
+        </label>
+        <button type="submit" class="btn btn--primary auth-submit">Create account</button>
+      </SignUpForm>
+
+      <p class="auth-card__footer">
+        Already have an account?
+        <a href={`/sign-in?next=${encodeURIComponent(next)}`}>Sign in</a>
+      </p>
+    </div>
+  </div>
+</SiteLayout>

@@ -7,6 +7,7 @@ import { fieldDescriptorsFromBlueprint } from '../../../client/form-from-zod.js'
 import { getRuntime } from '../../../../server/runtime.js'
 import { getRuntimeEnv } from '../../../../server/env.js'
 import { readLocalesConfig } from '../../../../core/locales.js'
+import { resolvePreviewConfig } from '../../../../core/blueprints/preview-path.js'
 import { EntriesRepo } from '../../../../core/repos/entries.js'
 
 const env = getRuntimeEnv()
@@ -55,8 +56,9 @@ const initial = hasTranslation
     }
   : { status: 'draft' }
 
-const previewTemplate = bp.preview?.path ?? '/{slug}'
-const livePreviewEnabled = (bp.preview as { live?: boolean } | undefined)?.live !== false
+const previewConfig = resolvePreviewConfig(bp)
+const previewTemplate = previewConfig.path
+const livePreviewEnabled = previewConfig.live !== false
 const previewPath = previewTemplate.replace('{slug}', encodeURIComponent(row?.slug ?? ''))
 ---
 <AdminShell title={`Edit ${bp.label}`} activePath={`/admin/collections/${bp.name}`}>

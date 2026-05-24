@@ -3,7 +3,8 @@ import AdminShell from '../../components/AdminShell.astro'
 import BlueprintEditor from '../../components/BlueprintEditor.vue'
 
 const { handle } = Astro.params
+const isAdmin = (Astro.locals as { vulseUser?: { role?: string } }).vulseUser?.role === 'admin'
 ---
 <AdminShell title={handle ? `Schema: ${handle}` : 'New collection'} activePath={handle ? `/admin/schema/${handle}` : '/admin/schema/new'}>
-  <BlueprintEditor client:only="vue" handle={handle ?? null} />
+  <BlueprintEditor client:only="vue" handle={handle ?? null} is-admin={isAdmin} />
 </AdminShell>

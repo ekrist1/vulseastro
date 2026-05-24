@@ -1,16 +1,11 @@
-export interface FormEmailEnv {
-  EMAIL_FROM?: string
-  EMAIL_API_TOKEN?: string
-}
+import { sendEmail, type EmailEnv } from '../email.js'
+
+export type FormEmailEnv = EmailEnv
 
 export async function sendFormEmail(
   env: FormEmailEnv,
   input: { to: string; subject: string; body: string },
 ): Promise<void> {
-  if (!env.EMAIL_FROM || !env.EMAIL_API_TOKEN) {
-    throw new Error('email_not_configured')
-  }
-  // Placeholder: real Email Workers integration documented in README.
-  // Tests mock this module.
-  console.log(`[vulse-form-email] to=${input.to} subject=${input.subject}`)
+  const result = await sendEmail(env, input)
+  if (result === 'logged') throw new Error('email_not_configured')
 }

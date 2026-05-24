@@ -2,23 +2,60 @@
 interface Props { redirectTo?: string; class?: string }
 const { redirectTo = '/', class: cls } = Astro.props
 ---
-<form data-vulse-sign-up data-redirect={redirectTo} class={cls}>
+<form data-vulse-sign-up data-redirect={redirectTo} class={cls} novalidate>
+  <p data-vulse-auth-error class="vulse-auth-error" hidden role="alert"></p>
   <slot />
 </form>
 <script>
+  function authErrorMessage(status: number, body: unknown, kind: 'sign-in' | 'sign-up'): string {
+    const msg =
+      body && typeof body === 'object' && 'message' in body && typeof (body as { message: unknown }).message === 'string'
+        ? (body as { message: string }).message
+        : null
+    if (msg) return msg
+    if (status === 403 || status === 400) {
+      if (kind === 'sign-up') return 'Sign-up is not enabled. Ask an administrator to allow member registration.'
+    }
+    return kind === 'sign-in' ? 'Sign in failed. Check your email and password.' : 'Could not create your account. Please try again.'
+  }
+
   document.querySelectorAll('form[data-vulse-sign-up]').forEach((form) => {
+    const errorEl = form.querySelector('[data-vulse-auth-error]') as HTMLElement | null
+    const showError = (message: string) => {
+      if (!errorEl) return
+      errorEl.textContent = message
+      errorEl.hidden = false
+    }
+    const clearError = () => {
+      if (!errorEl) return
+      errorEl.textContent = ''
+      errorEl.hidden = true
+    }
+
     form.addEventListener('submit', async (e) => {
       e.preventDefault()
+      clearError()
       const f = new FormData(form as HTMLFormElement)
       const res = await fetch('/api/auth/sign-up/email', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ email: f.get('email'), password: f.get('password'), name: f.get('name') ?? f.get('email') }),
+        body: JSON.stringify({
+          email: f.get('email'),
+          password: f.get('password'),
+          name: f.get('name') ?? f.get('email'),
+        }),
         credentials: 'same-origin',
       })
-      const event = new CustomEvent(res.ok ? 'vulse:sign-up:success' : 'vulse:sign-up:error', { detail: { status: res.status } })
+      const body = await res.json().catch(() => null)
+      const event = new CustomEvent(res.ok ? 'vulse:sign-up:success' : 'vulse:sign-up:error', {
+        detail: { status: res.status, body },
+      })
       form.dispatchEvent(event)
-      if (res.ok) window.location.href = (form as HTMLFormElement).dataset.redirect || '/'
+      if (res.ok) {
+        window.location.href = (form as HTMLFormElement).dataset.redirect || '/'
+        return
+      }
+      showError(authErrorMessage(res.status, body, 'sign-up'))
     })
   })
 </script>

@@ -7,6 +7,8 @@ export interface RuntimeEnv {
   BETTER_AUTH_SECRET: string
   BETTER_AUTH_URL?: string
   VULSE_PREVIEW_SECRET?: string
+  /** When `"true"`, enables public sign-up (overrides DB setting). Useful for local playgrounds. */
+  VULSE_ALLOW_MEMBER_SIGNUP?: string
   CF_IMAGES_ACCOUNT_HASH?: string
   CF_IMAGES_TOKEN?: string
   EMAIL_FROM?: string

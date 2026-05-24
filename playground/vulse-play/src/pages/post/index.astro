@@ -1,0 +1,25 @@
+---
+import { getCollection } from "astro:content";
+import SiteLayout from "../../layouts/SiteLayout.astro";
+
+const entries = (await getCollection("post")).sort((a, b) =>
+  String(a.data.title ?? a.data.slug ?? "").localeCompare(
+    String(b.data.title ?? b.data.slug ?? ""),
+  ),
+);
+---
+
+<SiteLayout title="Posts">
+  <h1>Posts</h1>
+  <ul>
+    {
+      entries.map((entry) => (
+        <li>
+          <a href={`/post/${entry.data.slug}`}>
+            {String(entry.data.title ?? entry.data.slug)}
+          </a>
+        </li>
+      ))
+    }
+  </ul>
+</SiteLayout>

@@ -206,6 +206,7 @@ function stripRenames(def: BlueprintDefinitionWithRenames): BlueprintDefinition 
     ...(def.tree !== undefined ? { tree: def.tree } : {}),
     ...(def.maxDepth !== undefined ? { maxDepth: def.maxDepth } : {}),
     ...(def.drafts !== undefined ? { drafts: def.drafts } : {}),
+    ...(def.preview !== undefined ? { preview: def.preview } : {}),
     fields: def.fields.map(({ previousName: _previousName, ...rest }) => rest),
   }
 }

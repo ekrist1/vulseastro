@@ -3,9 +3,9 @@ import { FormsRepo, SubmissionsRepo } from '../../core/repos/forms.js'
 import { renderTemplate } from './templates.js'
 import { sendFormEmail } from './email.js'
 import { sendFormWebhook } from './webhook.js'
-import { getFormHooks } from './hooks.js'
 import type { FormProcessMessage } from './queue.js'
 import type { FormEmailEnv } from './email.js'
+import { runFormAfterProcessHooks, runFormBeforeProcessHooks } from '../plugins.js'
 
 export interface ProcessEnv extends FormEmailEnv {
   DB: D1Database
@@ -26,12 +26,9 @@ export async function processSubmission(env: ProcessEnv, submissionId: string): 
 
   const def = formRow.definition
   const ctx = { form: def, submission, payload: submission.payload }
-  const hooks = getFormHooks()
 
   try {
-    if (hooks.onSubmit) {
-      await hooks.onSubmit({ ...ctx, env: env as unknown as Record<string, unknown> })
-    }
+    await runFormBeforeProcessHooks(ctx, env as unknown as Record<string, unknown>)
 
     const notifyEmails = def.settings.notifyEmails ?? []
     for (const email of notifyEmails) {
@@ -76,9 +73,7 @@ export async function processSubmission(env: ProcessEnv, submissionId: string): 
       }
     }
 
-    if (hooks.onAfterProcess) {
-      await hooks.onAfterProcess({ ...ctx, env: env as unknown as Record<string, unknown> })
-    }
+    await runFormAfterProcessHooks(ctx, env as unknown as Record<string, unknown>)
 
     await submissions.updateStatus(submissionId, 'processed')
   } catch (err) {

@@ -16,6 +16,7 @@ bucket_name = "vulse-media"
 
 [vars]
 BETTER_AUTH_SECRET = "dev-secret-change-me-in-production-32chars"
+VULSE_ALLOW_MEMBER_SIGNUP = "true"
 
 # vulse:form-queue — async submission processing (notify/confirmation emails, webhooks)
 # [[queues.producers]]

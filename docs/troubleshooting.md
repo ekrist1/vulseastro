@@ -143,7 +143,7 @@ export default {
 }
 ```
 
-Without `FORM_QUEUE`, submissions still land in D1 — only the async side-effects (emails, webhooks, `onSubmit` hook) are skipped.
+Without `FORM_QUEUE`, submissions still land in D1 — only the async side-effects (emails, webhooks, queued plugin hooks) are skipped.
 
 ## i18n / locales
 

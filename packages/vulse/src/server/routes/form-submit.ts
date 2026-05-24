@@ -6,8 +6,14 @@ import { insertUniqueValues } from '../../core/forms/unique.js'
 import { NotFoundError, ValidationError } from '../../core/errors.js'
 import { fail, ok } from '../envelope.js'
 import { enqueueFormProcess } from '../forms/queue.js'
+import { runFormAfterSubmitHooks, runFormBeforeSubmitHooks } from '../plugins.js'
 
-export function formSubmitRoutes(db: VulseDb, queue?: Queue) {
+export interface FormSubmitRouteOptions {
+  queue?: Queue
+  env?: Record<string, unknown>
+}
+
+export function formSubmitRoutes(db: VulseDb, options: FormSubmitRouteOptions = {}) {
   const forms = new FormsRepo(db)
   const submissions = new SubmissionsRepo(db)
   const drafts = new FormUploadDraftsRepo(db)
@@ -56,7 +62,25 @@ export function formSubmitRoutes(db: VulseDb, queue?: Queue) {
 
         const def = form.definition
         const honeypot = def.settings.honeypotField ?? '_hp'
-        const body = await request.json().catch(() => ({})) as Record<string, unknown>
+        let body = await request.json().catch(() => ({})) as Record<string, unknown>
+        const ip = request.headers.get('cf-connecting-ip')
+          ?? request.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
+          ?? '0.0.0.0'
+
+        const beforeSubmit = await runFormBeforeSubmitHooks({
+          request,
+          form: def,
+          payload: body,
+          ip,
+          headers: request.headers,
+        }, options.env)
+        if (beforeSubmit.action === 'drop') {
+          return ok({
+            ok: true,
+            message: def.settings.successMessage ?? 'Thank you!',
+          })
+        }
+        body = beforeSubmit.payload
 
         const hp = body[honeypot]
         if (hp !== undefined && hp !== null && String(hp).length > 0) {
@@ -66,9 +90,6 @@ export function formSubmitRoutes(db: VulseDb, queue?: Queue) {
           })
         }
 
-        const ip = request.headers.get('cf-connecting-ip')
-          ?? request.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
-          ?? '0.0.0.0'
         const rate = def.settings.rateLimit ?? { maxPerIp: 10, windowSec: 3600 }
         const rl = await checkRateLimit(db, handle, hashIp(ip), rate)
         if (!rl.allowed) {
@@ -121,7 +142,15 @@ export function formSubmitRoutes(db: VulseDb, queue?: Queue) {
           throw err
         }
 
-        await enqueueFormProcess(queue, submission.id)
+        await enqueueFormProcess(options.queue, submission.id)
+        await runFormAfterSubmitHooks({
+          request,
+          form: def,
+          payload,
+          submission,
+          ip,
+          headers: request.headers,
+        }, options.env)
 
         if (def.settings.redirectTo) {
           return ok({ ok: true, redirect: def.settings.redirectTo })

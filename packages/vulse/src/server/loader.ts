@@ -1,5 +1,6 @@
 import type { Loader } from 'astro/loaders'
 import { createDb } from '../core/db.js'
+import { readLocalesConfig } from '../core/locales.js'
 import { EntriesRepo } from '../core/repos/entries.js'
 
 export interface VulseLoaderOptions {
@@ -26,14 +27,15 @@ export function vulseLoader(opts: VulseLoaderOptions): Loader {
       const includeDrafts = (ctx as { _vulseIncludeDrafts?: boolean })._vulseIncludeDrafts ?? false
       const db = createDb(resolveBinding(ctx))
       const repo = new EntriesRepo(db)
+      const locale = opts.locale ?? (await readLocalesConfig(db)).defaultLocale
       const rows = await repo.list({
         collection: opts.collection,
+        locale,
         ...(includeDrafts ? {} : { status: 'published' }),
       })
 
       ctx.store.clear()
       for (const r of rows) {
-        if (opts.locale && r.locale !== opts.locale) continue
         await ctx.store.set({
           id: r.id,
           digest: `v${r.version}`,

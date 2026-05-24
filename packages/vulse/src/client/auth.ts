@@ -16,8 +16,9 @@ async function call<T>(path: string, body?: unknown, method = 'POST'): Promise<T
 export const auth = {
   signIn: (input: SignInInput) => call<{ data: unknown }>('/api/auth/sign-in/email', input),
   signUp: (input: SignUpInput) => call<{ data: unknown }>('/api/auth/sign-up/email', input),
-  signOut: () => call<unknown>('/api/auth/sign-out'),
-  requestPasswordReset: (email: string) => call<unknown>('/api/auth/forget-password', { email, redirectTo: '/reset-password' }),
+  signOut: () => call<unknown>('/api/auth/sign-out', {}),
+  requestPasswordReset: (email: string, redirectTo = '/reset-password') =>
+    call<unknown>('/api/auth/request-password-reset', { email, redirectTo }),
   resetPassword: (token: string, password: string) => call<unknown>('/api/auth/reset-password', { token, newPassword: password }),
   session: async (): Promise<Session> => {
     const res = await fetch('/api/auth/get-session', { credentials: 'same-origin' })

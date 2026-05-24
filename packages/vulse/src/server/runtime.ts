@@ -53,6 +53,8 @@ export async function getRuntime(env: RuntimeEnv, registry: BlueprintRegistry, b
   const auth = await createAuth(db, {
     baseURL: env.BETTER_AUTH_URL ?? baseURL,
     secret: env.BETTER_AUTH_SECRET,
+    ...(env.VULSE_ALLOW_MEMBER_SIGNUP === 'true' ? { allowSignUp: true } : {}),
+    env: env as unknown as Record<string, unknown>,
   })
   if (!env.BUCKET) throw new Error('Vulse: R2 binding "BUCKET" is missing. Add it to wrangler.toml.')
   const cfImages = {
@@ -77,7 +79,10 @@ export async function getRuntime(env: RuntimeEnv, registry: BlueprintRegistry, b
       preview: previewRoutes(auth, previewSecret(env)),
       previewSessions: previewSessionsRoutes(db, auth, registry),
       forms: formsRoutes(db, auth),
-      formSubmit: formSubmitRoutes(db, env.FORM_QUEUE),
+      formSubmit: formSubmitRoutes(db, {
+        ...(env.FORM_QUEUE ? { queue: env.FORM_QUEUE } : {}),
+        env: env as unknown as Record<string, unknown>,
+      }),
       formUpload: formUploadRoutes(db, { bucket: env.BUCKET }),
       globals: globalsRoutes(db, auth),
       globalsPublic: globalsPublicRoutes(db),

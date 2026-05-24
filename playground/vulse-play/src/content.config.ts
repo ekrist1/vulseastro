@@ -14,4 +14,16 @@ export const collections = {
       updatedAt: z.string().optional(),
     }),
   }),
+  post: defineCollection({
+    loader: vulseLoader({ collection: 'post' }),
+    schema: z.object({
+      title: z.string().optional(),
+      slug: z.string().optional(),
+      body: z.any().optional(),
+      id: z.string().optional(),
+      status: z.enum(['draft', 'published']).optional(),
+      publishedAt: z.string().nullable().optional(),
+      updatedAt: z.string().optional(),
+    }),
+  }),
 }

@@ -84,7 +84,7 @@ Files land in R2 as a regular media record. They are kept under a "draft" expiry
 
 ## Async processing (`FORM_QUEUE`)
 
-The submit handler returns immediately. Notification emails, webhooks, and the `onSubmit` / `onAfterProcess` integration hooks run in a Cloudflare Queue consumer.
+The submit handler returns immediately. Notification emails, webhooks, and queued plugin hooks run in a Cloudflare Queue consumer.
 
 Add the queue to `wrangler.toml`:
 
@@ -114,24 +114,12 @@ export default {
 
 Without a `FORM_QUEUE` binding, submissions are still stored in D1 — but the async side-effects don't run automatically. You can re-process manually by reading rows from `vulse_form_submissions` (e.g. in a one-off worker, or your own cron).
 
-## Integration hooks
+## Plugin hooks
 
-Pass hooks to the `vulse()` integration in `astro.config.mjs`:
-
-```ts
-vulse({
-  forms: {
-    onSubmit: async ({ form, payload, submission }) => {
-      // Runs first. Use for CRM / webhook / Slack notifications.
-    },
-    onAfterProcess: async ({ form, submission }) => {
-      // Runs after the built-in actions (notifications, etc.).
-    },
-  },
-})
-```
-
-Hooks run inside the queue consumer, not the submit handler. They have full access to `env` (D1, R2, secrets) via the queue context.
+Use the plugin system in [`plugins.md`](plugins.md) for custom form behavior.
+`form:beforeSubmit` can reject or silently drop spam before the submission is
+stored. `form:beforeProcess` and `form:afterProcess` run inside the queue
+consumer and have access to `env` (D1, R2, secrets) via the hook context.
 
 ## REST endpoints
 
@@ -178,28 +166,40 @@ The renderer uploads the file first, then submits the JSON with the resulting me
 
 ```ts
 // astro.config.mjs
+import { definePlugin } from 'vulse'
+
 vulse({
-  forms: {
-    onSubmit: async ({ form, submission }) => {
-      if (form.handle !== 'contact') return
-      await fetch('https://hooks.example.com/contact', {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify(submission.payload),
-      })
-    },
-  },
+  plugins: [
+    definePlugin({
+      id: 'contact-webhook',
+      hooks: {
+        'form:beforeProcess': async ({ form, submission }) => {
+          if (form.handle !== 'contact') return
+          await fetch('https://hooks.example.com/contact', {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify(submission.payload),
+          })
+        },
+      },
+    }),
+  ],
 })
 ```
 
 For Slack:
 
 ```ts
-async ({ form, submission, env }) => {
-  if (!env.SLACK_WEBHOOK) return
-  await fetch(env.SLACK_WEBHOOK, {
-    method: 'POST',
-    body: JSON.stringify({ text: `New ${form.label}: ${submission.payload.email}` }),
-  })
-}
+definePlugin({
+  id: 'slack-form-notify',
+  hooks: {
+    'form:beforeProcess': async ({ form, submission }, ctx) => {
+      if (typeof ctx.env.SLACK_WEBHOOK !== 'string') return
+      await fetch(ctx.env.SLACK_WEBHOOK, {
+        method: 'POST',
+        body: JSON.stringify({ text: `New ${form.label}: ${submission.payload.email}` }),
+      })
+    },
+  },
+})
 ```

@@ -1,35 +1,35 @@
 ---
+import SiteLayout from '../layouts/SiteLayout.astro'
 import SignInForm from 'vulse/client/components/SignInForm.astro'
-import SignUpForm from 'vulse/client/components/SignUpForm.astro'
 
 const next = Astro.url.searchParams.get('next') ?? '/'
 ---
-<html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <title>Sign in</title>
-    <style>
-      body { font-family: system-ui, sans-serif; max-width: 24rem; margin: 4rem auto; padding: 0 1rem; }
-      form { display: grid; gap: 0.75rem; margin-bottom: 2rem; }
-      input { padding: 0.5rem 0.75rem; border: 1px solid #d4d4d8; border-radius: 0.375rem; }
-      button { padding: 0.5rem 1rem; border-radius: 0.375rem; border: 1px solid #d4d4d8; background: #fff; cursor: pointer; }
-      h2 { font-size: 1.125rem; margin: 0 0 0.75rem; }
-    </style>
-  </head>
-  <body>
-    <h1>Sign in</h1>
-    <SignInForm redirectTo={next}>
-      <input name="email" type="email" required placeholder="Email" />
-      <input name="password" type="password" required placeholder="Password" />
-      <button type="submit">Sign in</button>
-    </SignInForm>
+<SiteLayout title="Sign in · Vulse Playground" description="Sign in to access member-only content.">
+  <div class="auth-page">
+    <div class="auth-card">
+      <p class="hero__eyebrow">Account</p>
+      <h1 class="auth-card__title">Sign in</h1>
+      <p class="auth-card__lead">Access member-only recipes and other gated content.</p>
 
-    <h2>Create account</h2>
-    <SignUpForm redirectTo={next}>
-      <input name="name" type="text" placeholder="Name" />
-      <input name="email" type="email" required placeholder="Email" />
-      <input name="password" type="password" required placeholder="Password" />
-      <button type="submit">Sign up</button>
-    </SignUpForm>
-  </body>
-</html>
+      <SignInForm redirectTo={next} class="auth-form">
+        <label class="auth-field">
+          <span class="auth-label">Email</span>
+          <input name="email" type="email" required autocomplete="email" />
+        </label>
+        <label class="auth-field">
+          <span class="auth-label">Password</span>
+          <input name="password" type="password" required autocomplete="current-password" />
+        </label>
+        <button type="submit" class="btn btn--primary auth-submit">Sign in</button>
+      </SignInForm>
+
+      <p class="auth-card__footer auth-card__footer--split">
+        <a href={`/forgot-password?next=${encodeURIComponent(next)}`}>Forgot password?</a>
+        <span>
+          No account yet?
+          <a href={`/sign-up?next=${encodeURIComponent(next)}`}>Create one</a>
+        </span>
+      </p>
+    </div>
+  </div>
+</SiteLayout>

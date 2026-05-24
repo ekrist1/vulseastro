@@ -1,5 +1,20 @@
 import { z } from 'astro/zod'
 
+export const SelectOptionSchema = z.union([
+  z.string().min(1),
+  z.object({ key: z.string().min(1), label: z.string().min(1) }),
+])
+
+export const LinkValueSchema = z.discriminatedUnion('type', [
+  z.object({ type: z.literal('url'), url: z.string().min(1) }),
+  z.object({
+    type: z.literal('entry'),
+    entryId: z.string().min(1),
+    collection: z.string().min(1),
+  }),
+  z.object({ type: z.literal('first-child') }),
+])
+
 const textFieldUiSchema = z.object({ kind: z.literal('text') })
 const textareaFieldUiSchema = z.object({ kind: z.literal('textarea') })
 const blocksFieldUiSchema = z.object({
@@ -10,11 +25,27 @@ const dateFieldUiSchema = z.object({ kind: z.literal('date') })
 const booleanFieldUiSchema = z.object({ kind: z.literal('boolean') })
 const selectFieldUiSchema = z.object({
   kind: z.literal('select'),
-  options: z.array(z.string().min(1)).min(1),
+  options: z.array(SelectOptionSchema).min(1),
+  multiple: z.boolean().optional(),
+  placeholder: z.string().optional(),
+  clearable: z.boolean().optional(),
 })
 const relationshipFieldUiSchema = z.object({
   kind: z.literal('relationship'),
   to: z.string().min(1),
+})
+const entryFieldUiSchema = z.object({
+  kind: z.literal('entry'),
+  collections: z.array(z.string().min(1)).min(1),
+})
+const entriesFieldUiSchema = z.object({
+  kind: z.literal('entries'),
+  collections: z.array(z.string().min(1)).min(1),
+  max: z.number().int().positive().optional(),
+})
+const linkFieldUiSchema = z.object({
+  kind: z.literal('link'),
+  collections: z.array(z.string().min(1)).optional(),
 })
 const assetFieldUiSchema = z.object({ kind: z.literal('asset') })
 
@@ -26,6 +57,9 @@ const nonReplicatorFieldUiSchemas = [
   booleanFieldUiSchema,
   selectFieldUiSchema,
   relationshipFieldUiSchema,
+  entryFieldUiSchema,
+  entriesFieldUiSchema,
+  linkFieldUiSchema,
   assetFieldUiSchema,
 ] as const
 
@@ -58,7 +92,20 @@ const replicatorFieldUiSchema = z.object({
   sets: z.array(ReplicatorSetSchema).min(1),
 })
 
-const fieldUiSchemas = [...nonReplicatorFieldUiSchemas, replicatorFieldUiSchema] as const
+const gridFieldUiSchema = z.object({
+  kind: z.literal('grid'),
+  fields: z.array(NestedFieldDefinitionSchema).min(1),
+  minRows: z.number().int().nonnegative().optional(),
+  maxRows: z.number().int().positive().optional(),
+  mode: z.enum(['table', 'stacked']).optional(),
+  addLabel: z.string().optional(),
+})
+
+const fieldUiSchemas = [
+  ...nonReplicatorFieldUiSchemas,
+  replicatorFieldUiSchema,
+  gridFieldUiSchema,
+] as const
 
 export const FieldUiSchema = z.discriminatedUnion('kind', fieldUiSchemas)
 
@@ -71,6 +118,16 @@ export const FieldDefinitionSchema = z.object({
   validation: FieldValidationSchema,
 })
 
+export const PreviewDefinitionSchema = z.object({
+  path: z
+    .string()
+    .min(1)
+    .refine((p) => p.startsWith('/'), 'path must start with /')
+    .refine((p) => p.includes('{slug}'), 'path must include {slug}'),
+  rootSelector: z.string().min(1).optional(),
+  live: z.boolean().optional(),
+})
+
 const BlueprintDefinitionObjectSchema = z.object({
   handle: z.string().regex(/^[a-z][a-z0-9_-]*$/),
   label: z.string().min(1),
@@ -78,6 +135,7 @@ const BlueprintDefinitionObjectSchema = z.object({
   tree: z.boolean().optional(),
   maxDepth: z.number().int().positive().optional(),
   drafts: z.boolean().optional(),
+  preview: PreviewDefinitionSchema.optional(),
   fields: z.array(FieldDefinitionSchema).min(1),
 })
 
@@ -104,11 +162,14 @@ function checkBlueprintConstraints(
 export const BlueprintDefinitionSchema =
   BlueprintDefinitionObjectSchema.superRefine(checkBlueprintConstraints)
 
+export type SelectOption = z.infer<typeof SelectOptionSchema>
+export type LinkValue = z.infer<typeof LinkValueSchema>
 export type NonReplicatorFieldUi = z.infer<typeof NonReplicatorFieldUiSchema>
 export type NestedFieldDefinition = z.infer<typeof NestedFieldDefinitionSchema>
 export type ReplicatorSetDefinition = z.infer<typeof ReplicatorSetSchema>
 export type FieldUi = z.infer<typeof FieldUiSchema>
 export type FieldDefinition = z.infer<typeof FieldDefinitionSchema>
+export type PreviewDefinition = z.infer<typeof PreviewDefinitionSchema>
 export type BlueprintDefinition = z.infer<typeof BlueprintDefinitionSchema>
 
 export const FieldDefinitionWithRenameSchema = FieldDefinitionSchema.extend({

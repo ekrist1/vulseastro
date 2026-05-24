@@ -19,8 +19,10 @@ import {
   generateContentConfig,
   scaffoldCliCommand,
 } from '../../scaffold/collection.js'
+import { formatSelectOptionsText, parseSelectOptionsText } from '../../core/blueprints/select-helpers.js'
+import { defaultPreviewPath } from '../../core/blueprints/preview-path.js'
 
-const props = defineProps<{ handle: string | null }>()
+const props = defineProps<{ handle: string | null; isAdmin?: boolean }>()
 const { sets, hydrate: hydrateSets } = useSets()
 const blueprintList = ref<BlueprintDefinition[]>([])
 
@@ -44,6 +46,14 @@ type EditorFieldUi =
   | {
       kind: 'replicator';
       sets: EditorReplicatorSet[];
+    }
+  | {
+      kind: 'grid';
+      fields: EditorNestedField[];
+      minRows?: number;
+      maxRows?: number;
+      mode?: 'table' | 'stacked';
+      addLabel?: string;
     };
 
 interface EditorField extends Omit<FieldDefinition, 'ui'> {
@@ -86,6 +96,10 @@ const singleton = ref(false);
 const tree = ref(false);
 const drafts = ref(false);
 const maxDepth = ref<number | null>(null);
+const previewPath = ref('');
+const previewRootSelector = ref('');
+const previewLive = ref(true);
+const previewPathTouched = ref(false);
 const fields = reactive<EditorField[]>([]);
 const expandedIndex = ref<number | null>(null);
 const expandedReplicatorSets = reactive<Set<string>>(new Set());
@@ -188,10 +202,20 @@ const scaffoldIndexRoute = ref('')
 const scaffoldOpen = ref(true)
 const copyNotice = ref<string | null>(null)
 
+function syncPreviewPathFromHandle() {
+  if (previewPathTouched.value) return
+  previewPath.value = defaultPreviewPath(handle.value || 'collection')
+}
+
+function onPreviewPathInput() {
+  previewPathTouched.value = true
+}
+
 function syncScaffoldRoutes() {
   const defaults = defaultScaffoldRoutes(handle.value || 'collection')
   scaffoldShowRoute.value = defaults.showRoute
   scaffoldIndexRoute.value = defaults.indexRoute
+  syncPreviewPathFromHandle()
 }
 
 const scaffoldInput = computed(() => ({
@@ -224,6 +248,10 @@ watch(label, (v) => {
   }
 });
 
+watch(handle, () => {
+  if (isCreate.value) syncScaffoldRoutes()
+});
+
 async function load() {
   for (const k of Object.keys(errors)) delete errors[k];
   fields.splice(0, fields.length);
@@ -234,8 +262,13 @@ async function load() {
     tree.value = false;
     drafts.value = false;
     maxDepth.value = null;
+    previewPath.value = defaultPreviewPath('');
+    previewRootSelector.value = '';
+    previewLive.value = true;
+    previewPathTouched.value = false;
     handleLocked.value = false;
     originalDrafts.value = false;
+    syncScaffoldRoutes();
     return;
   }
   const bp = await adminApi.get<BlueprintDefinition>(`/api/vulse/blueprints/${props.handle}`)
@@ -245,6 +278,16 @@ async function load() {
   tree.value = bp.tree ?? false;
   drafts.value = bp.drafts ?? false;
   maxDepth.value = bp.maxDepth ?? null;
+  if (bp.preview) {
+    previewPath.value = bp.preview.path
+    previewRootSelector.value = bp.preview.rootSelector ?? ''
+    previewLive.value = bp.preview.live !== false
+  } else {
+    previewPath.value = defaultPreviewPath(bp.handle)
+    previewRootSelector.value = ''
+    previewLive.value = true
+  }
+  previewPathTouched.value = true;
   handleLocked.value = true;
   originalDrafts.value = drafts.value;
   for (const f of bp.fields) {
@@ -295,9 +338,13 @@ function setKind(i: number, kind: FieldUi['kind']) {
   const f = fields[i]!;
   if (kind === 'select') f.ui = { kind, options: [] };
   else if (kind === 'relationship') f.ui = { kind, to: '' };
+  else if (kind === 'entry') f.ui = { kind, collections: [] };
+  else if (kind === 'entries') f.ui = { kind, collections: [] };
+  else if (kind === 'link') f.ui = { kind, collections: [] };
   else if (kind === 'replicator') f.ui = { kind, sets: [] };
+  else if (kind === 'grid') f.ui = { kind, fields: [], mode: 'table' };
   else f.ui = { kind };
-  if (kind === 'blocks') expandedIndex.value = i;
+  if (kind === 'blocks' || kind === 'grid') expandedIndex.value = i;
 }
 
 function setNestedKind(
@@ -313,7 +360,65 @@ function setNestedKind(
   if (!nested) return;
   if (kind === 'select') nested.ui = { kind, options: [] };
   else if (kind === 'relationship') nested.ui = { kind, to: '' };
+  else if (kind === 'entry') nested.ui = { kind, collections: [] };
+  else if (kind === 'entries') nested.ui = { kind, collections: [] };
+  else if (kind === 'link') nested.ui = { kind, collections: [] };
   else nested.ui = { kind };
+}
+
+function setGridNestedKind(fieldIndex: number, nestedIndex: number, kind: NonReplicatorFieldUi['kind']) {
+  const field = fields[fieldIndex];
+  if (!field || field.ui.kind !== 'grid') return;
+  const nested = field.ui.fields[nestedIndex];
+  if (!nested) return;
+  if (kind === 'select') nested.ui = { kind, options: [] };
+  else if (kind === 'relationship') nested.ui = { kind, to: '' };
+  else if (kind === 'entry') nested.ui = { kind, collections: [] };
+  else if (kind === 'entries') nested.ui = { kind, collections: [] };
+  else if (kind === 'link') nested.ui = { kind, collections: [] };
+  else nested.ui = { kind };
+}
+
+function updateSelectUi(
+  ui: Extract<NonReplicatorFieldUi, { kind: 'select' }>,
+  text: string,
+): Extract<NonReplicatorFieldUi, { kind: 'select' }> {
+  return {
+    kind: 'select',
+    options: parseSelectOptionsText(text),
+    ...(ui.multiple ? { multiple: true } : {}),
+    ...(ui.placeholder ? { placeholder: ui.placeholder } : {}),
+    ...(ui.clearable ? { clearable: true } : {}),
+  };
+}
+
+function toggleCollection(
+  ui: { collections?: string[] },
+  handle: string,
+  checked: boolean,
+) {
+  const current = ui.collections ?? [];
+  ui.collections = checked
+    ? [...current, handle]
+    : current.filter((c) => c !== handle);
+}
+
+function addGridColumn(fieldIndex: number) {
+  const field = fields[fieldIndex];
+  if (!field || field.ui.kind !== 'grid') return;
+  field.ui.fields.push({
+    name: '',
+    label: '',
+    ui: { kind: 'text' },
+    optional: false,
+    previousName: null,
+  });
+}
+
+function removeGridColumn(fieldIndex: number, nestedIndex: number) {
+  const field = fields[fieldIndex];
+  if (!field || field.ui.kind !== 'grid') return;
+  field.ui.fields.splice(nestedIndex, 1);
 }
 
 function updateBlocksSets(fieldIndex: number, handles: string[]) {
@@ -517,35 +622,47 @@ async function confirmRemoval() {
 }
 
 function toEditorField(field: FieldDefinition): EditorField {
-  if (field.ui.kind !== 'replicator') {
-    return {
-      name: field.name,
-      ...(field.label !== undefined ? { label: field.label } : {}),
-      ui: field.ui,
-      optional: field.optional,
-      ...(field.default !== undefined ? { default: field.default } : {}),
-      ...(field.validation ? { validation: field.validation } : {}),
-      previousName: field.name,
-      nameTouched: true,
-    };
-  }
-
-  return {
+  const base = {
     name: field.name,
     ...(field.label !== undefined ? { label: field.label } : {}),
-    previousName: field.name,
-    nameTouched: true,
     optional: field.optional,
     ...(field.default !== undefined ? { default: field.default } : {}),
     ...(field.validation ? { validation: field.validation } : {}),
-    ui: {
-      kind: 'replicator',
-      sets: field.ui.sets.map((set) => ({
-        name: set.name,
-        ...(set.label !== undefined ? { label: set.label } : {}),
-        previousName: set.name,
-        nameTouched: true,
-        fields: set.fields.map((nested) => ({
+    previousName: field.name,
+    nameTouched: true,
+  };
+
+  if (field.ui.kind === 'replicator') {
+    return {
+      ...base,
+      ui: {
+        kind: 'replicator',
+        sets: field.ui.sets.map((set) => ({
+          name: set.name,
+          ...(set.label !== undefined ? { label: set.label } : {}),
+          previousName: set.name,
+          nameTouched: true,
+          fields: set.fields.map((nested) => ({
+            name: nested.name,
+            ...(nested.label !== undefined ? { label: nested.label } : {}),
+            ui: nested.ui,
+            optional: nested.optional,
+            ...(nested.default !== undefined ? { default: nested.default } : {}),
+            ...(nested.validation ? { validation: nested.validation } : {}),
+            previousName: nested.name,
+            nameTouched: true,
+          })),
+        })),
+      },
+    };
+  }
+
+  if (field.ui.kind === 'grid') {
+    return {
+      ...base,
+      ui: {
+        kind: 'grid',
+        fields: field.ui.fields.map((nested) => ({
           name: nested.name,
           ...(nested.label !== undefined ? { label: nested.label } : {}),
           ui: nested.ui,
@@ -555,8 +672,17 @@ function toEditorField(field: FieldDefinition): EditorField {
           previousName: nested.name,
           nameTouched: true,
         })),
-      })),
-    },
+        ...(field.ui.minRows !== undefined ? { minRows: field.ui.minRows } : {}),
+        ...(field.ui.maxRows !== undefined ? { maxRows: field.ui.maxRows } : {}),
+        ...(field.ui.mode ? { mode: field.ui.mode } : {}),
+        ...(field.ui.addLabel ? { addLabel: field.ui.addLabel } : {}),
+      },
+    };
+  }
+
+  return {
+    ...base,
+    ui: field.ui,
   };
 }
 
@@ -587,6 +713,15 @@ function stripEditorField(field: EditorField): Record<string, unknown> {
         fields: set.fields.map(stripNestedEditorField),
       })),
     };
+  } else if (field.ui.kind === 'grid') {
+    out.ui = {
+      kind: 'grid',
+      fields: field.ui.fields.map(stripNestedEditorField),
+      ...(field.ui.minRows !== undefined ? { minRows: field.ui.minRows } : {}),
+      ...(field.ui.maxRows !== undefined ? { maxRows: field.ui.maxRows } : {}),
+      ...(field.ui.mode ? { mode: field.ui.mode } : {}),
+      ...(field.ui.addLabel ? { addLabel: field.ui.addLabel } : {}),
+    };
   } else {
     out.ui = field.ui;
   }
@@ -613,6 +748,15 @@ async function save() {
       ...(tree.value ? { tree: true } : {}),
       ...(tree.value && maxDepth.value !== null && maxDepth.value > 0 ? { maxDepth: maxDepth.value } : {}),
       ...(drafts.value ? { drafts: true } : {}),
+      ...(props.isAdmin
+        ? {
+            preview: {
+              path: previewPath.value.trim() || defaultPreviewPath(handle.value),
+              ...(previewRootSelector.value.trim() ? { rootSelector: previewRootSelector.value.trim() } : {}),
+              ...(previewLive.value === false ? { live: false } : {}),
+            },
+          }
+        : {}),
       fields: fields.map(stripEditorField),
     }
     if (isCreate.value) {
@@ -744,6 +888,62 @@ async function save() {
         </label>
       </div>
 
+      <div
+        v-if="isAdmin"
+        class="space-y-3 rounded border border-zinc-200 bg-white p-4"
+        data-testid="blueprint-preview-settings"
+      >
+        <div>
+          <h2 class="text-base font-semibold text-zinc-700">Live preview</h2>
+          <p class="mt-1 text-xs text-zinc-500">
+            Controls where the entry editor opens live preview and the Preview button. This does not create or change
+            Astro routes — the path must already exist in your site. A mismatch shows a 404 in preview.
+          </p>
+        </div>
+        <label class="block">
+          <span class="block text-sm font-medium text-zinc-700">Preview path</span>
+          <input
+            v-model="previewPath"
+            class="mt-1 w-full rounded border border-zinc-300 px-3 py-2 font-mono text-sm"
+            placeholder="/post/{slug}"
+            data-testid="blueprint-preview-path"
+            @input="onPreviewPathInput"
+          />
+          <span class="mt-1 block text-xs text-zinc-500">
+            Use <code>{slug}</code> for the entry URL slug, e.g. <code>/post/{slug}</code> or <code>/{slug}</code> for
+            root-level pages.
+          </span>
+        </label>
+        <label class="block">
+          <span class="block text-sm font-medium text-zinc-700">
+            Morph target selector <span class="font-normal text-zinc-400">(optional)</span>
+          </span>
+          <input
+            v-model="previewRootSelector"
+            class="mt-1 w-full rounded border border-zinc-300 px-3 py-2 font-mono text-sm"
+            placeholder="main"
+            data-testid="blueprint-preview-root-selector"
+          />
+          <span class="mt-1 block text-xs text-zinc-500">
+            CSS selector for the element updated as you type. Defaults to <code>main</code>. Change only if your layout
+            uses a different wrapper.
+          </span>
+        </label>
+        <label class="flex items-center gap-2">
+          <input
+            v-model="previewLive"
+            type="checkbox"
+            class="rounded border-zinc-300"
+            data-testid="blueprint-preview-live"
+          />
+          <span class="text-sm font-medium text-zinc-700">Show live preview panel in the entry editor</span>
+        </label>
+        <p class="text-xs text-zinc-500">
+          When disabled, editors still see the Preview button for saved drafts; only the split-panel live preview is
+          hidden.
+        </p>
+      </div>
+
       <div class="space-y-3">
         <div class="flex items-center justify-between">
           <h2 class="text-base font-semibold text-zinc-700">Fields</h2>
@@ -858,7 +1058,11 @@ async function save() {
                 <option value="boolean">boolean</option>
                 <option value="select">select</option>
                 <option value="replicator">replicator</option>
+                <option value="grid">grid</option>
                 <option value="relationship">relationship</option>
+                <option value="entry">entry</option>
+                <option value="entries">entries</option>
+                <option value="link">link</option>
                 <option value="asset">asset</option>
               </select>
             </label>
@@ -906,24 +1110,34 @@ async function save() {
             </div>
 
             <!-- select: options editor -->
-            <div v-if="f.ui.kind === 'select'">
-              <span class="block text-xs font-medium text-zinc-600">Options</span>
-              <textarea
-                rows="3"
-                class="mt-1 w-full rounded border border-zinc-300 px-3 py-1.5 font-mono text-xs"
-                :value="(f.ui.options ?? []).join('\n')"
-                :data-testid="`field-options-${i}`"
-                @input="
-                  f.ui = {
-                    kind: 'select',
-                    options: ($event.target as HTMLTextAreaElement).value
-                      .split('\n')
-                      .map((s) => s.trim())
-                      .filter(Boolean),
-                  }
-                "
-              />
-              <span class="text-xs text-zinc-500">One option per line.</span>
+            <div v-if="f.ui.kind === 'select'" class="space-y-2">
+              <div>
+                <span class="block text-xs font-medium text-zinc-600">Options</span>
+                <textarea
+                  rows="3"
+                  class="mt-1 w-full rounded border border-zinc-300 px-3 py-1.5 font-mono text-xs"
+                  :value="formatSelectOptionsText(f.ui.options ?? [])"
+                  :data-testid="`field-options-${i}`"
+                  @input="f.ui = updateSelectUi(f.ui, ($event.target as HTMLTextAreaElement).value)"
+                />
+                <span class="text-xs text-zinc-500">One option per line. Use <code>key: Label</code> for separate keys and labels.</span>
+              </div>
+              <label class="flex items-center gap-2">
+                <input v-model="f.ui.multiple" type="checkbox" class="rounded border-zinc-300" />
+                <span class="text-xs font-medium text-zinc-600">Allow multiple</span>
+              </label>
+              <label class="block">
+                <span class="block text-xs font-medium text-zinc-600">Placeholder</span>
+                <input
+                  v-model="f.ui.placeholder"
+                  type="text"
+                  class="mt-1 w-full rounded border border-zinc-300 px-3 py-1.5 text-sm"
+                />
+              </label>
+              <label class="flex items-center gap-2">
+                <input v-model="f.ui.clearable" type="checkbox" class="rounded border-zinc-300" />
+                <span class="text-xs font-medium text-zinc-600">Clearable</span>
+              </label>
             </div>
 
             <!-- relationship: target picker -->
@@ -938,6 +1152,37 @@ async function save() {
                 <option value="" disabled>Choose a collection</option>
                 <option v-for="bp in blueprintList" :key="bp.handle" :value="bp.handle">{{ bp.handle }}</option>
               </select>
+            </label>
+
+            <!-- entry / entries / link: collection picker -->
+            <div v-if="f.ui.kind === 'entry' || f.ui.kind === 'entries' || f.ui.kind === 'link'" class="space-y-2">
+              <span class="block text-xs font-medium text-zinc-600">
+                {{ f.ui.kind === 'link' ? 'Entry collections (optional)' : 'Collections' }}
+              </span>
+              <div class="flex flex-wrap gap-3">
+                <label
+                  v-for="bp in blueprintList"
+                  :key="bp.handle"
+                  class="flex items-center gap-1 text-sm"
+                >
+                  <input
+                    type="checkbox"
+                    :checked="(f.ui.collections ?? []).includes(bp.handle)"
+                    @change="toggleCollection(f.ui, bp.handle, ($event.target as HTMLInputElement).checked)"
+                  />
+                  {{ bp.handle }}
+                </label>
+              </div>
+            </div>
+
+            <label v-if="f.ui.kind === 'entries'" class="block">
+              <span class="block text-xs font-medium text-zinc-600">Max entries</span>
+              <input
+                v-model.number="f.ui.max"
+                type="number"
+                min="1"
+                class="mt-1 w-full rounded border border-zinc-300 px-3 py-1.5 text-sm"
+              />
             </label>
 
             <!-- blocks: attach global sets from Settings → Sets -->
@@ -1105,6 +1350,9 @@ async function save() {
                           <option value="boolean">boolean</option>
                           <option value="select">select</option>
                           <option value="relationship">relationship</option>
+                          <option value="entry">entry</option>
+                          <option value="entries">entries</option>
+                          <option value="link">link</option>
                           <option value="asset">asset</option>
                         </select>
                       </label>
@@ -1157,15 +1405,9 @@ async function save() {
                       <textarea
                         rows="3"
                         class="mt-1 w-full rounded border border-zinc-300 px-3 py-1.5 font-mono text-xs"
-                        :value="(nested.ui.options ?? []).join('\n')"
+                        :value="formatSelectOptionsText(nested.ui.options ?? [])"
                         @input="
-                          nested.ui = {
-                            kind: 'select',
-                            options: ($event.target as HTMLTextAreaElement).value
-                              .split('\n')
-                              .map((s) => s.trim())
-                              .filter(Boolean),
-                          }
+                          nested.ui = updateSelectUi(nested.ui, ($event.target as HTMLTextAreaElement).value)
                         "
                       />
                     </div>
@@ -1187,6 +1429,25 @@ async function save() {
                       </select>
                     </label>
 
+                    <div v-if="nested.ui.kind === 'entry' || nested.ui.kind === 'entries' || nested.ui.kind === 'link'" class="space-y-2">
+                      <span class="block text-xs font-medium text-zinc-600">Collections</span>
+                      <div class="flex flex-wrap gap-3">
+                        <label v-for="bp in blueprintList" :key="bp.handle" class="flex items-center gap-1 text-sm">
+                          <input
+                            type="checkbox"
+                            :checked="(nested.ui.collections ?? []).includes(bp.handle)"
+                            @change="toggleCollection(nested.ui, bp.handle, ($event.target as HTMLInputElement).checked)"
+                          />
+                          {{ bp.handle }}
+                        </label>
+                      </div>
+                    </div>
+
+                    <label v-if="nested.ui.kind === 'entries'" class="block">
+                      <span class="block text-xs font-medium text-zinc-600">Max entries</span>
+                      <input v-model.number="nested.ui.max" type="number" min="1" class="mt-1 w-full rounded border border-zinc-300 px-3 py-1.5 text-sm" />
+                    </label>
+
                     <BlocksSetsPicker
                       v-if="nested.ui.kind === 'blocks'"
                       :model-value="nested.ui.sets ?? []"
@@ -1205,6 +1466,106 @@ async function save() {
                   </div>
                 </div>
                 </div>
+              </div>
+            </div>
+
+            <div v-if="f.ui.kind === 'grid'" class="space-y-3">
+              <div class="flex flex-wrap gap-3">
+                <label class="block flex-1">
+                  <span class="block text-xs font-medium text-zinc-600">Min rows</span>
+                  <input v-model.number="f.ui.minRows" type="number" min="0" class="mt-1 w-full rounded border border-zinc-300 px-3 py-1.5 text-sm" />
+                </label>
+                <label class="block flex-1">
+                  <span class="block text-xs font-medium text-zinc-600">Max rows</span>
+                  <input v-model.number="f.ui.maxRows" type="number" min="1" class="mt-1 w-full rounded border border-zinc-300 px-3 py-1.5 text-sm" />
+                </label>
+                <label class="block flex-1">
+                  <span class="block text-xs font-medium text-zinc-600">Layout</span>
+                  <select v-model="f.ui.mode" class="mt-1 w-full rounded border border-zinc-300 px-3 py-1.5 text-sm">
+                    <option value="table">table</option>
+                    <option value="stacked">stacked</option>
+                  </select>
+                </label>
+              </div>
+              <label class="block">
+                <span class="block text-xs font-medium text-zinc-600">Add row label</span>
+                <input v-model="f.ui.addLabel" type="text" class="mt-1 w-full rounded border border-zinc-300 px-3 py-1.5 text-sm" placeholder="Add row" />
+              </label>
+
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-medium text-zinc-600">Columns</span>
+                <button type="button" class="rounded border border-zinc-300 bg-white px-2.5 py-1 text-xs font-medium text-zinc-700 hover:bg-zinc-50" @click="addGridColumn(i)">
+                  + Add column
+                </button>
+              </div>
+
+              <div v-if="f.ui.fields.length === 0" class="rounded border border-dashed border-zinc-300 bg-zinc-50 px-3 py-4 text-xs text-zinc-500">
+                Add at least one column field.
+              </div>
+
+              <div v-for="(nested, nestedIndex) in f.ui.fields" :key="nestedIndex" class="rounded border border-zinc-200 bg-zinc-50 p-3 space-y-3">
+                <div class="grid gap-3 md:grid-cols-2">
+                  <label class="block">
+                    <span class="block text-xs font-medium text-zinc-600">Name</span>
+                    <input v-model="nested.name" class="mt-1 w-full rounded border border-zinc-300 px-3 py-1.5 font-mono text-sm" :readonly="nested.previousName !== null" />
+                  </label>
+                  <label class="block">
+                    <span class="block text-xs font-medium text-zinc-600">Label</span>
+                    <input v-model="nested.label" class="mt-1 w-full rounded border border-zinc-300 px-3 py-1.5 text-sm" />
+                  </label>
+                </div>
+                <label class="block">
+                  <span class="block text-xs font-medium text-zinc-600">Kind</span>
+                  <select
+                    class="mt-1 w-full rounded border border-zinc-300 px-3 py-1.5 text-sm"
+                    :value="nested.ui.kind"
+                    @change="setGridNestedKind(i, nestedIndex, ($event.target as HTMLSelectElement).value as NonReplicatorFieldUi['kind'])"
+                  >
+                    <option value="text">text</option>
+                    <option value="textarea">textarea</option>
+                    <option value="blocks">blocks</option>
+                    <option value="date">date</option>
+                    <option value="boolean">boolean</option>
+                    <option value="select">select</option>
+                    <option value="relationship">relationship</option>
+                    <option value="entry">entry</option>
+                    <option value="entries">entries</option>
+                    <option value="link">link</option>
+                    <option value="asset">asset</option>
+                  </select>
+                </label>
+                <div v-if="nested.ui.kind === 'select'">
+                  <textarea
+                    rows="2"
+                    class="mt-1 w-full rounded border border-zinc-300 px-3 py-1.5 font-mono text-xs"
+                    :value="formatSelectOptionsText(nested.ui.options ?? [])"
+                    @input="nested.ui = updateSelectUi(nested.ui, ($event.target as HTMLTextAreaElement).value)"
+                  />
+                </div>
+                <label v-if="nested.ui.kind === 'relationship'" class="block">
+                  <span class="block text-xs font-medium text-zinc-600">Target collection</span>
+                  <select
+                    class="mt-1 w-full rounded border border-zinc-300 px-3 py-1.5 text-sm"
+                    :value="nested.ui.to ?? ''"
+                    @change="nested.ui = { kind: 'relationship', to: ($event.target as HTMLSelectElement).value }"
+                  >
+                    <option value="" disabled>Choose a collection</option>
+                    <option v-for="bp in blueprintList" :key="bp.handle" :value="bp.handle">{{ bp.handle }}</option>
+                  </select>
+                </label>
+                <div v-if="nested.ui.kind === 'entry' || nested.ui.kind === 'entries' || nested.ui.kind === 'link'" class="flex flex-wrap gap-3">
+                  <label v-for="bp in blueprintList" :key="bp.handle" class="flex items-center gap-1 text-sm">
+                    <input
+                      type="checkbox"
+                      :checked="(nested.ui.collections ?? []).includes(bp.handle)"
+                      @change="toggleCollection(nested.ui, bp.handle, ($event.target as HTMLInputElement).checked)"
+                    />
+                    {{ bp.handle }}
+                  </label>
+                </div>
+                <button type="button" class="text-xs text-red-600 hover:bg-red-50 rounded px-2 py-1" @click="removeGridColumn(i, nestedIndex)">
+                  Remove column
+                </button>
               </div>
             </div>
           </div>

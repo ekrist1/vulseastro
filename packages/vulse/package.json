@@ -35,6 +35,8 @@
     },
     "./client/components/SignInForm.astro": "./src/client/components/SignInForm.astro",
     "./client/components/SignUpForm.astro": "./src/client/components/SignUpForm.astro",
+    "./client/components/ForgotPasswordForm.astro": "./src/client/components/ForgotPasswordForm.astro",
+    "./client/components/ResetPasswordForm.astro": "./src/client/components/ResetPasswordForm.astro",
     "./client/components/SignOutButton.astro": "./src/client/components/SignOutButton.astro",
     "./client/components/SessionGuard.astro": "./src/client/components/SessionGuard.astro",
     "./client/BlockRenderer.vue": "./src/client/BlockRenderer.vue",

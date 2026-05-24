@@ -46,5 +46,8 @@ async function submit(e: Event) {
     <button :disabled="loading" class="w-full rounded bg-brand py-2 text-white font-medium disabled:opacity-50">
       {{ loading ? 'Signing in…' : 'Sign in' }}
     </button>
+    <p class="text-center text-sm text-zinc-500">
+      <a href="/forgot-password?next=/admin" class="text-brand hover:underline">Forgot password?</a>
+    </p>
   </form>
 </template>
