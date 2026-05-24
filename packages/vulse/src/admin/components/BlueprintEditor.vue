@@ -10,6 +10,8 @@ import type {
   ReplicatorSetDefinition,
 } from '../../core/blueprints/definition.js'
 import { useSets } from '../composables/useSets.js'
+import { useToast } from '../composables/toast.js'
+import BlocksSetsPicker from './fields/BlocksSetsPicker.vue'
 import { normalizeFieldHandle } from '../../core/slug.js'
 import {
   defaultScaffoldRoutes,
@@ -20,7 +22,6 @@ import {
 
 const props = defineProps<{ handle: string | null }>()
 const { sets, hydrate: hydrateSets } = useSets()
-const setList = computed(() => [...sets.value.values()])
 const blueprintList = ref<BlueprintDefinition[]>([])
 
 async function refreshBlueprints() {
@@ -105,6 +106,7 @@ function toggleSetExpanded(fieldIndex: number, setIndex: number) {
 const errors = reactive<Record<string, string>>({});
 const submitError = ref<string | null>(null);
 const saving = ref(false);
+const toast = useToast();
 const hydrated = ref(false);
 
 const handleLocked = ref(false);
@@ -252,7 +254,8 @@ async function load() {
 }
 
 onMounted(async () => {
-  await Promise.all([load(), hydrateSets(), refreshBlueprints()])
+  const [, setsMap] = await Promise.all([load(), hydrateSets(), refreshBlueprints()])
+  sets.value = setsMap
   hydrated.value = true
 })
 watch(() => props.handle, load);
@@ -294,6 +297,7 @@ function setKind(i: number, kind: FieldUi['kind']) {
   else if (kind === 'relationship') f.ui = { kind, to: '' };
   else if (kind === 'replicator') f.ui = { kind, sets: [] };
   else f.ui = { kind };
+  if (kind === 'blocks') expandedIndex.value = i;
 }
 
 function setNestedKind(
@@ -312,12 +316,24 @@ function setNestedKind(
   else nested.ui = { kind };
 }
 
-function toggleSet(fieldIndex: number, handle: string, checked: boolean) {
-  const field = fields[fieldIndex]!;
-  if (field.ui.kind !== 'blocks') return;
-  const current = field.ui.sets ?? [];
-  const next = checked ? [...current, handle] : current.filter((h) => h !== handle);
-  field.ui = { kind: 'blocks', ...(next.length ? { sets: next } : {}) };
+function updateBlocksSets(fieldIndex: number, handles: string[]) {
+  const field = fields[fieldIndex];
+  if (!field || field.ui.kind !== 'blocks') return;
+  field.ui = { kind: 'blocks', ...(handles.length ? { sets: handles } : {}) };
+}
+
+function updateNestedBlocksSets(
+  fieldIndex: number,
+  setIndex: number,
+  nestedIndex: number,
+  handles: string[],
+) {
+  const nested =
+    fields[fieldIndex]?.ui.kind === 'replicator'
+      ? fields[fieldIndex]!.ui.sets[setIndex]?.fields[nestedIndex]
+      : null;
+  if (!nested || nested.ui.kind !== 'blocks') return;
+  nested.ui = { kind: 'blocks', ...(handles.length ? { sets: handles } : {}) };
 }
 
 function blocksSetHandles(fieldIndex: number): string[] {
@@ -601,11 +617,13 @@ async function save() {
     }
     if (isCreate.value) {
       await adminApi.post('/api/vulse/blueprints', payload)
-    } else {
-      await adminApi.patch(`/api/vulse/blueprints/${props.handle!}`, payload)
+      await refreshBlueprints()
+      window.location.href = `/admin/schema/${handle.value}`
+      return
     }
+    await adminApi.patch(`/api/vulse/blueprints/${props.handle!}`, payload)
     await refreshBlueprints()
-    window.location.href = `/admin/schema/${handle.value}`
+    toast.success('Blueprint saved')
   } catch (err) {
     submitError.value = err instanceof Error ? err.message : 'Failed to save'
   } finally {
@@ -776,6 +794,12 @@ async function save() {
               >
                 <span class="font-mono text-sm">{{ f.label || f.name || '(new field)' }}</span>
                 <span class="ml-2 rounded bg-zinc-100 px-1.5 py-0.5 text-xs text-zinc-600">{{ f.ui.kind }}</span>
+                <span
+                  v-if="f.ui.kind === 'blocks' && blocksSetHandles(i).length > 0"
+                  class="ml-1 rounded bg-sky-50 px-1.5 py-0.5 text-xs text-sky-700"
+                >
+                  {{ blocksSetHandles(i).length }} set{{ blocksSetHandles(i).length === 1 ? '' : 's' }}
+                </span>
                 <span v-if="!f.optional" class="ml-1 rounded bg-rose-50 px-1.5 py-0.5 text-xs text-rose-700">required</span>
               </button>
             </div>
@@ -916,33 +940,13 @@ async function save() {
               </select>
             </label>
 
-            <!-- blocks: available sets chip picker -->
-            <div v-if="f.ui.kind === 'blocks'" class="mt-2">
-              <span class="block text-xs font-medium text-zinc-600">Available sets</span>
-              <div v-if="setList.length === 0" class="mt-1 text-xs text-zinc-500">
-                No sets defined yet.
-                <a href="/admin/settings/sets/new" class="text-zinc-700 underline">Create one</a>.
-              </div>
-              <div v-else class="mt-1 grid grid-cols-2 gap-1">
-                <label
-                  v-for="s in setList"
-                  :key="s.handle"
-                  class="flex items-center gap-1 text-sm"
-                >
-                  <input
-                    type="checkbox"
-                    :value="s.handle"
-                    :checked="blocksSetHandles(i).includes(s.handle)"
-                    :data-testid="`set-picker-${i}-${s.handle}`"
-                    @change="toggleSet(i, s.handle, ($event.target as HTMLInputElement).checked)"
-                  />
-                  <span>
-                    {{ s.label }}
-                    <span class="font-mono text-xs text-zinc-500">({{ s.handle }})</span>
-                  </span>
-                </label>
-              </div>
-            </div>
+            <!-- blocks: attach global sets from Settings → Sets -->
+            <BlocksSetsPicker
+              v-if="f.ui.kind === 'blocks'"
+              :model-value="blocksSetHandles(i)"
+              :data-testid="`blocks-sets-picker-${i}`"
+              @update:model-value="updateBlocksSets(i, $event)"
+            />
 
             <div v-if="f.ui.kind === 'replicator'" class="space-y-3">
               <div class="rounded border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
@@ -1182,6 +1186,12 @@ async function save() {
                         <option v-for="bp in blueprintList" :key="bp.handle" :value="bp.handle">{{ bp.handle }}</option>
                       </select>
                     </label>
+
+                    <BlocksSetsPicker
+                      v-if="nested.ui.kind === 'blocks'"
+                      :model-value="nested.ui.sets ?? []"
+                      @update:model-value="updateNestedBlocksSets(i, setIndex, nestedIndex, $event)"
+                    />
 
                     <div class="flex justify-end">
                       <button

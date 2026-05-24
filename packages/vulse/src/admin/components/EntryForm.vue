@@ -3,6 +3,7 @@ import { computed, onMounted, ref, watch } from 'vue'
 import { adminApi, AdminApiError } from '../client/api.js'
 import type { FieldDescriptor } from '../client/form-from-zod.js'
 import { normalizeSlug } from '../../core/slug.js'
+import { useToast } from '../composables/toast.js'
 import FieldRenderer from './fields/FieldRenderer.vue'
 import EntryStatusBadge from './EntryStatusBadge.vue'
 
@@ -39,6 +40,7 @@ const error = ref<string | null>(null)
 const fieldErrors = ref<Record<string, string>>({})
 const saving = ref(false)
 const lastAction = ref<'draft' | 'publish' | 'save'>('save')
+const toast = useToast()
 
 const fieldLabelByPath = computed<Record<string, string>>(() => {
   const map: Record<string, string> = {}
@@ -178,6 +180,11 @@ async function save(publish = false) {
       syncSlugFromResponse(updated.slug, requestedSlug)
       hasChanges.value = props.draftsEnabled && !publish
       if (publish) status.value = 'published'
+      if (props.draftsEnabled) {
+        toast.success(publish ? 'Entry published' : 'Draft saved')
+      } else {
+        toast.success('Entry saved')
+      }
     } else {
       if (props.tree && props.parentId) body.parentId = props.parentId
       if (props.draftsEnabled) body.publish = publish
@@ -203,6 +210,7 @@ async function publishNow() {
     await adminApi.post(`/api/vulse/entries/${props.collection}/${props.entryId}/publish`)
     hasChanges.value = false
     status.value = 'published'
+    toast.success('Entry published')
   } catch (e) {
     if (e instanceof AdminApiError) applyApiError(e)
     else error.value = 'Publish failed'

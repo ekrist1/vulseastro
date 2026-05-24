@@ -6,6 +6,7 @@ import {
   deleteCurrentNodeOrParentIfOnlyChild,
   insertContentAfter,
   insertParagraphAfter,
+  insertParagraphBefore,
   parentNodeInfo,
 } from './set-node-utils.js';
 
@@ -31,6 +32,10 @@ function addAccordionBelow() {
     attrs: { summary: 'Accordion', open: false },
     content: [{ type: 'paragraph' }],
   });
+}
+
+function addTextAbove() {
+  insertParagraphBefore(props);
 }
 
 function addTextBelow() {
@@ -65,6 +70,15 @@ function removeSet() {
             @click="addAccordionBelow"
           >
             {{ isGrouped ? 'Add item below' : 'Add accordion below' }}
+          </button>
+          <button
+            v-if="!isGrouped"
+            type="button"
+            class="rounded border border-zinc-300 bg-white px-2 py-1 text-xs text-zinc-600 hover:bg-zinc-100"
+            data-testid="accordion-add-above"
+            @click="addTextAbove"
+          >
+            Add text at top
           </button>
           <button
             v-if="!isGrouped"

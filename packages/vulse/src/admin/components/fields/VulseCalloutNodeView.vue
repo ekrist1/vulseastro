@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { NodeViewContent, NodeViewWrapper, type NodeViewProps } from '@tiptap/vue-3';
 import { computed } from 'vue';
-import { deleteCurrentNode, insertParagraphAfter } from './set-node-utils.js';
+import { deleteCurrentNode, insertParagraphAfter, insertParagraphBefore } from './set-node-utils.js';
 
 const props = defineProps<NodeViewProps>();
 
@@ -10,6 +10,10 @@ const tone = computed(() => String(props.node.attrs?.tone === 'warn' ? 'warn' : 
 function onToneChange(event: Event) {
   const next = (event.target as HTMLSelectElement).value === 'warn' ? 'warn' : 'info';
   props.updateAttributes({ tone: next });
+}
+
+function addAbove() {
+  insertParagraphBefore(props);
 }
 
 function addBelow() {
@@ -44,6 +48,14 @@ function removeSet() {
             <option value="warn">Warn</option>
           </select>
         </label>
+        <button
+          type="button"
+          class="rounded border border-zinc-300 bg-white px-2 py-1 text-xs text-zinc-600 hover:bg-zinc-100"
+          data-testid="callout-add-above"
+          @click="addAbove"
+        >
+          Add text at top
+        </button>
         <button
           type="button"
           class="rounded border border-zinc-300 bg-white px-2 py-1 text-xs text-zinc-600 hover:bg-zinc-100"

@@ -1,6 +1,7 @@
 ---
 import '../styles/admin.css'
 import SideNav from './SideNav.vue'
+import ToastHost from './ToastHost.vue'
 import { createDb } from '../../core/db.js'
 import { getRuntimeEnv } from '../../server/env.js'
 import { registryForRequest } from '../../core/blueprints/load.js'
@@ -39,5 +40,6 @@ const isAdmin = vulseUser?.role === 'admin'
       />
       <main class="flex-1 overflow-auto p-8 max-w-6xl"><slot /></main>
     </div>
+    <ToastHost client:load />
   </body>
 </html>

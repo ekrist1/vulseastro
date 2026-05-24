@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { NodeViewWrapper, type NodeViewProps } from '@tiptap/vue-3';
 import { ref, watch } from 'vue';
-import { deleteCurrentNode, insertParagraphAfter } from './set-node-utils.js';
+import { deleteCurrentNode, insertParagraphAfter, insertParagraphBefore } from './set-node-utils.js';
 import { parseIframeCode } from './url-utils.js';
 
 const props = defineProps<NodeViewProps>();
@@ -41,6 +41,10 @@ function commitCode() {
   props.updateAttributes(parsed);
 }
 
+function addAbove() {
+  insertParagraphBefore(props);
+}
+
 function addBelow() {
   insertParagraphAfter(props);
 }
@@ -54,12 +58,19 @@ function removeSet() {
   <NodeViewWrapper
     class="my-3 overflow-hidden rounded-lg border border-zinc-200 bg-zinc-50"
     data-testid="iframe-node-view"
-    contenteditable="false"
   >
-    <div class="border-b border-zinc-200 px-3 py-2">
+    <div class="border-b border-zinc-200 px-3 py-2" contenteditable="false">
       <div class="flex items-center justify-between gap-3">
         <div class="text-xs font-medium uppercase tracking-wide text-zinc-500">Iframe</div>
         <div class="flex items-center gap-2">
+          <button
+            type="button"
+            class="rounded border border-zinc-300 bg-white px-2 py-1 text-xs text-zinc-600 hover:bg-zinc-100"
+            data-testid="iframe-add-above"
+            @click="addAbove"
+          >
+            Add text at top
+          </button>
           <button
             type="button"
             class="rounded border border-zinc-300 bg-white px-2 py-1 text-xs text-zinc-600 hover:bg-zinc-100"
@@ -79,7 +90,7 @@ function removeSet() {
         </div>
       </div>
     </div>
-    <div class="grid gap-3 px-3 py-3">
+    <div class="grid gap-3 px-3 py-3" contenteditable="false">
       <label class="grid gap-1 text-xs text-zinc-500">
         <span>Iframe code</span>
         <textarea

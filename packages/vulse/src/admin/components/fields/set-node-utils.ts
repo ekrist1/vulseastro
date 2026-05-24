@@ -2,7 +2,9 @@ import type { JSONContent } from '@tiptap/core';
 import type { NodeViewProps } from '@tiptap/vue-3';
 
 function nodePos(props: NodeViewProps): number | null {
-  const pos = props.getPos();
+  const getPos = props.getPos;
+  if (typeof getPos !== 'function') return null;
+  const pos = getPos();
   return typeof pos === 'number' ? pos : null;
 }
 
@@ -14,6 +16,17 @@ function nodeEndPos(props: NodeViewProps): number | null {
 function nodeContentEndPos(props: NodeViewProps): number | null {
   const pos = nodePos(props);
   return pos === null ? null : pos + props.node.nodeSize - 1;
+}
+
+function insertParagraphAt(props: NodeViewProps, pos: number): void {
+  const paragraphType = props.editor.schema.nodes.paragraph;
+  if (!paragraphType) return;
+
+  const paragraph = paragraphType.create();
+  const { view, state } = props.editor;
+  view.dispatch(state.tr.insert(pos, paragraph));
+  props.editor.commands.focus();
+  props.editor.commands.setTextSelection(pos + 1);
 }
 
 export function insertContentAfter(
@@ -34,15 +47,16 @@ export function appendContentInside(
   props.editor.chain().focus().insertContentAt(end, content).run();
 }
 
+export function insertParagraphBefore(props: NodeViewProps): void {
+  const pos = nodePos(props);
+  if (pos === null) return;
+  insertParagraphAt(props, pos);
+}
+
 export function insertParagraphAfter(props: NodeViewProps): void {
   const after = nodeEndPos(props);
   if (after === null) return;
-  props.editor
-    .chain()
-    .focus()
-    .insertContentAt(after, { type: 'paragraph' })
-    .setTextSelection(after + 1)
-    .run();
+  insertParagraphAt(props, after);
 }
 
 export function deleteCurrentNode(props: NodeViewProps): void {

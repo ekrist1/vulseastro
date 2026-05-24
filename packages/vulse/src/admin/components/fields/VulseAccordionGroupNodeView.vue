@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { NodeViewContent, NodeViewWrapper, type NodeViewProps } from '@tiptap/vue-3';
-import { appendContentInside, deleteCurrentNode, insertParagraphAfter } from './set-node-utils.js';
+import { appendContentInside, deleteCurrentNode, insertParagraphAfter, insertParagraphBefore } from './set-node-utils.js';
 
 const props = defineProps<NodeViewProps>();
 
@@ -10,6 +10,10 @@ function addItem() {
     attrs: { summary: 'Accordion', open: false },
     content: [{ type: 'paragraph' }],
   });
+}
+
+function addTextAbove() {
+  insertParagraphBefore(props);
 }
 
 function addTextBelow() {
@@ -44,6 +48,14 @@ function removeGroup() {
           @click="addItem"
         >
           Add item
+        </button>
+        <button
+          type="button"
+          class="rounded border border-zinc-300 bg-white px-2 py-1 text-xs text-zinc-600 hover:bg-zinc-100"
+          data-testid="accordion-group-add-above"
+          @click="addTextAbove"
+        >
+          Add text at top
         </button>
         <button
           type="button"
