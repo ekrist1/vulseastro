@@ -1,8 +1,9 @@
 #!/usr/bin/env node
 import { Command } from 'commander'
+import { VULSE_VERSION } from '../version.js'
 
 const program = new Command()
-program.name('vulse').description('Vulse CMS command-line tools').version('0.0.0')
+program.name('vulse').description('Vulse CMS command-line tools').version(VULSE_VERSION)
 
 program
   .command('setup')

@@ -56,4 +56,4 @@ The playground (`playground/vulse-play`) is the easiest way to exercise changes 
 
 ## License
 
-See the repository for license information.
+See [LICENSE](LICENSE) (MIT).

@@ -1,6 +1,29 @@
 {
   "name": "vulse",
-  "version": "0.0.0",
+  "version": "0.1.0-alpha.0",
+  "description": "Astro-native headless CMS for Cloudflare (D1, R2, Workers)",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ekrist1/vulseastro.git",
+    "directory": "packages/vulse"
+  },
+  "bugs": "https://github.com/ekrist1/vulseastro/issues",
+  "homepage": "https://github.com/ekrist1/vulseastro#readme",
+  "keywords": [
+    "astro",
+    "cms",
+    "cloudflare",
+    "headless-cms",
+    "d1",
+    "workers"
+  ],
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
   "type": "module",
   "bin": {
     "vulse": "./dist/cli/index.js"
@@ -46,9 +69,12 @@
   "files": [
     "dist",
     "migrations",
-    "src/client"
+    "src/client",
+    "LICENSE",
+    "README.md"
   ],
   "scripts": {
+    "prepublishOnly": "pnpm run build",
     "build": "pnpm run build:bridge && tsc -p tsconfig.json",
     "build:bridge": "esbuild src/client/live-preview-bridge.ts --bundle --format=esm --outfile=src/server/assets/live-preview-bridge.js --platform=browser && node scripts/embed-bridge.mjs",
     "test": "vitest run",

@@ -1,4 +1,4 @@
-export const VULSE_VERSION = '0.0.0'
+export { VULSE_VERSION } from './version.js'
 export { defineCollection, z } from './core/blueprints/define.js'
 export { blocks, media, ref, entry, entries, link, grid } from './core/blueprints/zod-helpers.js'
 export type { LinkValue, SelectOption } from './core/blueprints/definition.js'

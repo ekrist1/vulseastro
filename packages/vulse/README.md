@@ -16,8 +16,12 @@
 
 ## Install
 
+> **Alpha:** install the `alpha` dist-tag until 1.0:
+>
+> `pnpm astro add vulse@alpha`
+
 ```bash
-pnpm astro add vulse
+pnpm astro add vulse@alpha
 pnpm astro add cloudflare
 wrangler d1 create vulse-db
 wrangler r2 bucket create vulse-media
@@ -97,4 +101,4 @@ if (!post) return Astro.redirect('/404')
 
 ## License
 
-See the [repository](https://github.com/ekrist1/vulseastro) for license information.
+MIT — see [LICENSE](https://github.com/ekrist1/vulseastro/blob/main/LICENSE).
