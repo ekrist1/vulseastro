@@ -1,6 +1,6 @@
 {
   "name": "@ekrist1/vulse",
-  "version": "0.1.5-alpha.0",
+  "version": "0.1.6-alpha.0",
   "description": "Astro-native headless CMS for Cloudflare (D1, R2, Workers)",
   "license": "MIT",
   "repository": {
