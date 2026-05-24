@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, onMounted, watch } from 'vue'
 import { adminApi } from '../client/api.js'
+import { resolveActiveLocale } from '../client/active-locale.js'
 import CollectionTree from './CollectionTree.vue'
 
 const props = defineProps<{
@@ -8,13 +9,17 @@ const props = defineProps<{
   label: string
   columns: string[]
   tree?: boolean
-  locale?: string
+  /** Active locale from the server. Avoid prop name `locale` (Astro/HTML coercion). */
+  entryLocale?: string
   supportedLocales?: string[]
+  defaultLocale?: string
 }>()
 
 const rows = ref<{ id: string; status: string; slug?: string; hasUnpublishedChanges?: boolean; content?: Record<string, unknown> }[]>([])
 const loading = ref(true)
-const activeLocale = ref(props.locale ?? 'default')
+const activeLocale = ref(
+  resolveActiveLocale(props.supportedLocales, props.entryLocale, props.defaultLocale),
+)
 const knownLocales = computed(() => props.supportedLocales ?? [activeLocale.value])
 
 async function load() {
@@ -37,6 +42,7 @@ function switchLocale(next: string) {
 }
 
 onMounted(() => {
+  activeLocale.value = resolveActiveLocale(props.supportedLocales, props.entryLocale, props.defaultLocale)
   if (!props.tree) void load()
   else loading.value = false
 })
@@ -70,7 +76,7 @@ watch(activeLocale, () => {
       </div>
     </div>
 
-    <CollectionTree v-if="tree" :handle="collection" :locale="activeLocale" />
+    <CollectionTree v-if="tree" :handle="collection" :entry-locale="activeLocale" />
 
     <div v-else-if="loading" class="text-sm text-zinc-500">Loading…</div>
 

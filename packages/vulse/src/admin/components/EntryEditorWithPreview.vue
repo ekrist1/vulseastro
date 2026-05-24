@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import type { FieldDescriptor } from '../client/form-from-zod.js'
+import { resolveActiveLocale } from '../client/active-locale.js'
 import { isLivePreviewEnabled } from '../client/live-preview-enabled.js'
 import EntryForm from './EntryForm.vue'
 import LivePreviewPanel from './LivePreviewPanel.vue'
@@ -20,13 +21,18 @@ const props = defineProps<{
   previewPath: string
   /** When false, hides live preview for this collection. Avoid prop name `enabled` (Astro/HTML coercion). */
   livePreviewAllowed?: boolean
-  locale?: string
+  /** Active locale from the server. Avoid prop name `locale` (Astro/HTML coercion). */
+  entryLocale?: string
   defaultLocale?: string
   supportedLocales?: string[]
   existingLocales?: string[]
 }>()
 
 const allowLivePreview = computed(() => isLivePreviewEnabled(props.livePreviewAllowed))
+
+const activeLocale = computed(() =>
+  resolveActiveLocale(props.supportedLocales, props.entryLocale, props.defaultLocale),
+)
 
 const previewContent = ref<Record<string, unknown>>({ ...props.initial })
 delete previewContent.value.slug
@@ -88,6 +94,7 @@ function togglePreview() {
       :class="previewVisible && allowLivePreview ? 'grid-cols-1 xl:grid-cols-2' : 'grid-cols-1'"
     >
       <EntryForm
+        :key="`${entryId ?? 'new'}:${activeLocale}`"
         :collection="collection"
         :entry-id="entryId"
         :fields="fields"
@@ -98,7 +105,7 @@ function togglePreview() {
         :parent-id="parentId"
         :has-unpublished-changes="hasUnpublishedChanges"
         :wide="!previewVisible || !allowLivePreview"
-        :locale="locale"
+        :entry-locale="entryLocale"
         :default-locale="defaultLocale"
         :supported-locales="supportedLocales"
         :existing-locales="existingLocales"
@@ -106,13 +113,13 @@ function togglePreview() {
       />
       <LivePreviewPanel
         v-if="previewVisible && allowLivePreview"
-        :key="(entryId ?? previewSlug) + ':' + (locale ?? 'default')"
+        :key="(entryId ?? previewSlug) + ':' + activeLocale"
         :collection="collection"
         :entry-id="entryId"
         :preview-path="previewPath"
         :slug="previewSlug"
         :content="previewContent"
-        :locale="locale"
+        :entry-locale="activeLocale"
       />
     </div>
   </div>

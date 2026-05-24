@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { adminApi, AdminApiError } from '../client/api'
 
 interface Values {
@@ -33,6 +33,15 @@ function parseLocales(text: string): string[] {
   return text.split(',').map((s) => s.trim()).filter(Boolean)
 }
 
+const supportedLocales = computed(() => parseLocales(localesText.value))
+
+watch(localesText, () => {
+  const codes = supportedLocales.value
+  if (codes.length > 0 && !codes.includes(values.value.defaultLocale)) {
+    values.value.defaultLocale = codes[0]
+  }
+})
+
 async function load() {
   loading.value = true
   try {
@@ -57,7 +66,7 @@ async function load() {
 
 function dirty(key: keyof Values): boolean {
   if (key === 'locales') {
-    const a = values.value.locales
+    const a = parseLocales(localesText.value)
     const b = initial.value.locales
     return a.length !== b.length || a.some((v, i) => v !== b[i])
   }
@@ -144,12 +153,23 @@ onMounted(load)
         </label>
         <label class="block">
           <span class="text-sm font-medium text-zinc-700">Default locale</span>
-          <input
+          <select
+            v-if="supportedLocales.length"
             v-model="values.defaultLocale"
             class="mt-1 w-full rounded border border-zinc-300 px-3 py-2 font-mono text-sm"
-            @input="onInput"
+            @change="onInput"
+          >
+            <option v-for="code in supportedLocales" :key="code" :value="code">{{ code }}</option>
+          </select>
+          <input
+            v-else
+            v-model="values.defaultLocale"
+            class="mt-1 w-full rounded border border-zinc-300 px-3 py-2 font-mono text-sm"
+            disabled
+            placeholder="Add supported locales first"
           />
         </label>
+        <p v-if="localesValid" class="rounded bg-red-50 px-3 py-2 text-sm text-red-700">{{ localesValid }}</p>
       </fieldset>
 
       <p v-if="error" class="rounded bg-red-50 px-3 py-2 text-sm text-red-700">{{ error }}</p>

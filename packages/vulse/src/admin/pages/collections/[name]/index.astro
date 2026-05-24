@@ -24,7 +24,8 @@ const activeLocale = requested && localesCfg.locales.includes(requested) ? reque
     label={bp.label}
     columns={columns}
     tree={bp.tree === true}
-    locale={activeLocale}
+    entryLocale={activeLocale}
     supportedLocales={localesCfg.locales}
+    defaultLocale={localesCfg.defaultLocale}
   />
 </AdminShell>

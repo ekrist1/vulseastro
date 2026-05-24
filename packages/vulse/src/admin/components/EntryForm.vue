@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
 import { adminApi, AdminApiError } from '../client/api.js'
+import { resolveActiveLocale } from '../client/active-locale.js'
 import type { FieldDescriptor } from '../client/form-from-zod.js'
 import { normalizeSlug } from '../../core/slug.js'
 import { useToast } from '../composables/toast.js'
@@ -18,14 +19,17 @@ const props = defineProps<{
   parentId?: string | null
   hasUnpublishedChanges?: boolean
   wide?: boolean
-  locale?: string
+  /** Active locale from the server. Avoid prop name `locale` (Astro/HTML coercion). */
+  entryLocale?: string
   supportedLocales?: string[]
   /** Locales that already have a translation for this entry. */
   existingLocales?: string[]
   defaultLocale?: string
 }>()
 
-const activeLocale = computed(() => props.locale ?? props.defaultLocale ?? 'default')
+const activeLocale = computed(() =>
+  resolveActiveLocale(props.supportedLocales, props.entryLocale, props.defaultLocale),
+)
 const knownLocales = computed(() => props.supportedLocales ?? [activeLocale.value])
 const hasTranslation = computed(() => (props.existingLocales ?? []).includes(activeLocale.value))
 
@@ -235,7 +239,9 @@ async function publishNow() {
   saving.value = true
   error.value = null
   try {
-    await adminApi.post(`/api/vulse/entries/${props.collection}/${props.entryId}/publish`)
+    await adminApi.post(
+      `/api/vulse/entries/${props.collection}/${props.entryId}/publish?locale=${encodeURIComponent(activeLocale.value)}`,
+    )
     hasChanges.value = false
     status.value = 'published'
     toast.success('Entry published')
@@ -271,7 +277,6 @@ onMounted(() => emitPreview())
             v-for="loc in knownLocales"
             :key="loc"
             :value="loc"
-            :disabled="loc === activeLocale"
           >
             {{ loc }}{{ (existingLocales ?? []).includes(loc) ? '' : ' (no translation)' }}
           </option>
