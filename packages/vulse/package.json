@@ -75,7 +75,7 @@
   ],
   "scripts": {
     "prepublishOnly": "pnpm run build",
-    "build": "pnpm run build:bridge && tsc -p tsconfig.json",
+    "build": "pnpm run build:bridge && node scripts/sync-version.mjs && tsc -p tsconfig.json",
     "build:bridge": "esbuild src/client/live-preview-bridge.ts --bundle --format=esm --outfile=src/server/assets/live-preview-bridge.js --platform=browser && node scripts/embed-bridge.mjs",
     "test": "vitest run",
     "test:watch": "vitest",
