@@ -1,5 +1,5 @@
-import { createHash } from 'node:crypto'
 import { z } from 'astro/zod'
+import { sha256Hex } from '../sha256.js'
 import { type FieldDefinition, FieldDefinitionSchema } from '../blueprints/definition.js'
 
 export const GlobalSetDefinitionSchema = z.object({
@@ -10,7 +10,7 @@ export const GlobalSetDefinitionSchema = z.object({
 
 export type GlobalSetDefinition = z.infer<typeof GlobalSetDefinitionSchema>
 
-export function hashGlobalSetDefinition(def: GlobalSetDefinition): string {
+export async function hashGlobalSetDefinition(def: GlobalSetDefinition): Promise<string> {
   const canonical = JSON.stringify({
     handle: def.handle,
     label: def.label,
@@ -23,5 +23,5 @@ export function hashGlobalSetDefinition(def: GlobalSetDefinition): string {
       validation: f.validation ?? null,
     })),
   })
-  return createHash('sha256').update(canonical).digest('hex')
+  return sha256Hex(canonical)
 }

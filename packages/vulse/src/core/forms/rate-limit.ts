@@ -1,10 +1,10 @@
-import { createHash } from 'node:crypto'
+import { sha256Hex } from '../sha256.js'
 import { eq, and, lt } from 'drizzle-orm'
 import type { VulseDb } from '../db.js'
 import { vulseFormRateLimits } from '../schema.js'
 
-export function hashIp(ip: string): string {
-  return createHash('sha256').update(ip).digest('hex')
+export async function hashIp(ip: string): Promise<string> {
+  return sha256Hex(ip)
 }
 
 export async function checkRateLimit(

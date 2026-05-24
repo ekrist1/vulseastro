@@ -69,7 +69,7 @@ export class GlobalsRepo {
     if (existing) throw new ConflictError(`global set already exists: ${def.handle}`)
 
     const now = new Date()
-    const hash = hashGlobalSetDefinition(def)
+    const hash = await hashGlobalSetDefinition(def)
     await this.db.insert(vulseGlobalSets).values({
       handle: def.handle,
       label: def.label,
@@ -103,7 +103,7 @@ export class GlobalsRepo {
     await this.db.update(vulseGlobalSets).set({
       label: def.label,
       definition: def,
-      blueprintHash: hashGlobalSetDefinition(def),
+      blueprintHash: await hashGlobalSetDefinition(def),
       updatedAt: new Date(),
     }).where(eq(vulseGlobalSets.handle, handle))
 
@@ -130,7 +130,7 @@ export class GlobalsRepo {
     if (!set) throw new NotFoundError('global set not found')
 
     const sets = await loadCompiledSets(this.db)
-    const compiled = compileGlobalSet(set.definition, sets)
+    const compiled = await compileGlobalSet(set.definition, sets)
     const result = compiled.schema.safeParse(input)
     if (!result.success) {
       throw new ValidationError('Invalid global value', { issues: result.error.issues })

@@ -28,7 +28,10 @@ This guide walks through installing Vulse into a fresh or existing Astro project
 
 ```bash
 pnpm astro add @ekrist1/vulse
+pnpm add @astrojs/vue vue
 ```
+
+Vulse wires up `@astrojs/vue` internally for the admin UI, but **your project must also depend on `@astrojs/vue` and `vue` directly** so the Cloudflare dev runner can resolve `@astrojs/vue/server.js`.
 
 The install hook will:
 

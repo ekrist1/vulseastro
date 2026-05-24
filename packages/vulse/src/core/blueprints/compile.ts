@@ -1,5 +1,5 @@
-import { createHash } from 'node:crypto'
 import { z } from 'astro/zod'
+import { sha256Hex } from '../sha256.js'
 import type { CompiledSet } from '../sets/compile.js'
 import { validateSetNodes } from '../sets/validate-tree.js'
 import type {
@@ -153,7 +153,7 @@ export function compileFieldObject(fields: NestedFieldDefinition[]): z.ZodObject
   return z.object(shape)
 }
 
-export function hashDefinition(def: BlueprintDefinition): string {
+export async function hashDefinition(def: BlueprintDefinition): Promise<string> {
   const canonical = JSON.stringify({
     handle: def.handle,
     label: def.label,
@@ -172,5 +172,5 @@ export function hashDefinition(def: BlueprintDefinition): string {
       validation: f.validation ?? null,
     })),
   })
-  return createHash('sha256').update(canonical).digest('hex')
+  return sha256Hex(canonical)
 }

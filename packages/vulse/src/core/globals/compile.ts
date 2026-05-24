@@ -12,10 +12,10 @@ export interface CompiledGlobalSet {
   hash: string
 }
 
-export function compileGlobalSet(
+export async function compileGlobalSet(
   def: GlobalSetDefinition,
   sets?: Map<string, CompiledSet>,
-): CompiledGlobalSet {
+): Promise<CompiledGlobalSet> {
   const options = sets ? { sets } : {}
   return {
     handle: def.handle,
@@ -30,6 +30,6 @@ export function compileGlobalSet(
       },
       options,
     ),
-    hash: hashGlobalSetDefinition(def),
+    hash: await hashGlobalSetDefinition(def),
   }
 }

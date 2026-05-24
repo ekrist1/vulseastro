@@ -1,7 +1,7 @@
 import { readFile, writeFile, mkdir, access } from 'node:fs/promises'
 import { join } from 'node:path'
 import { VULSE_PACKAGE } from '../package-name.js'
-import { patchWranglerToml } from './wrangler-patch.js'
+import { ensureWranglerConfig, patchWranglerConfig, findWranglerConfig } from './wrangler-config.js'
 
 const STARTER_BLUEPRINT = `import { defineCollection, z } from '${VULSE_PACKAGE}'
 
@@ -37,9 +37,10 @@ async function fileExists(path: string): Promise<boolean> {
 }
 
 export async function runInstallHook(cwd: string): Promise<void> {
-  const wranglerPath = join(cwd, 'wrangler.toml')
+  const wranglerFile = await findWranglerConfig(cwd)
+  const wranglerPath = join(cwd, wranglerFile ?? 'wrangler.toml')
   const existing = (await fileExists(wranglerPath)) ? await readFile(wranglerPath, 'utf8') : ''
-  const patched = patchWranglerToml(existing, { d1Name: 'vulse-db', r2Bucket: 'vulse-media' })
+  const patched = patchWranglerConfig(existing, wranglerFile ?? 'wrangler.toml', { d1Name: 'vulse-db', r2Bucket: 'vulse-media' })
   if (patched !== existing) await writeFile(wranglerPath, patched, 'utf8')
 
   const collectionsDir = join(cwd, 'src/vulse/collections')
@@ -63,9 +64,10 @@ export async function runInstallHook(cwd: string): Promise<void> {
 ✅ Vulse installed.
 
 One-time setup (copy/paste):
+  pnpm add @astrojs/vue vue   # required at project root for the admin UI renderer
   wrangler d1 create vulse-db
   wrangler r2 bucket create vulse-media
-  # Paste the returned database_id into wrangler.toml (search for TODO_PASTE_ID).
+  # Paste the returned database_id into your wrangler config (search for TODO_PASTE_ID).
   npx vulse migrate
   npx vulse seed:admin --email you@example.com
 

@@ -23,7 +23,7 @@ export async function createBlueprint(
     handle: def.handle,
     label: def.label,
     definition: def,
-    blueprintHash: hashDefinition(def),
+    blueprintHash: await hashDefinition(def),
     singleton: def.singleton,
     tree: def.tree === true,
     drafts: def.drafts === true,
@@ -86,7 +86,7 @@ export async function updateBlueprint(
   await db.update(vulseCollections).set({
     label: canonical.label,
     definition: canonical,
-    blueprintHash: hashDefinition(canonical),
+    blueprintHash: await hashDefinition(canonical),
     singleton: canonical.singleton,
     tree: canonical.tree === true,
     drafts: canonical.drafts === true,

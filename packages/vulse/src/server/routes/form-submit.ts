@@ -91,7 +91,7 @@ export function formSubmitRoutes(db: VulseDb, options: FormSubmitRouteOptions = 
         }
 
         const rate = def.settings.rateLimit ?? { maxPerIp: 10, windowSec: 3600 }
-        const rl = await checkRateLimit(db, handle, hashIp(ip), rate)
+        const rl = await checkRateLimit(db, handle, await hashIp(ip), rate)
         if (!rl.allowed) {
           return new Response(JSON.stringify({
             ok: false,

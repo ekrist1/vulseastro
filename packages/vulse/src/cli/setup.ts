@@ -4,7 +4,7 @@ import { randomBytes } from 'node:crypto'
 import { execSync } from 'node:child_process'
 import { createInterface } from 'node:readline/promises'
 import { stdin, stdout } from 'node:process'
-import { patchWranglerToml } from '../integration/wrangler-patch.js'
+import { patchWranglerConfig, findWranglerConfig } from '../integration/wrangler-config.js'
 import { runMigrate } from './migrate.js'
 import { runSeedAdmin } from './seed-admin.js'
 
@@ -132,7 +132,7 @@ export async function runSetup(opts: SetupOptions = {}): Promise<void> {
   try {
     stdout.write(`\nVulse setup — local development\n\n`)
     stdout.write(`This wizard will update:\n`)
-    stdout.write(`  • ${WRANGLER_FILE}   (D1 + R2 bindings)\n`)
+    stdout.write(`  • wrangler config   (D1 + R2 bindings)\n`)
     stdout.write(`  • ${DEV_VARS_FILE}    (local secrets — gitignored)\n`)
     stdout.write(`  • ${GITIGNORE_FILE}    (adds ${DEV_VARS_FILE})\n\n`)
 
@@ -143,10 +143,11 @@ export async function runSetup(opts: SetupOptions = {}): Promise<void> {
 
     // --- Step 1: D1 ---
     stdout.write(`\nStep 1/3 — Cloudflare D1 (database)\n`)
-    const wranglerPath = join(cwd, WRANGLER_FILE)
-    let wranglerToml = await readIfExists(wranglerPath)
+    const wranglerFile = (await findWranglerConfig(cwd)) ?? WRANGLER_FILE
+    const wranglerPath = join(cwd, wranglerFile)
+    let wranglerConfig = await readIfExists(wranglerPath)
     const d1Name = await prompter.ask('  D1 database name', 'vulse-db')
-    wranglerToml = patchWranglerToml(wranglerToml, { d1Name, r2Bucket: 'vulse-media' })
+    wranglerConfig = patchWranglerConfig(wranglerConfig, wranglerFile, { d1Name, r2Bucket: 'vulse-media' })
 
     let databaseId = await prompter.ask(
       '  D1 database_id (leave blank to create one now)',
@@ -173,12 +174,12 @@ export async function runSetup(opts: SetupOptions = {}): Promise<void> {
         }
       }
     }
-    if (databaseId) wranglerToml = setDatabaseId(wranglerToml, databaseId)
+    if (databaseId) wranglerConfig = setDatabaseId(wranglerConfig, databaseId)
 
     // --- Step 2: R2 ---
     stdout.write(`\nStep 2/3 — Cloudflare R2 (media storage)\n`)
     const r2Bucket = await prompter.ask('  R2 bucket name', 'vulse-media')
-    wranglerToml = patchWranglerToml(wranglerToml, { d1Name, r2Bucket })
+    wranglerConfig = patchWranglerConfig(wranglerConfig, wranglerFile, { d1Name, r2Bucket })
     if (await prompter.confirm(`  Run \`wrangler r2 bucket create ${r2Bucket}\`?`, true)) {
       const result = tryRun(`wrangler r2 bucket create ${r2Bucket}`)
       if (result.ok) {
@@ -191,8 +192,8 @@ export async function runSetup(opts: SetupOptions = {}): Promise<void> {
       }
     }
 
-    await writeFile(wranglerPath, wranglerToml, 'utf8')
-    stdout.write(`  ✓ wrote ${WRANGLER_FILE}\n`)
+    await writeFile(wranglerPath, wranglerConfig, 'utf8')
+    stdout.write(`  ✓ wrote ${wranglerFile}\n`)
 
     // --- Step 3: Secrets + .dev.vars ---
     stdout.write(`\nStep 3/3 — Secrets\n`)
@@ -221,7 +222,7 @@ export async function runSetup(opts: SetupOptions = {}): Promise<void> {
 
     // Warn if wrangler.toml still has the placeholder BETTER_AUTH_SECRET — .dev.vars
     // overrides it in dev, but the placeholder is misleading.
-    if (wranglerToml.includes(PLACEHOLDER_AUTH_SECRET)) {
+    if (wranglerConfig.includes(PLACEHOLDER_AUTH_SECRET)) {
       stdout.write(
         `  ℹ ${WRANGLER_FILE} still contains the placeholder BETTER_AUTH_SECRET in [vars].\n` +
         `    ${DEV_VARS_FILE} takes precedence in dev — you can remove the [vars] line.\n`,

@@ -60,7 +60,7 @@ export default function vulse(opts: VulseOptions = {}): AstroIntegration {
             ssr: {
               // Bundle vulse in-process for Cloudflare's module runner; avoid
               // noExternal: true — it pulls native dev deps (tailwind oxide, babel) into SSR.
-              noExternal: ['@ekrist1/vulse'],
+              noExternal: ['@ekrist1/vulse', '@astrojs/vue'],
               optimizeDeps: {
                 exclude: [...OPTIMIZE_DEPS_EXCLUDE],
               },
