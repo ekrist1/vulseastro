@@ -17,19 +17,23 @@ function isAdminCssImport(source: string, importer?: string): boolean {
 }
 
 /**
- * Resolve the admin CSS to its real on-disk path (never a virtual module).
- * A real `.css` file lets Astro inline the stylesheet into <head> during dev SSR;
- * a virtual id forces Vite's JS-based style injection, which flashes unstyled
- * content on every full-page admin navigation. Relative `@source` directives in
- * admin.css resolve correctly against this path, so no rewriting is needed.
+ * Normalize admin CSS imports to the package export path.
+ *
+ * Do not resolve to a raw absolute filesystem path — Vite/Astro turn that into broken
+ * dev URLs like `http://localhost:4321/home/user/.../admin.css`, which abort module
+ * loads and can trigger repeated full-page reloads in the admin UI.
+ *
+ * Package export resolution still yields a real on-disk CSS file (for SSR inlining and
+ * Tailwind `@source` scanning when combined with `vulseAdminFsAllow`).
  */
 export function vulseAdminCssPlugin(): Plugin {
   return {
     name: 'vulse-admin-css',
     enforce: 'pre',
-    resolveId(source, importer) {
+    async resolveId(source, importer) {
       if (!isAdminCssImport(source, importer)) return
-      return ADMIN_CSS_PATH
+      const resolved = await this.resolve(PACKAGE_IMPORT, importer, { skipSelf: true })
+      return resolved?.id ?? PACKAGE_IMPORT
     },
   }
 }
