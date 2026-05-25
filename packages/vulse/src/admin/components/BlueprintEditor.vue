@@ -143,6 +143,7 @@ const submitError = ref<string | null>(null);
 const saving = ref(false);
 const toast = useToast();
 const hydrated = ref(false);
+const loadError = ref<string | null>(null);
 
 const handleLocked = ref(false);
 const removalTarget = ref<RemovalTarget | null>(null);
@@ -326,9 +327,13 @@ async function load() {
 }
 
 onMounted(async () => {
-  const [, setsMap] = await Promise.all([load(), hydrateSets(), refreshBlueprints()])
-  sets.value = setsMap
-  hydrated.value = true
+  try {
+    const [, setsMap] = await Promise.all([load(), hydrateSets(), refreshBlueprints()])
+    sets.value = setsMap
+    hydrated.value = true
+  } catch (err) {
+    loadError.value = err instanceof Error ? err.message : 'Failed to load schema editor'
+  }
 })
 watch(() => props.handle, load);
 
@@ -811,6 +816,10 @@ async function save() {
 <template>
   <div class="p-6" data-testid="blueprint-editor">
     <h1 class="mb-4 text-xl font-semibold">{{ isCreate ? 'New collection' : `Edit ${handle}` }}</h1>
+
+    <div v-if="loadError" class="mb-4 rounded bg-red-50 px-3 py-2 text-sm text-red-700">
+      {{ loadError }}
+    </div>
 
     <form class="max-w-3xl space-y-6" @submit.prevent="save">
       <div class="space-y-3 rounded border border-zinc-200 bg-white p-4">

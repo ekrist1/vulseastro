@@ -1,7 +1,13 @@
 @import "tailwindcss";
 
-@source "../components";
-@source "../pages";
+/* Scan Vue SFCs and page templates for utility classes. Exclude Astro layouts that
+   import this stylesheet — otherwise Tailwind follows the CSS import during @source
+   scanning and Vite enters a dev full-reload loop (admin dashboard keeps reloading). */
+@source "../components/**/*.vue";
+@source "../pages/**/*.astro";
+@source not "../components/AdminShell.astro";
+@source not "../pages/login.astro";
+@source inline("flex min-h-screen flex-1 overflow-auto p-8 max-w-6xl grid place-items-center bg-zinc-50");
 
 :root {
   --vulse-sidebar-width: 240px;

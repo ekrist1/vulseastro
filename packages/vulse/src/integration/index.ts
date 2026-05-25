@@ -80,6 +80,9 @@ export default function vulse(opts: VulseOptions = {}): AstroIntegration {
             ],
             server: {
               fs: { allow: vulseAdminFsAllow(root) },
+              watch: {
+                ignored: ['**/.vulse/**'],
+              },
             },
             optimizeDeps: {
               exclude: [...OPTIMIZE_DEPS_EXCLUDE],
