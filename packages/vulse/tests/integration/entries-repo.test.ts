@@ -43,4 +43,15 @@ describe('EntriesRepo', () => {
     const updated = await repo.updateWithRevision(e.id, { content: { title: 'b' }, updatedBy: 'u1' })
     expect(updated.version).toBe(2)
   })
+
+  it('findManyByIds returns entries for the given ids at a locale', async () => {
+    const repo = new EntriesRepo(createDb(env.DB))
+    const a = await repo.create({ collection: 'post', slug: 'a', content: { title: 'A' }, createdBy: 'u1' })
+    const b = await repo.create({ collection: 'post', slug: 'b', content: { title: 'B' }, createdBy: 'u1' })
+    await repo.create({ collection: 'post', slug: 'c', content: { title: 'C' }, createdBy: 'u1' })
+
+    const found = await repo.findManyByIds([a.id, b.id])
+    expect(found.map((e) => e.slug).sort()).toEqual(['a', 'b'])
+    expect(await repo.findManyByIds([])).toEqual([])
+  })
 })

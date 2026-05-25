@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, gte, isNull, lte, sql } from 'drizzle-orm'
+import { and, asc, desc, eq, gte, inArray, isNull, lte, sql } from 'drizzle-orm'
 import { nanoid } from 'nanoid'
 import type { VulseDb } from '../db.js'
 import { entries, entryLocales, entryRevisions } from '../schema.js'
@@ -58,7 +58,7 @@ export interface ListOptions {
 type EntryShell = typeof entries.$inferSelect
 type EntryLocale = typeof entryLocales.$inferSelect
 
-function joinToEntry(shell: EntryShell, locale: EntryLocale): EntryRow {
+export function joinToEntry(shell: EntryShell, locale: EntryLocale): EntryRow {
   return {
     id: shell.id,
     collection: shell.collection,
@@ -334,6 +334,16 @@ export class EntriesRepo {
     const limited = opts.limit !== undefined ? base.limit(opts.limit) : base
     const paged = opts.offset !== undefined ? limited.offset(opts.offset) : limited
     const rows = await paged
+    return rows.map((r) => joinToEntry(r.shell, r.loc))
+  }
+
+  /** Fetch multiple entries by id at a single locale (used by relationship includes). */
+  async findManyByIds(ids: string[], locale: string = DEFAULT_LOCALE): Promise<EntryRow[]> {
+    if (ids.length === 0) return []
+    const rows = await this.db.select({ shell: entries, loc: entryLocales })
+      .from(entries)
+      .innerJoin(entryLocales, eq(entryLocales.entryId, entries.id))
+      .where(and(inArray(entries.id, ids), eq(entryLocales.locale, locale)))
     return rows.map((r) => joinToEntry(r.shell, r.loc))
   }
 

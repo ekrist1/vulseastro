@@ -77,6 +77,21 @@ function unwrap(sch: ZodTypeAny): ZodTypeAny {
   return inner
 }
 
+function effectiveTag(sch: ZodTypeAny): string {
+  let current = sch
+  for (;;) {
+    const tag = (current.description ?? '') as string
+    if (tag) return tag
+    const def = current._def as ZodDef
+    if (def.type === 'optional' || def.type === 'default') {
+      current = def.innerType!
+      continue
+    }
+    break
+  }
+  return ''
+}
+
 function maxLength(sch: ZodTypeAny): number | undefined {
   const checks = (sch._def as ZodDef).checks ?? []
   for (const check of checks) {
@@ -107,7 +122,7 @@ export function reflectFields(schema: z.ZodObject<any>): FieldDescriptor[] {
 }
 
 function describe(path: string, sch: ZodTypeAny): FieldDescriptor {
-  const tag = (sch.description ?? '') as string
+  const tag = effectiveTag(sch)
   const required = !sch.isOptional()
 
   if (tag === 'vulse:media') return { path, widget: 'media', required }
