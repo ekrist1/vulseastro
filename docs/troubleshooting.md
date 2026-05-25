@@ -176,7 +176,7 @@ Regenerate by restarting dev — the integration writes types on `astro:config:s
 Confirm `vulse` is in your dependencies and you re-ran `pnpm install` after upgrading. If you're using a monorepo with `workspace:*`, you may also need:
 
 ```bash
-pnpm --filter @ekrist1/vulse build
+pnpm --filter @vulsecms/core build
 ```
 
 to rebuild the `dist/` files the package exports.
@@ -212,6 +212,6 @@ The most expensive paths are full-text search and tree builds. If you see CPU-li
 
 ## Still stuck
 
-- Check the [release notes](https://github.com/ekrist1/vulseastro/releases) for behaviour changes between versions.
+- Check the [release notes](https://github.com/vulsecms/vulse/releases) for behaviour changes between versions.
 - Cross-reference [`directory-structure.md`](directory-structure.md) to confirm files are where they should be.
 - Re-read [`installation.md`](installation.md) end to end — most environment issues come from a half-finished install.

@@ -7,7 +7,7 @@ generated routes.
 ```ts
 // astro.config.mjs
 import { defineConfig } from 'astro/config'
-import vulse from '@ekrist1/vulse/integration'
+import vulse from '@vulsecms/core/integration'
 import { crmSyncPlugin } from './src/vulse/plugins/crm-sync'
 import { welcomeEmailPlugin } from './src/vulse/plugins/welcome-email'
 
@@ -34,7 +34,7 @@ Use `definePlugin()` from `vulse`:
 
 ```ts
 // src/vulse/plugins/example.ts
-import { definePlugin } from '@ekrist1/vulse'
+import { definePlugin } from '@vulsecms/core'
 
 export function examplePlugin() {
   return definePlugin({
@@ -89,7 +89,7 @@ Use `form:beforeSubmit` when the submission should not be saved at all.
 
 ```ts
 // src/vulse/plugins/spam-filter.ts
-import { definePlugin } from '@ekrist1/vulse'
+import { definePlugin } from '@vulsecms/core'
 
 const BLOCKED_TERMS = ['casino', 'crypto bonus', 'loan offer']
 
@@ -124,7 +124,7 @@ Use queued processing for CRM calls that can be slow or unreliable.
 
 ```ts
 // src/vulse/plugins/crm-sync.ts
-import { definePlugin } from '@ekrist1/vulse'
+import { definePlugin } from '@vulsecms/core'
 
 export function crmSyncPlugin() {
   return definePlugin({
@@ -166,7 +166,7 @@ Use `auth:userAfterCreate` for side effects after a member account is created.
 
 ```ts
 // src/vulse/plugins/welcome-email.ts
-import { definePlugin } from '@ekrist1/vulse'
+import { definePlugin } from '@vulsecms/core'
 
 export function welcomeEmailPlugin() {
   return definePlugin({
@@ -200,7 +200,7 @@ Use `auth:userBeforeCreate` when the account should not be created.
 
 ```ts
 // src/vulse/plugins/registration-rules.ts
-import { definePlugin } from '@ekrist1/vulse'
+import { definePlugin } from '@vulsecms/core'
 
 export function registrationRulesPlugin() {
   return definePlugin({

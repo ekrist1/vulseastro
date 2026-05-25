@@ -92,7 +92,7 @@ importers:
 
   playground/vulse-play:
     dependencies:
-      '@ekrist1/vulse':
+      '@vulsecms/core':
         specifier: workspace:*
         version: link:../../packages/vulse
       astro:

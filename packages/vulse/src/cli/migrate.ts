@@ -10,6 +10,6 @@ export async function runMigrate(opts: MigrateOptions): Promise<void> {
   }
   const flag = opts.remote ? '--remote' : '--local'
   const cmd = `wrangler d1 migrations apply DB ${flag}`
-  console.log(`> ${cmd}  (migrations: node_modules/@ekrist1/vulse/migrations via ${file})`)
+  console.log(`> ${cmd}  (migrations: node_modules/@vulsecms/core/migrations via ${file})`)
   execSync(cmd, { stdio: 'inherit' })
 }

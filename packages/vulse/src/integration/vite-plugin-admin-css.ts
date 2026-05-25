@@ -3,7 +3,7 @@ import { fileURLToPath } from 'node:url'
 import { searchForWorkspaceRoot } from 'vite'
 import type { Plugin } from 'vite'
 
-const PACKAGE_IMPORT = '@ekrist1/vulse/admin.css'
+const PACKAGE_IMPORT = '@vulsecms/core/admin.css'
 
 /** Absolute path to shipped admin UI sources (works from dist/integration/). */
 const ADMIN_ROOT = fileURLToPath(new URL('../../src/admin', import.meta.url))

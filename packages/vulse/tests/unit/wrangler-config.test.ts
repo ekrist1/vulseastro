@@ -49,13 +49,13 @@ describe('patchWranglerJsonc', () => {
 }
 `
     const out = patchWranglerJsonc(input)
-    expect(out).toContain('"migrations_dir": "node_modules/@ekrist1/vulse/migrations"')
+    expect(out).toContain('"migrations_dir": "node_modules/@vulsecms/core/migrations"')
   })
 
   it('creates d1 + r2 blocks from scratch', () => {
     const out = patchWranglerJsonc('{\n  "name": "x"\n}\n')
     expect(out).toContain('"d1_databases"')
-    expect(out).toContain('"migrations_dir": "node_modules/@ekrist1/vulse/migrations"')
+    expect(out).toContain('"migrations_dir": "node_modules/@vulsecms/core/migrations"')
     expect(out).toContain('"r2_buckets"')
   })
 })
@@ -69,6 +69,6 @@ database_name = "vulse-db"
 database_id = "abc"
 `
     const out = patchWranglerConfig(input, 'wrangler.toml')
-    expect(out).toContain('migrations_dir = "node_modules/@ekrist1/vulse/migrations"')
+    expect(out).toContain('migrations_dir = "node_modules/@vulsecms/core/migrations"')
   })
 })

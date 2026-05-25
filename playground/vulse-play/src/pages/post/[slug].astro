@@ -5,10 +5,10 @@ import {
   createDb,
   registryForRequest,
   resolvePreviewContent,
-} from '@ekrist1/vulse/server'
-import { resolveEffectiveSeo } from '@ekrist1/vulse'
-import type { SeoContent } from '@ekrist1/vulse'
-import BlockRenderer from '@ekrist1/vulse/client/BlockRenderer.astro'
+} from '@vulsecms/core/server'
+import { resolveEffectiveSeo } from '@vulsecms/core'
+import type { SeoContent } from '@vulsecms/core'
+import BlockRenderer from '@vulsecms/core/client/BlockRenderer.astro'
 import SiteLayout from '../../layouts/SiteLayout.astro'
 
 const slug = Astro.params.slug!

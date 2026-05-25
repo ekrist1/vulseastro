@@ -17,6 +17,6 @@ jobs:
         with: { node-version: 22, cache: 'pnpm' }
       - run: pnpm install --frozen-lockfile
       - run: pnpm -r typecheck
-      - run: pnpm --filter @ekrist1/vulse test
-      - run: pnpm --filter @ekrist1/vulse test:integration
-      - run: pnpm --filter @ekrist1/vulse build
+      - run: pnpm --filter @vulsecms/core test
+      - run: pnpm --filter @vulsecms/core test:integration
+      - run: pnpm --filter @vulsecms/core build

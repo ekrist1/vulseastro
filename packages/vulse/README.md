@@ -18,10 +18,10 @@
 
 > **Alpha:** install the `alpha` dist-tag until 1.0:
 >
-> `pnpm astro add @ekrist1/vulse@alpha`
+> `pnpm astro add @vulsecms/core@beta`
 
 ```bash
-pnpm astro add @ekrist1/vulse@alpha
+pnpm astro add @vulsecms/core@beta
 pnpm astro add cloudflare
 wrangler d1 create vulse-db
 wrangler r2 bucket create vulse-media
@@ -32,7 +32,7 @@ pnpm dev
 
 Sign in at `http://localhost:4321/admin/login`.
 
-The full setup (Cloudflare resources, secrets, first admin) is documented in [`docs/installation.md`](https://github.com/ekrist1/vulseastro/blob/main/docs/installation.md).
+The full setup (Cloudflare resources, secrets, first admin) is documented in [`docs/installation.md`](https://github.com/vulsecms/vulse/blob/main/docs/installation.md).
 
 ## Documentation
 
@@ -40,26 +40,26 @@ Vulse's documentation lives on GitHub:
 
 | Page | Purpose |
 |------|---------|
-| [Installation](https://github.com/ekrist1/vulseastro/blob/main/docs/installation.md) | Prerequisites, install, Cloudflare resources, first admin |
-| [Upgrading](https://github.com/ekrist1/vulseastro/blob/main/docs/upgrading.md) | Updates and migrations |
-| [Configuration](https://github.com/ekrist1/vulseastro/blob/main/docs/configuration.md) | `wrangler.toml` bindings, env vars, runtime settings |
-| [Control panel](https://github.com/ekrist1/vulseastro/blob/main/docs/control-panel.md) | Admin UI walkthrough |
-| [Content modeling](https://github.com/ekrist1/vulseastro/blob/main/docs/content-modeling.md) | Blueprints, sets, replicators, globals, locales |
-| [Frontend](https://github.com/ekrist1/vulseastro/blob/main/docs/frontend.md) | Wiring Vulse into Astro |
-| [Live preview](https://github.com/ekrist1/vulseastro/blob/main/docs/live-preview.md) | Live preview and saved-draft preview |
-| [Forms](https://github.com/ekrist1/vulseastro/blob/main/docs/forms.md) | Form builder, spam, queues, hooks |
-| [Plugins](https://github.com/ekrist1/vulseastro/blob/main/docs/plugins.md) | Native Vulse plugins for forms, auth, CRM, and email workflows |
-| [API reference](https://github.com/ekrist1/vulseastro/blob/main/docs/api-reference.md) | REST endpoints |
-| [CLI reference](https://github.com/ekrist1/vulseastro/blob/main/docs/cli.md) | `vulse migrate`, `seed:admin`, `collection:scaffold` |
-| [Deployment](https://github.com/ekrist1/vulseastro/blob/main/docs/deployment.md) | Cloudflare deploy + production checklist |
-| [Directory structure](https://github.com/ekrist1/vulseastro/blob/main/docs/directory-structure.md) | What files and folders mean |
-| [Troubleshooting](https://github.com/ekrist1/vulseastro/blob/main/docs/troubleshooting.md) | FAQ and common errors |
+| [Installation](https://github.com/vulsecms/vulse/blob/main/docs/installation.md) | Prerequisites, install, Cloudflare resources, first admin |
+| [Upgrading](https://github.com/vulsecms/vulse/blob/main/docs/upgrading.md) | Updates and migrations |
+| [Configuration](https://github.com/vulsecms/vulse/blob/main/docs/configuration.md) | `wrangler.toml` bindings, env vars, runtime settings |
+| [Control panel](https://github.com/vulsecms/vulse/blob/main/docs/control-panel.md) | Admin UI walkthrough |
+| [Content modeling](https://github.com/vulsecms/vulse/blob/main/docs/content-modeling.md) | Blueprints, sets, replicators, globals, locales |
+| [Frontend](https://github.com/vulsecms/vulse/blob/main/docs/frontend.md) | Wiring Vulse into Astro |
+| [Live preview](https://github.com/vulsecms/vulse/blob/main/docs/live-preview.md) | Live preview and saved-draft preview |
+| [Forms](https://github.com/vulsecms/vulse/blob/main/docs/forms.md) | Form builder, spam, queues, hooks |
+| [Plugins](https://github.com/vulsecms/vulse/blob/main/docs/plugins.md) | Native Vulse plugins for forms, auth, CRM, and email workflows |
+| [API reference](https://github.com/vulsecms/vulse/blob/main/docs/api-reference.md) | REST endpoints |
+| [CLI reference](https://github.com/vulsecms/vulse/blob/main/docs/cli.md) | `vulse migrate`, `seed:admin`, `collection:scaffold` |
+| [Deployment](https://github.com/vulsecms/vulse/blob/main/docs/deployment.md) | Cloudflare deploy + production checklist |
+| [Directory structure](https://github.com/vulsecms/vulse/blob/main/docs/directory-structure.md) | What files and folders mean |
+| [Troubleshooting](https://github.com/vulsecms/vulse/blob/main/docs/troubleshooting.md) | FAQ and common errors |
 
 ## Quick example
 
 ```ts
 // src/vulse/collections/post.ts
-import { defineCollection, z, blocks, media } from '@ekrist1/vulse'
+import { defineCollection, z, blocks, media } from '@vulsecms/core'
 
 export default defineCollection({
   name: 'post',
@@ -82,7 +82,7 @@ export default defineCollection({
 ---
 // src/pages/blog/[slug].astro
 import { getCollection } from 'astro:content'
-import BlockRenderer from '@ekrist1/vulse/client/BlockRenderer.astro'
+import BlockRenderer from '@vulsecms/core/client/BlockRenderer.astro'
 
 const posts = await getCollection('post')
 const post = posts.find((p) => p.data.slug === Astro.params.slug)
@@ -101,4 +101,4 @@ if (!post) return Astro.redirect('/404')
 
 ## License
 
-MIT — see [LICENSE](https://github.com/ekrist1/vulseastro/blob/main/LICENSE).
+MIT — see [LICENSE](https://github.com/vulsecms/vulse/blob/main/LICENSE).

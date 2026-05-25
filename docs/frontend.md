@@ -21,7 +21,7 @@ Wire the loader in `src/content.config.ts`:
 
 ```ts
 import { defineCollection, z } from 'astro:content'
-import { vulseLoader } from '@ekrist1/vulse/loader'
+import { vulseLoader } from '@vulsecms/core/loader'
 
 export const collections = {
   post: defineCollection({
@@ -40,7 +40,7 @@ Then use Astro's content API in pages:
 ```astro
 ---
 import { getCollection } from 'astro:content'
-import BlockRenderer from '@ekrist1/vulse/client/BlockRenderer.astro'
+import BlockRenderer from '@vulsecms/core/client/BlockRenderer.astro'
 
 const posts = await getCollection('post')
 const post = posts.find((p) => p.data.slug === Astro.params.slug)
@@ -65,7 +65,7 @@ import {
   getRuntime,
   createDb,
   registryForRequest,
-} from '@ekrist1/vulse/server'
+} from '@vulsecms/core/server'
 
 const env = getRuntimeEnv()
 const db = createDb(env.DB)
@@ -265,8 +265,8 @@ const archive = await rt.sdk.query('post')
 ProseMirror JSON from the TipTap editor renders via `BlockRenderer`:
 
 ```astro
-import BlockRenderer from '@ekrist1/vulse/client/BlockRenderer.astro'
-<!-- or Vue: import BlockRenderer from '@ekrist1/vulse/client/BlockRenderer.vue' -->
+import BlockRenderer from '@vulsecms/core/client/BlockRenderer.astro'
+<!-- or Vue: import BlockRenderer from '@vulsecms/core/client/BlockRenderer.vue' -->
 
 <BlockRenderer
   blocks={entry.data.body ?? []}
@@ -295,7 +295,7 @@ Reusable sets defined under **Admin → Settings → Sets** appear in the editor
 
 ```vue
 <script setup lang="ts">
-import BlockRenderer from '@ekrist1/vulse/client/BlockRenderer.vue'
+import BlockRenderer from '@vulsecms/core/client/BlockRenderer.vue'
 import QuoteSet from '../components/sets/QuoteSet.vue'
 
 defineProps<{ body: unknown }>()
@@ -320,7 +320,7 @@ If you've enabled more than one locale in **Settings → Site**, the runtime SDK
 
 ```ts
 // SSG: build one Astro collection per language
-import { vulseLoader } from '@ekrist1/vulse/loader'
+import { vulseLoader } from '@vulsecms/core/loader'
 
 export const collections = {
   post_en: defineCollection({ loader: vulseLoader({ collection: 'post', locale: 'en' }) }),
@@ -360,8 +360,8 @@ Vulse ships these **headless** — you provide the markup and styling.
 
 ```astro
 ---
-import SignInForm from '@ekrist1/vulse/client/components/SignInForm.astro'
-import SignUpForm from '@ekrist1/vulse/client/components/SignUpForm.astro'
+import SignInForm from '@vulsecms/core/client/components/SignInForm.astro'
+import SignUpForm from '@vulsecms/core/client/components/SignUpForm.astro'
 const next = Astro.url.searchParams.get('next') ?? '/'
 ---
 <h1>Sign in</h1>
@@ -393,7 +393,7 @@ Hide the sign-up block when registration is off, or rely on the API returning 40
 
 ```astro
 ---
-import SessionGuard from '@ekrist1/vulse/client/components/SessionGuard.astro'
+import SessionGuard from '@vulsecms/core/client/components/SessionGuard.astro'
 ---
 <SessionGuard requireRole="member" redirectTo="/sign-in">
   <h1>Members only</h1>
@@ -405,7 +405,7 @@ import SessionGuard from '@ekrist1/vulse/client/components/SessionGuard.astro'
 ### Browser auth SDK
 
 ```ts
-import { auth as vulseAuth } from '@ekrist1/vulse/client/auth'
+import { auth as vulseAuth } from '@vulsecms/core/client/auth'
 
 await vulseAuth.signIn({ email, password })
 await vulseAuth.signUp({ email, password, name })

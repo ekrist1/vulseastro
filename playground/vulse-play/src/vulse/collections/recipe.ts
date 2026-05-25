@@ -1,4 +1,4 @@
-import { defineCollection, z, blocks } from '@ekrist1/vulse'
+import { defineCollection, z, blocks } from '@vulsecms/core'
 
 export default defineCollection({
   name: 'recipe',

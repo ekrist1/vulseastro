@@ -1,7 +1,7 @@
 ---
 import SiteLayout from '../layouts/SiteLayout.astro'
-import BlockRenderer from '@ekrist1/vulse/client/BlockRenderer.astro'
-import { getRuntimeEnv, getRuntime, createDb, registryForRequest, resolvePreviewContent } from '@ekrist1/vulse/server'
+import BlockRenderer from '@vulsecms/core/client/BlockRenderer.astro'
+import { getRuntimeEnv, getRuntime, createDb, registryForRequest, resolvePreviewContent } from '@vulsecms/core/server'
 
 const slug = Astro.params.slug!
 const env = getRuntimeEnv()

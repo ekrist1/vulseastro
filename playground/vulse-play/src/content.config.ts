@@ -1,5 +1,5 @@
 import { defineCollection, z } from 'astro:content'
-import { vulseLoader } from '@ekrist1/vulse/loader'
+import { vulseLoader } from '@vulsecms/core/loader'
 
 export const collections = {
   page: defineCollection({

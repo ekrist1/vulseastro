@@ -13,7 +13,7 @@ npx vulse migrate --remote   # production D1
 After the install you should:
 
 1. Restart your dev server (Astro picks up changes to integrations only on startup).
-2. Check the [release notes](https://github.com/ekrist1/vulseastro/releases) for breaking changes.
+2. Check the [release notes](https://github.com/vulsecms/vulse/releases) for breaking changes.
 3. Re-build before deploying:
 
    ```bash
@@ -24,7 +24,7 @@ After the install you should:
 
 Migrations are bundled into the Vulse package and shipped with each release. They are forward-only.
 
-The runtime applies them automatically the first time the worker boots after a deploy, by reading the bundled SQL files at `node_modules/@ekrist1/vulse/migrations/`. You don't normally need to run `vulse migrate` manually in production — but it is useful when you want to apply changes before the first request hits the new worker, or when you are operating against multiple environments and want to keep ledgers in sync.
+The runtime applies them automatically the first time the worker boots after a deploy, by reading the bundled SQL files at `node_modules/@vulsecms/core/migrations/`. You don't normally need to run `vulse migrate` manually in production — but it is useful when you want to apply changes before the first request hits the new worker, or when you are operating against multiple environments and want to keep ledgers in sync.
 
 ### What `vulse migrate` does
 
@@ -69,7 +69,7 @@ pnpm astro add cloudflare
 
 # Re-add Vulse (this is idempotent for already-installed packages, but it does
 # re-run the integration's install hook to patch wrangler.toml and tsconfig.json).
-pnpm astro add @ekrist1/vulse
+pnpm astro add @vulsecms/core
 ```
 
 ## After upgrading: re-scaffold collection pages?

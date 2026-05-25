@@ -34,7 +34,7 @@ compatibility_flags = ["nodejs_compat"]
 binding = "DB"
 database_name = "vulse-db-prod"
 database_id = "<production-d1-id>"
-migrations_dir = "node_modules/@ekrist1/vulse/migrations"
+migrations_dir = "node_modules/@vulsecms/core/migrations"
 
 [[r2_buckets]]
 binding = "BUCKET"
@@ -119,7 +119,7 @@ Wire it from your worker entry:
 
 ```ts
 // src/worker.ts (the file `main` points to)
-import { vulseScheduled } from '@ekrist1/vulse/integration/cron'
+import { vulseScheduled } from '@vulsecms/core/integration/cron'
 
 export default {
   async scheduled(event, env, ctx) {
@@ -143,7 +143,7 @@ Form submissions are stored synchronously, but notifications, webhooks, and queu
 
 ```ts
 // src/worker.ts
-import { vulseFormQueue, vulseScheduled } from '@ekrist1/vulse/server'
+import { vulseFormQueue, vulseScheduled } from '@vulsecms/core/server'
 
 export default {
   async scheduled(event, env, ctx) {

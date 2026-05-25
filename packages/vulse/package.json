@@ -1,15 +1,15 @@
 {
-  "name": "@ekrist1/vulse",
-  "version": "0.1.7-alpha.4",
+  "name": "@vulsecms/core",
+  "version": "0.1.0-beta.0",
   "description": "Astro-native headless CMS for Cloudflare (D1, R2, Workers)",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/ekrist1/vulseastro.git",
+    "url": "git+https://github.com/vulsecms/vulse.git",
     "directory": "packages/vulse"
   },
-  "bugs": "https://github.com/ekrist1/vulseastro/issues",
-  "homepage": "https://github.com/ekrist1/vulseastro#readme",
+  "bugs": "https://github.com/vulsecms/vulse/issues",
+  "homepage": "https://github.com/vulsecms/vulse#readme",
   "keywords": [
     "astro",
     "astro-integration",
