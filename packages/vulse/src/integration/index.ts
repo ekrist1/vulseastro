@@ -88,7 +88,11 @@ export default function vulse(opts: VulseOptions = {}): AstroIntegration {
             server: {
               fs: { allow: vulseAdminFsAllow(root) },
               watch: {
-                ignored: ['**/.vulse/**'],
+                // .wrangler holds Miniflare's local D1 SQLite; in WAL mode the
+                // -wal/-shm files are touched continuously while getPlatformProxy
+                // keeps the DB open, which would otherwise fire a file-change ->
+                // full-reload on a loop. .astro is generated state. Ignore both.
+                ignored: ['**/.vulse/**', '**/.wrangler/**', '**/.astro/**'],
               },
             },
             optimizeDeps: {
