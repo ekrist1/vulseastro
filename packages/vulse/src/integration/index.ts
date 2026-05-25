@@ -21,14 +21,15 @@ const SSR_NODE_EXTERNAL = [
   'blake3-wasm',
 ] as const
 
-/** Packages that break Vite dep pre-bundling (native bindings, dev-only tools). */
+/**
+ * Excluded from Vite dep pre-bundling: dev/build-only or native deps that break
+ * esbuild. Do NOT add @vulsecms/core's own runtime deps (better-auth, drizzle-orm,
+ * nanoid, …) here — they're nested under the package in pnpm installs, and
+ * excluding them from the SSR optimizer leaves unresolvable bare imports in the
+ * SSR bundle (e.g. "Cannot find module 'drizzle-orm/d1'"). `astro/zod` is safe to
+ * exclude because it resolves via the consumer's top-level `astro` install.
+ */
 const OPTIMIZE_DEPS_EXCLUDE = [
-  'better-auth',
-  'better-auth/adapters/drizzle',
-  'drizzle-orm',
-  'drizzle-orm/d1',
-  'drizzle-orm/sqlite-core',
-  'nanoid',
   'astro/zod',
   '@tailwindcss/vite',
   '@tailwindcss/oxide',

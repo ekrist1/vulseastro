@@ -1,6 +1,6 @@
 {
   "name": "@vulsecms/core",
-  "version": "0.1.0-beta.6",
+  "version": "0.1.0-beta.7",
   "description": "Astro-native headless CMS for Cloudflare (D1, R2, Workers)",
   "license": "MIT",
   "repository": {

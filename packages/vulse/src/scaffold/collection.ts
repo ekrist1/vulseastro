@@ -146,6 +146,11 @@ export function generateShowPage(input: CollectionScaffoldInput): string {
   return `---
 import { getRuntimeEnv, getRuntime, createDb, registryForRequest, resolvePreviewContent } from '${VULSE_PACKAGE}/server'
 ${blockImport}
+// Reads content from D1 per request, so it must render on demand. Required when
+// the project uses Astro's default \`output: 'static'\` — otherwise a dynamic
+// route errors with "getStaticPaths() function is required for dynamic routes".
+export const prerender = false
+
 const slug = Astro.params.slug!
 const env = getRuntimeEnv()
 const db = createDb(env.DB)

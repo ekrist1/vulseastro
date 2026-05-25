@@ -45,6 +45,10 @@ describe('collection scaffold', () => {
     ])
     expect(generateCodeBlueprint(input)).toContain("preview: { path: '/blog/{slug}' }")
     expect(scaffoldCliCommand(input)).toContain('collection:scaffold blog')
+    // The show page reads D1 per request, so it must opt out of prerendering
+    // or it breaks under Astro's default `output: 'static'`.
+    const showPage = files.find((f) => f.path === 'src/pages/blog/[slug].astro')
+    expect(showPage?.content).toContain('export const prerender = false')
   })
 
   it('patches content.config.ts without duplicating collection', () => {
