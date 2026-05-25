@@ -16,12 +16,12 @@
 
 ## Install
 
-> **Alpha:** install the `alpha` dist-tag until 1.0:
->
-> `pnpm astro add @vulsecms/core@beta`
+> **Beta:** Vulse is in public beta until 1.0. `astro add` doesn't accept a dist-tag
+> argument, so just run `pnpm astro add @vulsecms/core` — the `beta` release is what
+> currently installs. To pin the prerelease explicitly: `pnpm add @vulsecms/core@beta`.
 
 ```bash
-pnpm astro add @vulsecms/core@beta
+pnpm astro add @vulsecms/core
 pnpm astro add cloudflare
 wrangler d1 create vulse-db
 wrangler r2 bucket create vulse-media
