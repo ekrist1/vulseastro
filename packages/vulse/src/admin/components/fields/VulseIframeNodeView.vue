@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { NodeViewWrapper, type NodeViewProps } from '@tiptap/vue-3';
+import { NodeViewWrapper, nodeViewProps } from '@tiptap/vue-3';
 import { ref, watch } from 'vue';
 import { deleteCurrentNode, insertParagraphAfter, insertParagraphBefore } from './set-node-utils.js';
 import { parseIframeCode } from './url-utils.js';
 
-const props = defineProps<NodeViewProps>();
+const props = defineProps(nodeViewProps);
 
 const codeDraft = ref(
   String(

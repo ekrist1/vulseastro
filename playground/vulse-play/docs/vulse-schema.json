@@ -1,0 +1,161 @@
+{
+  "version": 1,
+  "generatedAt": "2026-05-25T12:14:28.033Z",
+  "source": "database",
+  "collections": [
+    {
+      "handle": "page",
+      "label": "Page",
+      "singleton": false,
+      "admin": {
+        "titleField": "title",
+        "listColumns": [
+          "title",
+          "slug"
+        ]
+      },
+      "preview": {
+        "path": "/{slug}"
+      },
+      "fields": [
+        {
+          "name": "title",
+          "label": "title",
+          "ui": {
+            "kind": "text"
+          },
+          "optional": false
+        },
+        {
+          "name": "slug",
+          "label": "slug",
+          "ui": {
+            "kind": "text"
+          },
+          "optional": false
+        },
+        {
+          "name": "body",
+          "label": "body",
+          "ui": {
+            "kind": "blocks"
+          },
+          "optional": true
+        }
+      ]
+    },
+    {
+      "handle": "post",
+      "label": "Blog post",
+      "singleton": false,
+      "drafts": true,
+      "seo": true,
+      "admin": {
+        "titleField": "title",
+        "listColumns": [
+          "title",
+          "slug"
+        ],
+        "seoMapping": {
+          "metaDescription": "body",
+          "ogImage": "main_image"
+        }
+      },
+      "preview": {
+        "path": "/post/{slug}"
+      },
+      "fields": [
+        {
+          "name": "title",
+          "label": "title",
+          "ui": {
+            "kind": "text"
+          },
+          "optional": false
+        },
+        {
+          "name": "slug",
+          "label": "slug",
+          "ui": {
+            "kind": "text"
+          },
+          "optional": false
+        },
+        {
+          "name": "body",
+          "label": "body",
+          "ui": {
+            "kind": "blocks"
+          },
+          "optional": true
+        },
+        {
+          "name": "main_image",
+          "label": "Main image",
+          "ui": {
+            "kind": "asset"
+          },
+          "optional": true
+        },
+        {
+          "name": "related_entries",
+          "label": "Related entries",
+          "ui": {
+            "kind": "entries",
+            "collections": [
+              "post"
+            ],
+            "max": 5
+          },
+          "optional": false
+        }
+      ]
+    },
+    {
+      "handle": "recipe",
+      "label": "Recipe",
+      "singleton": false,
+      "tree": true,
+      "drafts": true,
+      "seo": true,
+      "admin": {
+        "titleField": "title",
+        "listColumns": [
+          "title",
+          "slug"
+        ]
+      },
+      "preview": {
+        "path": "/recipes/{slug}"
+      },
+      "fields": [
+        {
+          "name": "title",
+          "label": "title",
+          "ui": {
+            "kind": "text"
+          },
+          "optional": false
+        },
+        {
+          "name": "slug",
+          "label": "slug",
+          "ui": {
+            "kind": "text"
+          },
+          "optional": false
+        },
+        {
+          "name": "body",
+          "label": "body",
+          "ui": {
+            "kind": "blocks"
+          },
+          "optional": true
+        }
+      ]
+    }
+  ],
+  "sets": [],
+  "globals": []
+}

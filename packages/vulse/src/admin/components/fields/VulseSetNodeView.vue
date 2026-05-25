@@ -1,12 +1,11 @@
 <script setup lang="ts">
-import type { NodeViewProps } from '@tiptap/vue-3'
-import { NodeViewWrapper } from '@tiptap/vue-3'
+import { NodeViewWrapper, nodeViewProps } from '@tiptap/vue-3'
 import { computed, onMounted, ref } from 'vue'
 import { nestedFieldToDescriptor } from '../../../core/blueprints/code-to-definition.js'
 import { useSets } from '../../composables/useSets.js'
 import FieldRenderer from './FieldRenderer.vue'
 
-const props = defineProps<NodeViewProps>()
+const props = defineProps(nodeViewProps)
 const { get, hydrate } = useSets()
 onMounted(() => { void hydrate() })
 

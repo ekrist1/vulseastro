@@ -17,10 +17,13 @@ describe('patchWranglerJsonc', () => {
     expect(out).toContain('"r2_buckets"')
   })
 
-  it('adds nodejs_compat when neither compatibility_flags nor compatibility_date exist', () => {
+  it('adds compatibility_date and nodejs_compat when neither compatibility_flags nor compatibility_date exist', () => {
     const out = patchWranglerJsonc('{\n  "name": "w",\n  "main": "./src/index.ts"\n}')
     expect(out).toContain('nodejs_compat')
+    expect(out).toContain('"compatibility_date"')
     expect(() => parseJsonc(out)).not.toThrow()
+    // Idempotent: a second pass must not change an already-patched config.
+    expect(patchWranglerJsonc(out)).toBe(out)
   })
 
   it('appends nodejs_compat to an existing compatibility_flags array', () => {
@@ -70,5 +73,15 @@ database_id = "abc"
 `
     const out = patchWranglerConfig(input, 'wrangler.toml')
     expect(out).toContain('migrations_dir = "node_modules/@vulsecms/core/migrations"')
+  })
+
+  it('adds compatibility_date + nodejs_compat to a toml config lacking them, idempotently', () => {
+    const input = 'name = "x"\n'
+    const out = patchWranglerConfig(input, 'wrangler.toml')
+    expect(out).toContain('compatibility_date = "')
+    expect(out).toContain('compatibility_flags = ["nodejs_compat"]')
+    // A second pass must be a no-op — otherwise the Cloudflare adapter
+    // restarts the dev server on every patch.
+    expect(patchWranglerConfig(out, 'wrangler.toml')).toBe(out)
   })
 })

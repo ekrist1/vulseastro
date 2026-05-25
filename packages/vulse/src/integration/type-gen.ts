@@ -1,5 +1,14 @@
-import { writeFile, mkdir, readdir } from 'node:fs/promises'
+import { mkdir, readFile, readdir, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
+
+async function writeFileIfChanged(path: string, contents: string): Promise<void> {
+  try {
+    if (await readFile(path, 'utf8') === contents) return
+  } catch {
+    // Missing files are written below.
+  }
+  await writeFile(path, contents, 'utf8')
+}
 
 export async function generateBlueprintTypes(projectRoot: string): Promise<void> {
   const collectionsDir = join(projectRoot, 'src/vulse/collections')
@@ -24,5 +33,5 @@ declare module 'astro:content' {
 }
 `
   await mkdir(join(projectRoot, '.vulse'), { recursive: true })
-  await writeFile(join(projectRoot, '.vulse/types.d.ts'), out, 'utf8')
+  await writeFileIfChanged(join(projectRoot, '.vulse/types.d.ts'), out)
 }

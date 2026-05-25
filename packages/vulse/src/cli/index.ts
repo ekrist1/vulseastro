@@ -74,6 +74,19 @@ program
     })
   })
 
+program
+  .command('schema:export')
+  .description('Generate AGENTS.md and docs/vulse-schema.* for AI-assisted frontend development')
+  .option('--remote', 'Read schema from production D1 instead of local miniflare', false)
+  .option('--out-dir <dir>', 'Directory for vulse-schema.md/json (default: docs)')
+  .action(async (opts) => {
+    const { runSchemaExport } = await import('./schema-export.js')
+    await runSchemaExport({
+      remote: !!opts.remote,
+      ...(opts.outDir !== undefined ? { docsDir: opts.outDir } : {}),
+    })
+  })
+
 program.parseAsync().catch((err) => {
   console.error(err instanceof Error ? err.message : err)
   process.exit(1)

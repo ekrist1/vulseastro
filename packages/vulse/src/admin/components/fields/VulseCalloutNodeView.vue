@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { NodeViewContent, NodeViewWrapper, type NodeViewProps } from '@tiptap/vue-3';
+import { NodeViewContent, NodeViewWrapper, nodeViewProps } from '@tiptap/vue-3';
 import { computed } from 'vue';
 import { deleteCurrentNode, insertParagraphAfter, insertParagraphBefore } from './set-node-utils.js';
 
-const props = defineProps<NodeViewProps>();
+const props = defineProps(nodeViewProps);
 
 const tone = computed(() => String(props.node.attrs?.tone === 'warn' ? 'warn' : 'info'));
 

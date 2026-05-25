@@ -129,6 +129,30 @@ npx vulse collection:scaffold blog --skip-blueprint --skip-pages
 
 Restart your dev server after scaffolding so Astro picks up the new pages and loader.
 
+## `vulse schema:export`
+
+Generate committed AI-friendly schema docs from your Vulse content model.
+
+```bash
+npx vulse schema:export
+npx vulse schema:export --remote
+```
+
+| Output | Purpose |
+|--------|---------|
+| `AGENTS.md` | Short AI onboarding — collection summary and frontend rules |
+| `docs/vulse-schema.md` | Full human-readable schema reference |
+| `docs/vulse-schema.json` | Machine-readable schema snapshot |
+
+| Flag | Purpose |
+|------|---------|
+| `--remote` | Read collections, sets, and globals from production D1 instead of local miniflare. |
+| `--out-dir <dir>` | Directory for `vulse-schema.md` and `vulse-schema.json` (default: `docs`). `AGENTS.md` always writes to the project root. |
+
+When D1 is unavailable, the command falls back to code blueprints in `src/vulse/collections/` and omits sets/globals (with a warning in the output).
+
+See [`ai-schema.md`](ai-schema.md) for workflow tips and optional `schemaDocs: true` integration setting.
+
 ## `vulse --help`
 
 ```bash
@@ -137,6 +161,7 @@ npx vulse setup --help
 npx vulse migrate --help
 npx vulse seed:admin --help
 npx vulse collection:scaffold --help
+npx vulse schema:export --help
 ```
 
 Each subcommand prints its flags.

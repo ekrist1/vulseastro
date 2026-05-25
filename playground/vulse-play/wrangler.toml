@@ -7,7 +7,7 @@ compatibility_flags = ["nodejs_compat"]
 binding = "DB"
 database_name = "vulse-db"
 database_id = "local-dev"
-migrations_dir = "node_modules/@ekrist1/vulse/migrations"
+migrations_dir = "node_modules/@vulsecms/core/migrations"
 
 # vulse:r2
 [[r2_buckets]]

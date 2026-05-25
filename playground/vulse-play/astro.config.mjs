@@ -1,7 +1,7 @@
 // @ts-check
 import { defineConfig } from 'astro/config';
 import cloudflare from '@astrojs/cloudflare';
-import vulse from '@ekrist1/vulse/integration';
+import vulse from '@vulsecms/core/integration';
 
 // https://astro.build/config
 export default defineConfig({

@@ -1,6 +1,6 @@
 import { access, readFile, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
-import { patchWranglerToml, VULSE_MIGRATIONS_DIR, type PatchOptions } from './wrangler-patch.js'
+import { patchWranglerToml, VULSE_MIGRATIONS_DIR, DEFAULT_COMPATIBILITY_DATE, type PatchOptions } from './wrangler-patch.js'
 
 const WRANGLER_FILES = ['wrangler.jsonc', 'wrangler.toml', 'wrangler.json'] as const
 const DEFAULT_PATCH: PatchOptions = { d1Name: 'vulse-db', r2Bucket: 'vulse-media' }
@@ -76,6 +76,10 @@ export function patchWranglerJsonc(input: string, opts: PatchOptions = DEFAULT_P
     }
   ],`
     out = insertJsoncProperty(out, r2Block)
+  }
+
+  if (!out.includes('"compatibility_date"')) {
+    out = insertJsoncProperty(out, `  "compatibility_date": "${DEFAULT_COMPATIBILITY_DATE}",`)
   }
 
   if (!out.includes('nodejs_compat')) {

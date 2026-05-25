@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { NodeViewContent, NodeViewWrapper, type NodeViewProps } from '@tiptap/vue-3';
+import { NodeViewContent, NodeViewWrapper, nodeViewProps } from '@tiptap/vue-3';
 import { appendContentInside, deleteCurrentNode, insertParagraphAfter, insertParagraphBefore } from './set-node-utils.js';
 
-const props = defineProps<NodeViewProps>();
+const props = defineProps(nodeViewProps);
 
 function addItem() {
   appendContentInside(props, {

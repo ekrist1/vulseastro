@@ -10,6 +10,7 @@ import { createVulseViteLogger } from './vite-logger.js'
 import { vulseSuppressSourcemapsPlugin } from './vite-plugin-suppress-sourcemaps.js'
 import { generateBlueprintTypes } from './type-gen.js'
 import { initLoaderBinding } from './loader-binding.js'
+import { exportSchemaDocs } from './schema-docs-gen.js'
 import { ensureWranglerConfig } from './wrangler-config.js'
 import { setVulsePlugins } from '../server/plugins.js'
 import type { VulsePlugin } from '../core/plugins/definition.js'
@@ -42,6 +43,8 @@ export interface VulseOptions {
   /** Override the admin route prefix. Defaults to `/admin`. */
   adminPath?: string
   plugins?: VulsePlugin[]
+  /** Regenerate AGENTS.md + docs/vulse-schema.* on dev/build. Default: false. */
+  schemaDocs?: boolean
 }
 
 export default function vulse(opts: VulseOptions = {}): AstroIntegration {
@@ -53,6 +56,10 @@ export default function vulse(opts: VulseOptions = {}): AstroIntegration {
         const root = typeof config.root === 'string' ? config.root : fileURLToPath(config.root)
         await generateBlueprintTypes(root)
         await initLoaderBinding(root)
+        if (opts.schemaDocs) {
+          const db = globalThis.__VULSE_TEST_DB__
+          await exportSchemaDocs(root, db ? { db } : {})
+        }
         await ensureWranglerConfig(root)
         injectVulseRoutes({ injectRoute, logger })
         injectVulseAdminRoutes({

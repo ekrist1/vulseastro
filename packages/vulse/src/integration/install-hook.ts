@@ -72,5 +72,8 @@ One-time setup (copy/paste):
   npx vulse seed:admin --email you@example.com
 
 Then: astro dev → open /admin to log in.
+
+After defining your content model, export schema docs for AI tools:
+  npx vulse schema:export
 `)
 }

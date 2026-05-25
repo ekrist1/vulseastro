@@ -13,12 +13,16 @@ import { applySeoToSchema, type SeoFieldMapping } from './seo.js'
 let registryCache: BlueprintRegistry | null = null
 let seededBlueprints: Blueprint[] | null = null
 
-async function loadBlueprintModules(): Promise<Blueprint[]> {
+async function loadBlueprintModules(projectRoot?: string): Promise<Blueprint[]> {
   if (seededBlueprints) return seededBlueprints
   try {
     const mod = await import('virtual:vulse-blueprints')
     return mod.default as Blueprint[]
   } catch {
+    if (projectRoot) {
+      const { loadCodeBlueprintsFromDisk } = await import('./load-from-disk.js')
+      return loadCodeBlueprintsFromDisk(projectRoot)
+    }
     return []
   }
 }
@@ -69,8 +73,8 @@ function inferAdmin(def: Blueprint['definition']): Blueprint['admin'] {
   return { titleField, listColumns: [titleField] }
 }
 
-export async function registryFromDb(db: VulseDb): Promise<BlueprintRegistry> {
-  const codeBlueprints = await loadBlueprintModules()
+export async function registryFromDb(db: VulseDb, projectRoot?: string): Promise<BlueprintRegistry> {
+  const codeBlueprints = await loadBlueprintModules(projectRoot)
   await seedCodeBlueprints(db, codeBlueprints)
   const sets = await loadCompiledSets(db)
   const codeByName = new Map(codeBlueprints.map((bp) => [bp.name, bp]))

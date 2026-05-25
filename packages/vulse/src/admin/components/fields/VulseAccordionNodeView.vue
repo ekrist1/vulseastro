@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { NodeViewContent, NodeViewWrapper, type NodeViewProps } from '@tiptap/vue-3';
+import { NodeViewContent, NodeViewWrapper, nodeViewProps } from '@tiptap/vue-3';
 import { computed } from 'vue';
 import {
   deleteCurrentNode,
@@ -10,7 +10,7 @@ import {
   parentNodeInfo,
 } from './set-node-utils.js';
 
-const props = defineProps<NodeViewProps>();
+const props = defineProps(nodeViewProps);
 
 const summary = computed(() => String(props.node.attrs?.summary ?? 'Accordion'));
 const open = computed(() => Boolean(props.node.attrs?.open));
