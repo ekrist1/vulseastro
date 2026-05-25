@@ -24,4 +24,19 @@ describe('patchWranglerToml', () => {
     expect(out).toMatch(/\[\[d1_databases\]\]/)
     expect(out).toMatch(/\[\[r2_buckets\]\]/)
   })
+
+  it('adds nodejs_compat at the root (before tables) when there is no compatibility_date', () => {
+    const out = patchWranglerToml('name = "w"\n', { d1Name: 'vulse-db', r2Bucket: 'vulse-media' })
+    expect(out).toContain('nodejs_compat')
+    // A bare key must precede [[table]] sections or TOML binds it to the last table.
+    expect(out.indexOf('nodejs_compat')).toBeLessThan(out.indexOf('[[d1_databases]]'))
+  })
+
+  it('adds nodejs_compat next to an existing compatibility_date', () => {
+    const out = patchWranglerToml('name = "w"\ncompatibility_date = "2024-09-01"\n', {
+      d1Name: 'vulse-db',
+      r2Bucket: 'vulse-media',
+    })
+    expect(out).toContain('compatibility_flags = ["nodejs_compat"]')
+  })
 })

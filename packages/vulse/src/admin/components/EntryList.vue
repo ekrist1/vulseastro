@@ -78,16 +78,7 @@ watch(activeLocale, () => {
 
     <CollectionTree v-if="tree" :handle="collection" :entry-locale="activeLocale" />
 
-    <div v-else-if="loading" class="text-sm text-zinc-500">Loading…</div>
-
-    <div
-      v-else-if="rows.length === 0"
-      class="rounded border border-dashed border-zinc-300 bg-white p-8 text-center text-sm text-zinc-500"
-    >
-      No <code>{{ activeLocale }}</code> entries yet. Create your first one with “+ New”.
-    </div>
-
-    <div v-else class="overflow-hidden rounded border border-zinc-200 bg-white">
+    <div v-else class="overflow-hidden rounded border border-zinc-200 bg-white min-h-[12rem]">
       <table class="w-full text-left text-sm">
         <thead class="border-b border-zinc-200 bg-zinc-50">
           <tr>
@@ -95,7 +86,24 @@ watch(activeLocale, () => {
             <th class="p-3 font-medium text-zinc-600">Status</th>
           </tr>
         </thead>
-        <tbody>
+        <tbody v-if="loading">
+          <tr v-for="n in 3" :key="n" class="border-b border-zinc-100 last:border-0">
+            <td v-for="c in columns" :key="c" class="p-3">
+              <span class="inline-block h-4 w-24 animate-pulse rounded bg-zinc-100" />
+            </td>
+            <td class="p-3">
+              <span class="inline-block h-5 w-16 animate-pulse rounded bg-zinc-100" />
+            </td>
+          </tr>
+        </tbody>
+        <tbody v-else-if="rows.length === 0">
+          <tr>
+            <td :colspan="columns.length + 1" class="p-8 text-center text-sm text-zinc-500">
+              No <code>{{ activeLocale }}</code> entries yet. Create your first one with “+ New”.
+            </td>
+          </tr>
+        </tbody>
+        <tbody v-else>
           <tr v-for="r in rows" :key="r.id" class="border-b border-zinc-100 last:border-0 hover:bg-zinc-50">
             <td v-for="c in columns" :key="c" class="p-3">
               <a

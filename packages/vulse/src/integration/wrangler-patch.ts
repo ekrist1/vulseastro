@@ -22,7 +22,13 @@ export function patchWranglerToml(input: string, opts: PatchOptions): string {
     out += `\n${R2_MARKER}\n[[r2_buckets]]\nbinding = "BUCKET"\nbucket_name = "${opts.r2Bucket}"\n`
   }
   if (!out.includes('nodejs_compat')) {
-    out = out.replace(/compatibility_date = "[^"]+"/, (m) => `${m}\ncompatibility_flags = ["nodejs_compat"]`)
+    if (/compatibility_date = "[^"]+"/.test(out)) {
+      out = out.replace(/compatibility_date = "[^"]+"/, (m) => `${m}\ncompatibility_flags = ["nodejs_compat"]`)
+    } else {
+      // No compatibility_date to anchor to. Prepend at the root — a bare TOML key
+      // appended at the end would bind to the last [[table]] section, not the root.
+      out = `compatibility_flags = ["nodejs_compat"]\n${out}`
+    }
   }
   return out
 }

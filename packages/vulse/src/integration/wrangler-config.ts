@@ -23,6 +23,20 @@ export function isJsonWranglerConfig(file: WranglerConfigFile): boolean {
   return file === 'wrangler.jsonc' || file === 'wrangler.json'
 }
 
+/**
+ * Insert a top-level property block immediately before the config's closing brace.
+ * Adds a comma to the preceding property when it lacks a trailing one — otherwise
+ * the result is invalid JSON (the common case: a scaffold whose last property has
+ * no trailing comma).
+ */
+function insertJsoncProperty(input: string, block: string): string {
+  return input.replace(/^([\s\S]*)\}(\s*)$/, (_match, body: string) => {
+    const trimmed = body.replace(/\s+$/, '')
+    const needsComma = trimmed.length > 0 && !/[,{]$/.test(trimmed)
+    return `${trimmed}${needsComma ? ',' : ''}\n${block}\n}\n`
+  })
+}
+
 export function patchWranglerJsonc(input: string, opts: PatchOptions = DEFAULT_PATCH): string {
   const D1_MARKER = '// vulse:d1'
   const R2_MARKER = '// vulse:r2'
@@ -49,7 +63,7 @@ export function patchWranglerJsonc(input: string, opts: PatchOptions = DEFAULT_P
       "migrations_dir": "${VULSE_MIGRATIONS_DIR}"
     }
   ],`
-      out = out.replace(/\}\s*$/, `${d1Block}\n}\n`)
+      out = insertJsoncProperty(out, d1Block)
     }
   }
 
@@ -61,7 +75,7 @@ export function patchWranglerJsonc(input: string, opts: PatchOptions = DEFAULT_P
       "bucket_name": "${opts.r2Bucket}"
     }
   ],`
-    out = out.replace(/\}\s*$/, `${r2Block}\n}\n`)
+    out = insertJsoncProperty(out, r2Block)
   }
 
   if (!out.includes('nodejs_compat')) {
@@ -76,6 +90,8 @@ export function patchWranglerJsonc(input: string, opts: PatchOptions = DEFAULT_P
         /"compatibility_date"\s*:\s*"[^"]*"/,
         (m) => `${m},\n  "compatibility_flags": ["nodejs_compat"]`,
       )
+    } else {
+      out = insertJsoncProperty(out, `  "compatibility_flags": ["nodejs_compat"],`)
     }
   }
 
@@ -107,16 +123,21 @@ export function patchWranglerConfig(
   return patched
 }
 
-/** Ensure the active wrangler config points migrations at the bundled package SQL. */
+/**
+ * Patch an existing wrangler config so migrations point at the bundled package SQL
+ * (and D1/R2/nodejs_compat are present). Never creates a config from scratch —
+ * that belongs to `vulse setup`, not to every `astro dev`/`build`. Returns the
+ * patched file, or null when no wrangler config exists.
+ */
 export async function ensureWranglerConfig(
   cwd: string,
   opts: PatchOptions = DEFAULT_PATCH,
-): Promise<WranglerConfigFile> {
+): Promise<WranglerConfigFile | null> {
   const existing = await findWranglerConfig(cwd)
-  const file = existing ?? 'wrangler.toml'
-  const path = join(cwd, file)
-  const before = existing ? await readFile(path, 'utf8') : ''
-  const after = patchWranglerConfig(before, file, opts)
+  if (!existing) return null
+  const path = join(cwd, existing)
+  const before = await readFile(path, 'utf8')
+  const after = patchWranglerConfig(before, existing, opts)
   if (after !== before) await writeFile(path, after, 'utf8')
-  return file
+  return existing
 }

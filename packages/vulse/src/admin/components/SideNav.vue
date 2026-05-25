@@ -2,8 +2,6 @@
 import { onMounted, ref, watch } from 'vue'
 import CollectionKindIcon from './CollectionKindIcon.vue'
 
-const logoUrl = new URL('../assets/logo-mark.svg', import.meta.url).href
-
 const props = defineProps<{
   collections: { name: string; label: string; singleton?: boolean }[]
   activePath?: string
@@ -53,7 +51,18 @@ async function signOut() {
 <template>
   <aside class="w-[var(--vulse-sidebar-width)] min-h-screen border-r border-zinc-200 bg-white shrink-0">
     <div class="px-4 py-3 font-semibold tracking-tight flex items-center gap-2">
-      <img class="h-8 w-8" :src="logoUrl" alt="Vulse" />
+      <svg class="vulse-logo-mark h-8 w-8 shrink-0" width="32" height="32" viewBox="0 0 120 120" role="img" aria-label="Vulse">
+        <rect x="0" y="0" width="120" height="120" rx="24" fill="#0B0B0C" />
+        <path
+          d="M30 36 L60 92 L90 36"
+          stroke="#FAFAF7"
+          stroke-width="11"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          fill="none"
+        />
+        <circle cx="60" cy="92" r="6" fill="#FF5B2E" />
+      </svg>
       Vulse
     </div>
 

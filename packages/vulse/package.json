@@ -67,7 +67,8 @@
     "./client/components/SessionGuard.astro": "./src/client/components/SessionGuard.astro",
     "./client/BlockRenderer.vue": "./src/client/BlockRenderer.vue",
     "./client/BlockRenderer.astro": "./src/client/BlockRenderer.astro",
-    "./client/components/FormRenderer.astro": "./src/client/components/FormRenderer.astro"
+    "./client/components/FormRenderer.astro": "./src/client/components/FormRenderer.astro",
+    "./admin.css": "./src/admin/styles/admin.css"
   },
   "files": [
     "dist",
@@ -76,6 +77,7 @@
     "src/core",
     "src/server",
     "src/scaffold",
+    "src/package-name.ts",
     "src/client",
     "LICENSE",
     "README.md"

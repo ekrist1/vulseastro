@@ -13,8 +13,13 @@ const forms = ref<FormRow[]>([])
 const loading = ref(true)
 
 onMounted(async () => {
-  forms.value = await adminApi.get<FormRow[]>('/api/vulse/forms')
-  loading.value = false
+  try {
+    forms.value = await adminApi.get<FormRow[]>('/api/vulse/forms')
+  } catch (err) {
+    console.error('[vulse] failed to load forms', err)
+  } finally {
+    loading.value = false
+  }
 })
 </script>
 

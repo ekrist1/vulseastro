@@ -19,6 +19,13 @@
   background: var(--vulse-color-paper);
 }
 
+.vulse-logo-mark {
+  display: block;
+  width: 2rem;
+  height: 2rem;
+  flex-shrink: 0;
+}
+
 .vulse-button-primary {
   display: inline-flex;
   align-items: center;
