@@ -28,9 +28,11 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
       - run: pnpm --filter @vulsecms/core exec node scripts/sync-version.mjs
+      # Build first: some unit tests resolve the package by name (@vulsecms/core),
+      # which needs dist/ to exist.
+      - run: pnpm --filter @vulsecms/core build
       - run: pnpm --filter @vulsecms/core test
       - run: pnpm --filter @vulsecms/core test:integration
-      - run: pnpm --filter @vulsecms/core build
 
       # Extra safety: Ensure .npmrc points to the registry token env variable
       - name: Configure NPM Auth
