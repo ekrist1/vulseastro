@@ -39,6 +39,12 @@ const OPTIMIZE_DEPS_EXCLUDE = [
   'blake3-wasm',
 ] as const
 
+const VUE_INTEGRATION_NAME = '@astrojs/vue'
+
+function hasVueIntegration(integrations: readonly AstroIntegration[]): boolean {
+  return integrations.some((integration) => integration.name === VUE_INTEGRATION_NAME)
+}
+
 export interface VulseOptions {
   /** Override the admin route prefix. Defaults to `/admin`. */
   adminPath?: string
@@ -68,8 +74,9 @@ export default function vulse(opts: VulseOptions = {}): AstroIntegration {
           ...(opts.adminPath !== undefined ? { adminPath: opts.adminPath } : {}),
         })
         addMiddleware({ entrypoint: new URL('./middleware.js', import.meta.url), order: 'pre' })
+        const vueIntegrations = hasVueIntegration(config.integrations) ? [] : [vue()]
         updateConfig({
-          integrations: [vue()],
+          integrations: vueIntegrations,
           vite: {
             customLogger: createVulseViteLogger(),
             plugins: [
