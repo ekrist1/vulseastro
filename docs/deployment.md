@@ -1,6 +1,6 @@
 # Deployment
 
-Vulse targets **Cloudflare Workers / Pages** with a single artifact: one deploy serves your public site, the admin UI, and the API.
+Vulse targets **Cloudflare Workers** with a single artifact: one deploy serves your public site, the admin UI, and the API.
 
 ## Production checklist
 
@@ -12,6 +12,14 @@ Vulse targets **Cloudflare Workers / Pages** with a single artifact: one deploy 
 6. [Build and deploy](#6-build-and-deploy).
 7. [Wire the scheduled handler (cron)](#cron).
 8. [Wire the queue consumer (forms)](#queue-consumer-forms) — if using forms.
+
+> **Important — your `wrangler.toml` is not deployed directly.** The `@astrojs/cloudflare`
+> adapter reads `wrangler.toml` at **build time** and writes a fully-resolved deploy config
+> to `dist/server/wrangler.json` (computing `main`, `assets`, and copying your bindings,
+> `vars`, and `database_id`). You deploy *that* file. The practical consequence:
+> **any change to `wrangler.toml` — especially `database_id` — only takes effect after you
+> rebuild.** Always `pnpm build` immediately before `wrangler deploy`. See
+> [How deploy resolves config](#how-deploy-resolves-config).
 
 ## 1. Create resources
 
@@ -26,7 +34,6 @@ wrangler queues create vulse-form-queue
 
 ```toml
 name = "my-site"
-main = "./dist/_worker.js"
 compatibility_date = "2025-10-01"
 compatibility_flags = ["nodejs_compat"]
 
@@ -56,6 +63,13 @@ crons = ["0 * * * *"]
 ```
 
 The `nodejs_compat` flag is required for media uploads.
+
+**Do not set `main` or `assets` yourself.** The `@astrojs/cloudflare` adapter computes both
+during `astro build` and writes them into the generated `dist/server/wrangler.json`. (Older
+guides reference a single `dist/_worker.js` artifact — that layout no longer applies to this
+adapter; the entry is `dist/server/entry.mjs` and assets live in `dist/client/`.) Everything
+else above — bindings, `vars`, `database_id`, queues, crons — *is* read from `wrangler.toml`
+and copied into the generated config at build time.
 
 ## 3. Migrations
 
@@ -102,10 +116,45 @@ After bootstrap, log in to `/admin/login` and promote any additional admins via 
 
 ```bash
 pnpm build
-wrangler deploy
+wrangler deploy -c dist/server/wrangler.json
 ```
 
-If you're using Cloudflare Pages, point Pages at your repo and let it run `pnpm build` — the CI environment needs the same bindings configured in the Pages dashboard.
+The build must run **immediately before** the deploy: `wrangler.toml` (including
+`database_id`) is baked into `dist/server/wrangler.json` at build time, so deploying a stale
+build ships stale bindings. See [How deploy resolves config](#how-deploy-resolves-config).
+
+> Plain `wrangler deploy` (no `-c`) also works *after a build*, because the adapter writes a
+> redirect at `.wrangler/deploy/config.json` that points wrangler at the generated config.
+> Passing `-c dist/server/wrangler.json` explicitly is more robust — it deploys the right
+> config even if `.wrangler/` was cleaned, gitignored, or never generated.
+
+## How deploy resolves config
+
+`astro build` (via `@astrojs/cloudflare`) produces:
+
+```
+dist/
+├── server/
+│   ├── entry.mjs        # the Worker entry (this is `main`)
+│   └── wrangler.json    # generated deploy config — merges your wrangler.toml + computed main/assets
+├── client/              # static assets (served via the ASSETS binding)
+└── .wrangler/deploy/config.json   # redirect: tells `wrangler deploy` to use dist/server/wrangler.json
+```
+
+`dist/server/wrangler.json` is a **point-in-time snapshot** of `wrangler.toml` taken at build
+time, with `main`, `assets`, and the resolved bindings filled in. `wrangler deploy` reads this
+file, not your `wrangler.toml`. That is why:
+
+- **Editing `wrangler.toml` has no effect on a deploy until you rebuild.** A wrong/placeholder
+  `database_id` in a stale build will deploy a Worker bound to the wrong D1, even though
+  `wrangler.toml` looks correct.
+- **`npx vulse migrate --remote` reads `wrangler.toml` live**, while `wrangler deploy` reads the
+  build snapshot. If the two disagree, migrations can hit the correct database while the
+  deployed Worker points at a different one. Keep them in sync by rebuilding before every deploy.
+
+If you're using Cloudflare Pages, point Pages at your repo and let it run `pnpm build` — the CI
+environment needs the same bindings configured in the Pages dashboard. Because CI builds and
+deploys in the same job, the generated config and redirect are always fresh.
 
 ## Cron
 
@@ -167,7 +216,7 @@ Or attach the custom domain through the Cloudflare dashboard. `BETTER_AUTH_URL` 
 
 ## Verifying a deploy
 
-After `wrangler deploy`:
+After `wrangler deploy -c dist/server/wrangler.json`:
 
 - `https://your-domain.com/` should render your site.
 - `https://your-domain.com/admin/login` should serve the admin sign-in.
@@ -194,26 +243,32 @@ For schema rollbacks, see [`upgrading.md#rolling-back`](upgrading.md#rolling-bac
 
 ## Multi-environment
 
-Use wrangler environments to deploy preview and production from one repo:
+> **`wrangler`'s `[env.*]` sections do not work with this adapter.** The
+> `@astrojs/cloudflare` adapter flattens `wrangler.toml` to its **top-level** environment
+> when it generates `dist/server/wrangler.json` — `[env.staging]`/`[env.production]` blocks
+> are *not* copied in. (`definedEnvironments` is recorded, but the per-env bindings are
+> dropped.) Running `wrangler deploy -c dist/server/wrangler.json --env staging` therefore
+> fails with *"No environment found in configuration with name staging."*
 
-```toml
-[env.staging]
-name = "my-site-staging"
-[[env.staging.d1_databases]]
-binding = "DB"
-database_name = "vulse-db-staging"
-database_id = "<staging-id>"
-
-[env.production]
-name = "my-site"
-[[env.production.d1_databases]]
-binding = "DB"
-database_name = "vulse-db-prod"
-database_id = "<prod-id>"
-```
+Because the deployed config is whatever was at the **top level** of `wrangler.toml` at build
+time, run one build+deploy per environment with that environment's values in place. Keep a
+config file per environment and swap it in before building:
 
 ```bash
-wrangler deploy --env staging
-wrangler deploy --env production
-npx vulse migrate --remote --env staging
+# Staging
+cp wrangler.staging.toml wrangler.toml
+pnpm build
+wrangler deploy -c dist/server/wrangler.json
+npx vulse migrate --remote
+
+# Production
+cp wrangler.production.toml wrangler.toml
+pnpm build
+wrangler deploy -c dist/server/wrangler.json
+npx vulse migrate --remote
 ```
+
+Each `wrangler.<env>.toml` is a complete top-level config (its own `name`, `database_id`, R2
+bucket, etc.) — not an `[env.*]` section. In CI, give each environment its own job/branch so
+the right config is built and deployed in isolation. `npx vulse migrate --remote` reads the
+current top-level `wrangler.toml`, so run it against the same config you just built.

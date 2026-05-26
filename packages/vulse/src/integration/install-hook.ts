@@ -17,19 +17,8 @@ export default defineCollection({
 })
 `
 
-const CONTENT_CONFIG = `import { defineCollection, z } from 'astro:content'
-import { vulseLoader } from '${VULSE_PACKAGE}/loader'
-
-export const collections = {
-  page: defineCollection({
-    loader: vulseLoader({ collection: 'page' }),
-    schema: z.object({
-      title: z.string(),
-      slug: z.string(),
-      body: z.any().optional(),
-    }),
-  }),
-}
+const CONTENT_CONFIG = `/** Optional Content Layer loaders for SSG — see docs/frontend.md. Public pages use the runtime SDK by default. */
+export const collections = {}
 `
 
 async function fileExists(path: string): Promise<boolean> {

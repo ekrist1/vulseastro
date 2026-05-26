@@ -23,6 +23,6 @@ Full schema reference: [`docs/vulse-schema.md`](docs/vulse-schema.md) (machine-r
 1. Use each collection's **preview path** as the route template (`{slug}` → `Astro.params.slug`).
 2. Use **`admin.titleField`** for page headings and list cards.
 3. Render **`blocks`** fields with `BlockRenderer` from `@vulsecms/core/client/BlockRenderer.astro`.
-4. Use **`vulseLoader()`** + `getCollection()` for static archive pages; use the **runtime SDK** for SSR, filters, and auth-gated content.
+4. Use the **runtime SDK** for collection index/detail pages (instant after admin publish). Use **`vulseLoader()`** + `getCollection()` only for optional SSG archives (`collection:scaffold --static`).
 5. Respect field types: `asset` fields are media IDs (resolve via SDK/media API); `entry`/`entries`/`relationship`/`link` fields reference other collections.
 6. Check [`docs/vulse-schema.md`](docs/vulse-schema.md) for full field lists, sets, globals, and relationship edges before scaffolding new pages.

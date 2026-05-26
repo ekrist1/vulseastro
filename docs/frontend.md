@@ -4,57 +4,16 @@ This page covers wiring Vulse into your Astro project: pulling content into page
 
 ## Two ways to read content
 
-Vulse offers **two complementary delivery paths**. Pick per page based on whether the page is statically generated or rendered on each request.
+Vulse offers **two delivery paths**. For CMS-driven collection pages (lists, detail, preview), use the **runtime SDK** so admin publishes appear on the next request. The **Content Layer loader** is optional for rare static archives that accept full rebuilds after publish.
 
 | Path | When to use | Mechanism |
 |------|-------------|-----------|
-| **Content Layer loader** | SSG / static builds, archive pages, full content rebuilds on publish | Astro's `defineCollection({ loader: vulseLoader(...) })` |
-| **Runtime SDK** | SSR pages, filtered or paginated listings, members-only content, live preview | `rt.sdk.collections.find()` / `findBySlug()` / `rt.sdk.query()` |
+| **Runtime SDK** (default) | Collection index/detail pages, filters, members-only content, live preview | `rt.sdk.collections.find()` / `findBySlug()` / `rt.sdk.query()` |
+| **Content Layer loader** (opt-in) | Read-mostly archives with zero D1 on CDN hits; content frozen until rebuild | `vulseLoader()` + `getCollection()` at build time |
 
-You can use both in the same project — typically loader-only for archives that should pre-render, and the SDK for member-only pages and dynamic filtering.
+`collection:scaffold` generates SSR pages by default. Pass `--static` when you also want a `vulseLoader()` entry in `content.config.ts`.
 
-The build-time loader syncs the full published set for static generation. `rt.sdk.collections.find()` is a simple filtered SSR read (author, date range, pagination). `rt.sdk.query()` is the full query builder for JSON-field filters, tree scoping, relationship resolution, counting, and pagination.
-
-## Content Layer loader (SSG)
-
-Wire the loader in `src/content.config.ts`:
-
-```ts
-import { defineCollection, z } from 'astro:content'
-import { vulseLoader } from '@vulsecms/core/loader'
-
-export const collections = {
-  post: defineCollection({
-    loader: vulseLoader({ collection: 'post' }),
-    schema: z.object({
-      title: z.string(),
-      slug: z.string(),
-      body: z.any().optional(),
-    }),
-  }),
-}
-```
-
-Then use Astro's content API in pages:
-
-```astro
----
-import { getCollection } from 'astro:content'
-import BlockRenderer from '@vulsecms/core/client/BlockRenderer.astro'
-
-const posts = await getCollection('post')
-const post = posts.find((p) => p.data.slug === Astro.params.slug)
-if (!post) return Astro.redirect('/404')
----
-<h1>{post.data.title}</h1>
-<BlockRenderer blocks={post.data.body ?? []} />
-```
-
-The loader reads **published** entries from D1 at sync/build time. In dev, D1 is resolved via wrangler's platform proxy — no extra setup.
-
-For filtering, pagination, or author archives, prefer the runtime SDK below. The loader intentionally syncs the full published set so static generation is straightforward.
-
-## Runtime SDK (SSR)
+## Runtime SDK (default)
 
 Use the SDK from a server-rendered page:
 
@@ -97,6 +56,32 @@ const heroUrl = rt.sdk.media.url(mediaId, 'hero')
 ```
 
 The `audience` option is what activates per-entry access rules — pass the current `session.user` (or `null` for anonymous traffic). The SDK filters out entries the audience can't read.
+
+### Collection index (listing)
+
+```astro
+---
+import { getRuntimeEnv, getRuntime, createDb, registryForRequest } from '@vulsecms/core/server'
+
+export const prerender = false
+
+const env = getRuntimeEnv()
+const db = createDb(env.DB)
+const rt = await getRuntime(env, await registryForRequest(db), Astro.url.origin)
+const session = await rt.auth.api.getSession({ headers: Astro.request.headers })
+
+const posts = await rt.sdk.collections.find('post', {
+  audience: session?.user ?? null,
+  orderBy: 'publishedAt',
+  order: 'desc',
+})
+---
+<ul>
+  {posts.map((entry) => (
+    <li><a href={`/post/${entry.slug}`}>{(entry.content as { title?: string }).title ?? entry.slug}</a></li>
+  ))}
+</ul>
+```
 
 ## Query builder
 
@@ -459,11 +444,46 @@ On dev/build, Vulse writes `.vulse/types.d.ts` from your blueprint files. Make s
 
 The integration regenerates this file on `astro:config:setup`, so restarting `pnpm dev` after blueprint changes is enough.
 
+## Content Layer loader (optional SSG)
+
+Use this only when you explicitly want static HTML baked at build time and can **rebuild and redeploy** after every publish (or accept stale listings until then). New or edited entries in admin **do not** appear on `getCollection()` pages until the next build.
+
+Wire the loader in `src/content.config.ts` (or run `npx vulse collection:scaffold <handle> --static`):
+
+```ts
+import { defineCollection, z } from 'astro:content'
+import { vulseLoader } from '@vulsecms/core/loader'
+
+export const collections = {
+  post: defineCollection({
+    loader: vulseLoader({ collection: 'post' }),
+    schema: z.object({
+      title: z.string(),
+      slug: z.string(),
+      body: z.any().optional(),
+    }),
+  }),
+}
+```
+
+```astro
+---
+import { getCollection } from 'astro:content'
+
+const posts = await getCollection('post')
+---
+```
+
+The loader reads **published** entries from D1 at sync/build time. In dev, D1 is resolved via wrangler's platform proxy.
+
+For CMS workflows where editors expect instant feedback, use the runtime SDK instead.
+
 ## Cheat sheet
 
 | I want to… | Use |
 |-----------|-----|
-| List all published posts at build time | `getCollection('post')` via `vulseLoader` |
+| List published posts (updates on next request after admin publish) | `rt.sdk.collections.find('post', { audience })` |
+| List posts at build time only (requires redeploy after publish) | `getCollection('post')` via `vulseLoader` + `--static` scaffold |
 | List posts filtered by author at request time | `rt.sdk.collections.find('post', { createdBy, audience })` |
 | Filter posts by a JSON field at request time | `rt.sdk.query('post').where('content.featured','=',true).all()` |
 | Get a whole subtree of a tree collection | `rt.sdk.query('docs').descendantsOf(parentId).all()` |

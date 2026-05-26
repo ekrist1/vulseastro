@@ -19,12 +19,13 @@ describe('runInstallHook', () => {
     expect((toml.match(/\[\[r2_buckets\]\]/g) ?? []).length).toBe(1)
   })
 
-  it('creates collections starter and content config', async () => {
+  it('creates collections starter and empty content config', async () => {
     await runInstallHook(cwd)
     const starter = await readFile(join(cwd, 'src/vulse/collections/page.ts'), 'utf8')
     expect(starter).toMatch(/defineCollection/)
     const cfg = await readFile(join(cwd, 'src/content.config.ts'), 'utf8')
-    expect(cfg).toMatch(/vulseLoader/)
+    expect(cfg).toMatch(/export const collections = \{\}/)
+    expect(cfg).not.toMatch(/vulseLoader/)
   })
 
   it('preserves an existing src/content.config.ts', async () => {

@@ -50,15 +50,16 @@ program
 
 program
   .command('collection:scaffold <handle>')
-  .description('Scaffold a code blueprint, Astro index/show pages, and content.config entry')
+  .description('Scaffold a code blueprint and SSR Astro index/show pages (optional Content Layer loader with --static)')
   .option('--route <path>', 'Show route template, e.g. /blog/{slug}')
   .option('--index <path>', 'Index route, e.g. /blog (omit for show-only)')
   .option('--label <label>', 'Collection label for generated files')
   .option('--title-field <field>', 'Title field used in templates')
+  .option('--static', 'Add vulseLoader() to content.config.ts for SSG getCollection()', false)
   .option('--force', 'Overwrite existing scaffold files', false)
   .option('--skip-blueprint', 'Skip src/vulse/collections/<handle>.ts', false)
   .option('--skip-pages', 'Skip Astro page files', false)
-  .option('--skip-content-config', 'Skip content.config.ts update', false)
+  .option('--skip-content-config', 'Skip content.config.ts even when --static is set', false)
   .action(async (handle: string, opts) => {
     const { runCollectionScaffold } = await import('./collection-scaffold.js')
     await runCollectionScaffold({
@@ -68,6 +69,7 @@ program
       ...(opts.label !== undefined ? { label: opts.label } : {}),
       ...(opts.titleField !== undefined ? { titleField: opts.titleField } : {}),
       force: !!opts.force,
+      static: !!opts.static,
       skipBlueprint: !!opts.skipBlueprint,
       skipPages: !!opts.skipPages,
       skipContentConfig: !!opts.skipContentConfig,

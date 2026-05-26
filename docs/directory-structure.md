@@ -13,7 +13,7 @@ my-site/
 ├── tsconfig.json                 Includes .astro/types.d.ts and .vulse/types.d.ts
 ├── package.json                  Workspace + vulse + @astrojs/cloudflare deps
 ├── src/
-│   ├── content.config.ts         Astro Content Layer collections, wired to vulseLoader()
+│   ├── content.config.ts         Optional Content Layer loaders (empty by default; use --static scaffold)
 │   ├── pages/                    Your Astro pages
 │   │   ├── index.astro
 │   │   ├── sign-in.astro         (your own auth page using vulse/client/components)
@@ -59,23 +59,7 @@ Required bindings (see [`configuration.md`](configuration.md)):
 
 ### `src/content.config.ts`
 
-Wires the Astro Content Layer loader for collections you want available via `getCollection()` at build time:
-
-```ts
-import { defineCollection, z } from 'astro:content'
-import { vulseLoader } from '@vulsecms/core/loader'
-
-export const collections = {
-  post: defineCollection({
-    loader: vulseLoader({ collection: 'post' }),
-    schema: z.object({
-      title: z.string(),
-      slug: z.string(),
-      body: z.any().optional(),
-    }),
-  }),
-}
-```
+Created empty on install. Collection pages use the **runtime SDK** by default (`collection:scaffold` generates SSR index/show templates). To opt into build-time `getCollection()` for a collection, run `npx vulse collection:scaffold <handle> --static` or add `vulseLoader()` entries manually — see [`frontend.md`](frontend.md).
 
 ### `src/vulse/collections/`
 

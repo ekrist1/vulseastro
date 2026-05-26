@@ -1,9 +1,25 @@
 ---
-import { getCollection } from 'astro:content'
+import {
+  getRuntimeEnv,
+  getRuntime,
+  createDb,
+  registryForRequest,
+} from '@vulsecms/core/server'
 import SiteLayout from '../layouts/SiteLayout.astro'
 
-const pages = (await getCollection('page')).sort((a, b) =>
-  a.data.title.localeCompare(b.data.title),
+const env = getRuntimeEnv()
+const db = createDb(env.DB)
+const rt = await getRuntime(env, await registryForRequest(db), Astro.url.origin)
+const session = await rt.auth.api.getSession({ headers: Astro.request.headers })
+
+const rows = await rt.sdk.collections.find('page', {
+  ...(session?.user ? { audience: session.user } : {}),
+})
+
+const pages = rows.sort((a, b) =>
+  String((a.content as { title?: string }).title ?? a.slug).localeCompare(
+    String((b.content as { title?: string }).title ?? b.slug),
+  ),
 )
 ---
 <SiteLayout
@@ -15,7 +31,7 @@ const pages = (await getCollection('page')).sort((a, b) =>
     <p class="hero__eyebrow">Astro · Cloudflare D1 · R2</p>
     <h1 class="hero__title">Headless CMS, one deploy</h1>
     <p class="hero__lead">
-      This playground loads published pages from D1 via the Vulse content loader.
+      This playground loads published pages from D1 via the Vulse runtime SDK.
       Edit content in the admin, preview drafts, and render blocks on the public site.
     </p>
     <div class="hero__actions">
@@ -40,15 +56,18 @@ const pages = (await getCollection('page')).sort((a, b) =>
       </div>
     ) : (
       <ul class="card-grid">
-        {pages.map((page, i) => (
-          <li class="card" style={`animation-delay: ${i * 0.06}s`}>
-            <a href={`/${page.data.slug}`} style="color:inherit;text-decoration:none;display:block;">
-              <span class="card__badge">Page</span>
-              <h3 class="card__title">{page.data.title}</h3>
-              <p class="card__meta">/{page.data.slug}</p>
-            </a>
-          </li>
-        ))}
+        {pages.map((page, i) => {
+          const title = String((page.content as { title?: string }).title ?? page.slug)
+          return (
+            <li class="card" style={`animation-delay: ${i * 0.06}s`}>
+              <a href={`/${page.slug}`} style="color:inherit;text-decoration:none;display:block;">
+                <span class="card__badge">Page</span>
+                <h3 class="card__title">{title}</h3>
+                <p class="card__meta">/{page.slug}</p>
+              </a>
+            </li>
+          )
+        })}
       </ul>
     )}
   </section>

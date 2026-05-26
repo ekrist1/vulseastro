@@ -1694,7 +1694,7 @@ async function save() {
         <div>
           <h2 class="text-sm font-semibold text-zinc-800">Scaffold frontend</h2>
           <p class="mt-1 text-xs text-zinc-500">
-            Generate a code blueprint, Astro index/show pages, and a content.config entry — like Statamic’s scaffold views.
+            Generate a code blueprint and SSR Astro index/show pages. Add <code class="font-mono text-xs">--static</code> for an optional Content Layer loader snippet.
             Run the CLI locally or copy the files below.
           </p>
         </div>
@@ -1738,7 +1738,7 @@ async function save() {
 
         <div>
           <div class="mb-2 flex items-center justify-between">
-            <span class="font-mono text-xs text-zinc-600">src/content.config.ts</span>
+            <span class="font-mono text-xs text-zinc-600">src/content.config.ts (optional, <code class="font-mono">--static</code>)</span>
             <button type="button" class="text-xs text-zinc-600 hover:underline" @click="copyText(scaffoldContentConfigSnippet, 'content.config.ts')">Copy</button>
           </div>
           <p class="mb-2 text-xs text-zinc-500">Merge into an existing file or use as-is if you do not have one yet.</p>

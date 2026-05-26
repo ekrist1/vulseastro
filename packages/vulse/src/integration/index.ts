@@ -21,6 +21,14 @@ const SSR_NODE_EXTERNAL = [
   'blake3-wasm',
 ] as const
 
+/** Build-only / native Tailwind deps — never bundle in SSR/prerender. */
+const SSR_TAILWIND_EXTERNAL = [
+  '@tailwindcss/vite',
+  '@tailwindcss/oxide',
+  '@tailwindcss/node',
+  'tailwindcss',
+] as const
+
 /**
  * Excluded from Vite dep pre-bundling: dev/build-only or native deps that break
  * esbuild. Do NOT add @vulsecms/core's own runtime deps (better-auth, drizzle-orm,
@@ -101,7 +109,7 @@ export default function vulse(opts: VulseOptions = {}): AstroIntegration {
             },
             ssr: {
               // Let workerd provide Node compat built-ins (better-auth uses AsyncLocalStorage).
-              external: [...SSR_NODE_EXTERNAL],
+              external: [...SSR_NODE_EXTERNAL, ...SSR_TAILWIND_EXTERNAL],
               // Bundle vulse in-process for Cloudflare's module runner; avoid
               // noExternal: true — it pulls native dev deps (tailwind oxide, babel) into SSR.
               noExternal: ['@vulsecms/core', '@astrojs/vue'],

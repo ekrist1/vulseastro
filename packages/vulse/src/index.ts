@@ -1,8 +1,4 @@
-import type { AstroIntegration } from 'astro'
-import type { VulseOptions } from './integration/index.js'
-
 export { VULSE_VERSION } from './version.js'
-export type { VulseOptions } from './integration/index.js'
 export { defineCollection, z } from './core/blueprints/define.js'
 export { blocks, media, ref, entry, entries, link, grid } from './core/blueprints/zod-helpers.js'
 export type { LinkValue, SelectOption } from './core/blueprints/definition.js'
@@ -25,17 +21,3 @@ export type {
   VulsePluginHooks,
 } from './core/plugins/definition.js'
 export { BUILT_IN_BLOCK_TYPES } from './core/blocks/schema.js'
-
-export default function vulse(opts: VulseOptions = {}): AstroIntegration {
-  return {
-    name: 'vulse',
-    hooks: {
-      'astro:config:setup': async (params) => {
-        // Keep runtime helper imports from eagerly evaluating Astro/Vite integration code.
-        const { default: createVulseIntegration } = await import('./integration/index.js')
-        const integration = createVulseIntegration(opts)
-        await integration.hooks?.['astro:config:setup']?.(params)
-      },
-    },
-  }
-}

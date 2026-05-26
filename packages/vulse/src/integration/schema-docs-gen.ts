@@ -224,38 +224,34 @@ function collectRelationships(collections: CollectionSnapshot[]): string[] {
 
 const FRONTEND_COOKBOOK = `## Frontend cookbook
 
-### Content Layer loader (SSG)
-
-Wire collections in \`src/content.config.ts\`:
-
-\`\`\`ts
-import { defineCollection, z } from 'astro:content'
-import { vulseLoader } from '${VULSE_PACKAGE}/loader'
-
-export const collections = {
-  post: defineCollection({
-    loader: vulseLoader({ collection: 'post' }),
-    schema: z.object({ title: z.string(), slug: z.string() }),
-  }),
-}
-\`\`\`
-
-Use \`getCollection()\` in pages for static archive/detail routes.
-
-### Runtime SDK (SSR)
+### Runtime SDK (default)
 
 \`\`\`astro
 ---
 import { getRuntimeEnv, getRuntime, createDb, registryForRequest } from '${VULSE_PACKAGE}/server'
 
+export const prerender = false
+
 const env = getRuntimeEnv()
 const db = createDb(env.DB)
 const rt = await getRuntime(env, await registryForRequest(db), Astro.url.origin)
-const entry = await rt.sdk.collections.findBySlug('post', Astro.params.slug!)
+const session = await rt.auth.api.getSession({ headers: Astro.request.headers })
+
+const entry = await rt.sdk.collections.findBySlug('post', Astro.params.slug!, {
+  audience: session?.user ?? null,
+})
+
+const archive = await rt.sdk.collections.find('post', {
+  audience: session?.user ?? null,
+})
 ---
 \`\`\`
 
-Use the SDK for filtered listings, member-only content, and live preview.
+Use the SDK for collection index/detail pages, filters, member-only content, and live preview. Admin publishes appear on the next request.
+
+### Content Layer loader (optional SSG)
+
+Only when you want build-time \`getCollection()\` and accept redeploying after publish. Run \`npx vulse collection:scaffold <handle> --static\` or wire \`vulseLoader()\` in \`src/content.config.ts\` manually. See \`docs/frontend.md\`.
 
 ### Rendering blocks
 
@@ -360,7 +356,7 @@ export function formatAgentsMarkdown(snapshot: SchemaSnapshot): string {
     '1. Use each collection\'s **preview path** as the route template (`{slug}` → `Astro.params.slug`).',
     '2. Use **`admin.titleField`** for page headings and list cards.',
     '3. Render **`blocks`** fields with `BlockRenderer` from `@vulsecms/core/client/BlockRenderer.astro`.',
-    '4. Use **`vulseLoader()`** + `getCollection()` for static archive pages; use the **runtime SDK** for SSR, filters, and auth-gated content.',
+    '4. Use the **runtime SDK** for collection index/detail pages (instant after admin publish). Use **`vulseLoader()`** + `getCollection()` only for optional SSG archives (`collection:scaffold --static`).',
     '5. Respect field types: `asset` fields are media IDs (resolve via SDK/media API); `entry`/`entries`/`relationship`/`link` fields reference other collections.',
     '6. Check [`docs/vulse-schema.md`](docs/vulse-schema.md) for full field lists, sets, globals, and relationship edges before scaffolding new pages.',
     '',

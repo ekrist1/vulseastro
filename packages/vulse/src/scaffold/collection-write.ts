@@ -10,6 +10,8 @@ export interface WriteCollectionScaffoldOptions {
   force?: boolean
   skipBlueprint?: boolean
   skipPages?: boolean
+  /** When true, add a vulseLoader() entry to content.config.ts (SSG / getCollection). */
+  static?: boolean
   skipContentConfig?: boolean
 }
 
@@ -54,7 +56,7 @@ export async function writeCollectionScaffold(
     written.push(file.path)
   }
 
-  if (!opts.skipContentConfig) {
+  if (opts.static && !opts.skipContentConfig) {
     const configPath = join(cwd, 'src/content.config.ts')
     if (await exists(configPath)) {
       const existing = await readFile(configPath, 'utf8')

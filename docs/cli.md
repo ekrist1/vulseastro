@@ -87,7 +87,7 @@ The seed always runs migrations first, so it's safe to run on a fresh database.
 
 ## `vulse collection:scaffold`
 
-Generate Astro page templates and a Content Layer loader entry for a collection.
+Generate a code blueprint and SSR Astro index/show pages for a collection. Pages use the runtime SDK so admin publishes appear on the next request.
 
 ```bash
 npx vulse collection:scaffold blog \
@@ -99,8 +99,8 @@ npx vulse collection:scaffold blog \
 |--------|---------|
 | `src/vulse/collections/<handle>.ts` | Code blueprint with `preview.path` and starter access rules |
 | `src/pages/<segment>/[slug].astro` | Entry detail page using the runtime SDK |
-| `src/pages/<segment>/index.astro` | Listing page using `getCollection` — only when `--index` is set |
-| `src/content.config.ts` | Adds a `vulseLoader()` entry. Merged into the existing file if one exists. |
+| `src/pages/<segment>/index.astro` | Listing page using the runtime SDK — only when `--index` is set |
+| `src/content.config.ts` | Only with `--static`: adds a `vulseLoader()` entry for SSG `getCollection()` |
 
 ### Options
 
@@ -108,11 +108,11 @@ npx vulse collection:scaffold blog \
 |------|---------|
 | `--route <pattern>` | URL pattern for the detail page. Use `{slug}` as the placeholder. Defaults to `/<handle>/{slug}`. |
 | `--index <path>` | Generate a listing page at `<path>/index.astro`. Omit to skip. |
+| `--static` | Also add `vulseLoader()` to `content.config.ts` for build-time `getCollection()` (requires redeploy after publish). |
 | `--force` | Overwrite existing files. Without it, the CLI refuses to clobber. |
 | `--skip-blueprint` | Don't write the blueprint file (use when the blueprint already exists). |
-| `--skip-loader` | Don't touch `src/content.config.ts`. |
+| `--skip-content-config` | Skip `content.config.ts` even when `--static` is set. |
 | `--skip-pages` | Don't write Astro page templates. |
-| `--remote` | Apply against production D1 (rarely needed — scaffolding is local-only). |
 
 ### Examples
 
@@ -123,11 +123,11 @@ npx vulse collection:scaffold page --route '/{slug}'
 # Refresh the templates from the current Vulse version:
 npx vulse collection:scaffold blog --force
 
-# Only update content.config.ts, leave pages alone:
-npx vulse collection:scaffold blog --skip-blueprint --skip-pages
+# Opt-in Content Layer loader for a static archive:
+npx vulse collection:scaffold blog --static --skip-pages
 ```
 
-Restart your dev server after scaffolding so Astro picks up the new pages and loader.
+Restart your dev server after scaffolding so Astro picks up the new pages.
 
 ## `vulse schema:export`
 

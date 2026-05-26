@@ -179,22 +179,36 @@ export function generateIndexPage(input: CollectionScaffoldInput): string | null
   const hrefPrefix = segment ? `/${segment}` : ''
 
   return `---
-import { getCollection } from 'astro:content'
+import { getRuntimeEnv, getRuntime, createDb, registryForRequest } from '${VULSE_PACKAGE}/server'
 
-const entries = (await getCollection('${input.handle}')).sort((a, b) =>
-  String(a.data.${titleField} ?? a.data.slug ?? '').localeCompare(String(b.data.${titleField} ?? b.data.slug ?? '')),
+export const prerender = false
+
+const env = getRuntimeEnv()
+const db = createDb(env.DB)
+const rt = await getRuntime(env, await registryForRequest(db), Astro.url.origin)
+const session = await rt.auth.api.getSession({ headers: Astro.request.headers })
+
+const rows = await rt.sdk.collections.find('${input.handle}', {
+  ...(session?.user ? { audience: session.user } : {}),
+})
+
+const entries = rows.sort((a, b) =>
+  String((a.content as { ${titleField}?: string }).${titleField} ?? a.slug).localeCompare(
+    String((b.content as { ${titleField}?: string }).${titleField} ?? b.slug),
+  ),
 )
 ---
 <section>
   <h1>${input.label.replace(/'/g, "\\'")}</h1>
   <ul>
-    {entries.map((entry) => (
-      <li>
-        <a href={\`${hrefPrefix}/\${entry.data.slug}\`}>
-          {String(entry.data.${titleField} ?? entry.data.slug)}
-        </a>
-      </li>
-    ))}
+    {entries.map((entry) => {
+      const title = String((entry.content as { ${titleField}?: string }).${titleField} ?? entry.slug)
+      return (
+        <li>
+          <a href={\`${hrefPrefix}/\${entry.slug}\`}>{title}</a>
+        </li>
+      )
+    })}
   </ul>
 </section>
 `
@@ -228,12 +242,16 @@ export function generateContentConfig(input: CollectionScaffoldInput): string {
   return patchContentConfig('', input)
 }
 
-export function scaffoldCliCommand(input: CollectionScaffoldInput): string {
+export function scaffoldCliCommand(
+  input: CollectionScaffoldInput,
+  opts: { static?: boolean } = {},
+): string {
   const parts = [
     `npx vulse collection:scaffold ${input.handle}`,
     `--route '${input.showRoute}'`,
   ]
   if (input.indexRoute) parts.push(`--index '${input.indexRoute}'`)
+  if (opts.static) parts.push('--static')
   if (input.label && input.label !== input.handle) {
     parts.push(`--label '${input.label.replace(/'/g, "'\\''")}'`)
   }
@@ -244,10 +262,14 @@ export function scaffoldCliCommand(input: CollectionScaffoldInput): string {
 
 export function generateCollectionScaffoldFiles(
   input: CollectionScaffoldInput,
-  opts: { includeBlueprint?: boolean; includeContentConfig?: boolean; includeIndex?: boolean } = {},
+  opts: {
+    includeBlueprint?: boolean
+    includeContentConfig?: boolean
+    includeIndex?: boolean
+  } = {},
 ): ScaffoldFile[] {
   const includeBlueprint = opts.includeBlueprint ?? true
-  const includeContentConfig = opts.includeContentConfig ?? true
+  const includeContentConfig = opts.includeContentConfig ?? false
   const includeIndex = opts.includeIndex ?? !!input.indexRoute?.trim()
 
   const segment = deriveUrlSegment(input.showRoute, input.indexRoute)

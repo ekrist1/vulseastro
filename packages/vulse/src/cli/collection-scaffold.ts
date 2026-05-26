@@ -8,6 +8,7 @@ export interface CollectionScaffoldCliOptions {
   label?: string
   titleField?: string
   force?: boolean
+  static?: boolean
   skipBlueprint?: boolean
   skipPages?: boolean
   skipContentConfig?: boolean
@@ -36,6 +37,7 @@ export async function runCollectionScaffold(opts: CollectionScaffoldCliOptions):
     ...(opts.titleField ? { titleField: opts.titleField } : {}),
   }, {
     ...(opts.force ? { force: true } : {}),
+    ...(opts.static ? { static: true } : {}),
     ...(opts.skipBlueprint ? { skipBlueprint: true } : {}),
     ...(opts.skipPages ? { skipPages: true } : {}),
     ...(opts.skipContentConfig ? { skipContentConfig: true } : {}),
