@@ -7,6 +7,7 @@ const props = defineProps<{
   activePath?: string
   userEmail?: string
   isAdmin?: boolean
+  status?: { mode: 'development' | 'production'; database: 'local SQLite' | 'remote D1'; warningCount: number }
 }>()
 
 const schemaOpen = ref(false)
@@ -64,6 +65,18 @@ async function signOut() {
         <circle cx="60" cy="92" r="6" fill="#FF5B2E" />
       </svg>
       Vulse
+    </div>
+
+    <div v-if="status" class="px-4 pb-2">
+      <component
+        :is="isAdmin ? 'a' : 'span'"
+        :href="isAdmin ? '/admin/settings/status' : undefined"
+        class="inline-flex items-center gap-1 rounded px-2 py-0.5 text-xs font-medium"
+        :class="status.mode === 'development' ? 'bg-amber-100 text-amber-800' : 'bg-zinc-100 text-zinc-600'"
+      >
+        {{ status.mode === 'development' ? 'DEV · local DB' : 'PROD · remote DB' }}
+        <span v-if="status.warningCount > 0" :title="`${status.warningCount} warning(s)`">⚠</span>
+      </component>
     </div>
 
     <div v-if="userEmail" class="border-y border-zinc-100 px-4 py-2 text-xs">
@@ -155,6 +168,7 @@ async function signOut() {
         <div class="px-2 pt-4 text-xs uppercase tracking-wide text-zinc-500">Settings</div>
         <a href="/admin/settings" :class="subNavClass('/admin/settings', true)">Site</a>
         <a href="/admin/settings/auth" :class="subNavClass('/admin/settings/auth', true)">Auth</a>
+        <a href="/admin/settings/status" :class="subNavClass('/admin/settings/status', true)">Status</a>
       </template>
     </nav>
   </aside>
