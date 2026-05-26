@@ -1,6 +1,6 @@
 import type { RuntimeEnv } from './env.js'
-import { VULSE_VERSION } from '../version.js'
-import { PLACEHOLDER_AUTH_SECRET } from '../placeholder-auth-secret.js'
+import { VULSE_VERSION } from './version.js'
+import { PLACEHOLDER_AUTH_SECRET } from './placeholder-auth-secret.js'
 
 export interface VulseStatus {
   mode: 'development' | 'production'

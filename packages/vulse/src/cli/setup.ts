@@ -11,7 +11,7 @@ import {
 } from '../integration/wrangler-config.js'
 import { runMigrate } from './migrate.js'
 import { runSeedAdmin } from './seed-admin.js'
-import { PLACEHOLDER_AUTH_SECRET } from '../placeholder-auth-secret.js'
+import { PLACEHOLDER_AUTH_SECRET } from '../server/placeholder-auth-secret.js'
 
 export interface SetupOptions {
   yes?: boolean

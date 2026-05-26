@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { getVulseStatus } from '../../src/server/status'
 import type { RuntimeEnv } from '../../src/server/env'
-import { PLACEHOLDER_AUTH_SECRET } from '../../src/placeholder-auth-secret'
+import { PLACEHOLDER_AUTH_SECRET } from '../../src/server/placeholder-auth-secret.js'
 
 function baseEnv(overrides: Partial<RuntimeEnv> = {}): RuntimeEnv {
   return {

@@ -2,7 +2,7 @@ import { nanoid } from 'nanoid'
 import { createDb } from '../core/db.js'
 import { ConflictError } from '../core/errors.js'
 import { createAuth } from '../server/better-auth.js'
-import { PLACEHOLDER_AUTH_SECRET } from '../placeholder-auth-secret.js'
+import { PLACEHOLDER_AUTH_SECRET } from '../server/placeholder-auth-secret.js'
 
 export interface SeedOptions { email?: string; remote?: boolean; password?: string }
 export interface SeedResult { email: string; tempPassword: string }
