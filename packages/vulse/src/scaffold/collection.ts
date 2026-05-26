@@ -144,7 +144,7 @@ export function generateShowPage(input: CollectionScaffoldInput): string {
     : ''
 
   return `---
-import { getRuntimeEnv, getRuntime, createDb, registryForRequest, resolvePreviewContent } from '${VULSE_PACKAGE}/server'
+import { useCollection } from '${VULSE_PACKAGE}/server'
 ${blockImport}
 // Reads content from D1 per request, so it must render on demand. Required when
 // the project uses Astro's default \`output: 'static'\` — otherwise a dynamic
@@ -152,17 +152,8 @@ ${blockImport}
 export const prerender = false
 
 const slug = Astro.params.slug!
-const env = getRuntimeEnv()
-const db = createDb(env.DB)
-const rt = await getRuntime(env, await registryForRequest(db), Astro.url.origin)
-const session = await rt.auth.api.getSession({ headers: Astro.request.headers })
-
-const entry = await rt.sdk.collections.findBySlug('${input.handle}', slug, {
-  ...(session?.user ? { audience: session.user } : {}),
-})
+const { entry, content } = await useCollection(Astro, '${input.handle}', { slug })
 if (!entry) return new Response(null, { status: 404, statusText: 'Not found' })
-
-const content = resolvePreviewContent(entry, Astro.locals) as Record<string, unknown>
 ---
 <article>
   <h1>{String(content.${titleField} ?? slug)}</h1>${blockRender}
@@ -179,18 +170,11 @@ export function generateIndexPage(input: CollectionScaffoldInput): string | null
   const hrefPrefix = segment ? `/${segment}` : ''
 
   return `---
-import { getRuntimeEnv, getRuntime, createDb, registryForRequest } from '${VULSE_PACKAGE}/server'
+import { useCollection } from '${VULSE_PACKAGE}/server'
 
 export const prerender = false
 
-const env = getRuntimeEnv()
-const db = createDb(env.DB)
-const rt = await getRuntime(env, await registryForRequest(db), Astro.url.origin)
-const session = await rt.auth.api.getSession({ headers: Astro.request.headers })
-
-const rows = await rt.sdk.collections.find('${input.handle}', {
-  ...(session?.user ? { audience: session.user } : {}),
-})
+const { entries: rows } = await useCollection(Astro, '${input.handle}')
 
 const entries = rows.sort((a, b) =>
   String((a.content as { ${titleField}?: string }).${titleField} ?? a.slug).localeCompare(

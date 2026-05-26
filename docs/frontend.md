@@ -57,6 +57,31 @@ const heroUrl = rt.sdk.media.url(mediaId, 'hero')
 
 The `audience` option is what activates per-entry access rules — pass the current `session.user` (or `null` for anonymous traffic). The SDK filters out entries the audience can't read.
 
+### `useCollection` helper
+
+For collection pages, `useCollection` wraps runtime setup, session/audience wiring, and preview content resolution:
+
+```astro
+---
+import { useCollection } from '@vulsecms/core/server'
+
+// Single entry (resolves draft/live preview content by default)
+const { entry, content, registry } = await useCollection(Astro, 'post', {
+  slug: Astro.params.slug!,
+})
+if (!entry) return new Response(null, { status: 404, statusText: 'Not found' })
+
+// Listing — passes find options through (order, limit, filters, etc.)
+const { entries } = await useCollection(Astro, 'post', {
+  orderBy: 'publishedAt',
+  order: 'desc',
+  limit: 20,
+})
+---
+```
+
+Pass `preview: false` on slug lookups to skip `resolvePreviewContent` and use published `entry.content`. Override `audience` when you need explicit access control beyond the current session.
+
 ### Collection index (listing)
 
 ```astro

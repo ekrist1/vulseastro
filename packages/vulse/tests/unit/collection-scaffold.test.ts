@@ -51,7 +51,7 @@ describe('collection scaffold', () => {
     expect(showPage?.content).toContain('export const prerender = false')
     const indexPage = files.find((f) => f.path === 'src/pages/blog/index.astro')
     expect(indexPage?.content).toContain('export const prerender = false')
-    expect(indexPage?.content).toContain("rt.sdk.collections.find('blog'")
+    expect(indexPage?.content).toContain("useCollection(Astro, 'blog'")
     expect(indexPage?.content).not.toContain('getCollection')
   })
 
