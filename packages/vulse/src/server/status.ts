@@ -1,8 +1,6 @@
 import type { RuntimeEnv } from './env.js'
 import { VULSE_VERSION } from '../version.js'
-
-/** The exact placeholder written by `vulse setup` when no secret is provided. */
-const PLACEHOLDER_AUTH_SECRET = 'dev-secret-change-me-in-production-32chars'
+import { PLACEHOLDER_AUTH_SECRET } from '../placeholder-auth-secret.js'
 
 export interface VulseStatus {
   mode: 'development' | 'production'

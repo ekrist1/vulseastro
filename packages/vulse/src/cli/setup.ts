@@ -7,6 +7,7 @@ import { stdin, stdout } from 'node:process'
 import { patchWranglerConfig, findWranglerConfig } from '../integration/wrangler-config.js'
 import { runMigrate } from './migrate.js'
 import { runSeedAdmin } from './seed-admin.js'
+import { PLACEHOLDER_AUTH_SECRET } from '../placeholder-auth-secret.js'
 
 export interface SetupOptions {
   yes?: boolean
@@ -22,7 +23,6 @@ const WRANGLER_FILE = 'wrangler.toml'
 const GITIGNORE_FILE = '.gitignore'
 
 const PLACEHOLDER_DB_ID = 'TODO_PASTE_ID_FROM_WRANGLER_OUTPUT'
-const PLACEHOLDER_AUTH_SECRET = 'dev-secret-change-me-in-production-32chars'
 
 async function fileExists(path: string): Promise<boolean> {
   try { await access(path); return true } catch { return false }

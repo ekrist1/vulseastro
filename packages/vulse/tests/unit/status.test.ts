@@ -1,8 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { getVulseStatus } from '../../src/server/status'
 import type { RuntimeEnv } from '../../src/server/env'
-
-const PLACEHOLDER_SECRET = 'dev-secret-change-me-in-production-32chars'
+import { PLACEHOLDER_AUTH_SECRET } from '../../src/placeholder-auth-secret'
 
 function baseEnv(overrides: Partial<RuntimeEnv> = {}): RuntimeEnv {
   return {
@@ -54,7 +53,7 @@ describe('getVulseStatus', () => {
   })
 
   it('warns about the placeholder auth secret', () => {
-    const s = getVulseStatus(baseEnv({ BETTER_AUTH_SECRET: PLACEHOLDER_SECRET }), true)
+    const s = getVulseStatus(baseEnv({ BETTER_AUTH_SECRET: PLACEHOLDER_AUTH_SECRET }), true)
     expect(s.warnings.some((w) => /placeholder/i.test(w))).toBe(true)
   })
 

@@ -2,6 +2,7 @@ import { nanoid } from 'nanoid'
 import { createDb } from '../core/db.js'
 import { ConflictError } from '../core/errors.js'
 import { createAuth } from '../server/better-auth.js'
+import { PLACEHOLDER_AUTH_SECRET } from '../placeholder-auth-secret.js'
 
 export interface SeedOptions { email?: string; remote?: boolean; password?: string }
 export interface SeedResult { email: string; tempPassword: string }
@@ -23,7 +24,7 @@ export async function seedAdminUser(db: D1Database, opts: SeedAdminUserOptions):
   if (existing) throw new ConflictError(`User with email ${opts.email} already exists`)
 
   const tempPassword = opts.password ?? generatePassword()
-  const secret = opts.secret ?? 'dev-secret-change-me-in-production-32chars'
+  const secret = opts.secret ?? PLACEHOLDER_AUTH_SECRET
   const baseURL = opts.baseURL ?? 'http://localhost'
 
   const auth = await createAuth(createDb(db), { baseURL, secret, allowSignUp: true })
