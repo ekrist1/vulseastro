@@ -1,4 +1,4 @@
-import { join } from 'node:path'
+import { resolveWranglerConfigPath } from './wrangler-config.js'
 
 declare global {
   // eslint-disable-next-line no-var
@@ -10,9 +10,9 @@ export async function initLoaderBinding(projectRoot: string): Promise<void> {
   if (globalThis.__VULSE_TEST_DB__) return
   try {
     const { getPlatformProxy } = await import('wrangler')
-    const { env } = await getPlatformProxy({ configPath: join(projectRoot, 'wrangler.toml') })
+    const { env } = await getPlatformProxy({ configPath: await resolveWranglerConfigPath(projectRoot) })
     if (env.DB) globalThis.__VULSE_TEST_DB__ = env.DB as D1Database
   } catch {
-    // wrangler.toml missing or platform proxy unavailable (e.g. CI without bindings)
+    // wrangler config missing or platform proxy unavailable (e.g. CI without bindings)
   }
 }

@@ -1,5 +1,8 @@
 import { describe, it, expect } from 'vitest'
-import { patchWranglerJsonc, patchWranglerConfig } from '../../src/integration/wrangler-config'
+import { mkdtemp, writeFile } from 'node:fs/promises'
+import { join } from 'node:path'
+import { tmpdir } from 'node:os'
+import { patchWranglerJsonc, patchWranglerConfig, resolveWranglerConfigPath } from '../../src/integration/wrangler-config'
 
 /** Parse the way wrangler does: tolerate line comments and trailing commas. */
 function parseJsonc(input: string): unknown {
@@ -83,5 +86,28 @@ database_id = "abc"
     // A second pass must be a no-op — otherwise the Cloudflare adapter
     // restarts the dev server on every patch.
     expect(patchWranglerConfig(out, 'wrangler.toml')).toBe(out)
+  })
+})
+
+describe('resolveWranglerConfigPath', () => {
+  it('prefers wrangler.jsonc over wrangler.toml in the same directory', async () => {
+    const dir = await mkdtemp(join(tmpdir(), 'vulse-wrangler-'))
+    await writeFile(join(dir, 'wrangler.toml'), 'name = "toml"\n', 'utf8')
+    await writeFile(join(dir, 'wrangler.jsonc'), '{\n  "name": "jsonc"\n}\n', 'utf8')
+
+    await expect(resolveWranglerConfigPath(dir)).resolves.toBe(join(dir, 'wrangler.jsonc'))
+  })
+
+  it('finds wrangler.jsonc when no wrangler.toml exists', async () => {
+    const dir = await mkdtemp(join(tmpdir(), 'vulse-wrangler-'))
+    await writeFile(join(dir, 'wrangler.jsonc'), '{\n  "name": "jsonc"\n}\n', 'utf8')
+
+    await expect(resolveWranglerConfigPath(dir)).resolves.toBe(join(dir, 'wrangler.jsonc'))
+  })
+
+  it('throws when no wrangler config exists', async () => {
+    const dir = await mkdtemp(join(tmpdir(), 'vulse-wrangler-'))
+
+    await expect(resolveWranglerConfigPath(dir)).rejects.toThrow(/No wrangler config found/)
   })
 })

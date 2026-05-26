@@ -1,7 +1,12 @@
 import { readFile, writeFile, mkdir, access } from 'node:fs/promises'
 import { join } from 'node:path'
 import { VULSE_PACKAGE } from '../package-name.js'
-import { ensureWranglerConfig, patchWranglerConfig, findWranglerConfig } from './wrangler-config.js'
+import {
+  DEFAULT_WRANGLER_CONFIG_FILE,
+  ensureWranglerConfig,
+  patchWranglerConfig,
+  findWranglerConfig,
+} from './wrangler-config.js'
 
 const STARTER_BLUEPRINT = `import { defineCollection, z } from '${VULSE_PACKAGE}'
 
@@ -27,9 +32,12 @@ async function fileExists(path: string): Promise<boolean> {
 
 export async function runInstallHook(cwd: string): Promise<void> {
   const wranglerFile = await findWranglerConfig(cwd)
-  const wranglerPath = join(cwd, wranglerFile ?? 'wrangler.toml')
+  const wranglerPath = join(cwd, wranglerFile ?? DEFAULT_WRANGLER_CONFIG_FILE)
   const existing = (await fileExists(wranglerPath)) ? await readFile(wranglerPath, 'utf8') : ''
-  const patched = patchWranglerConfig(existing, wranglerFile ?? 'wrangler.toml', { d1Name: 'vulse-db', r2Bucket: 'vulse-media' })
+  const patched = patchWranglerConfig(existing, wranglerFile ?? DEFAULT_WRANGLER_CONFIG_FILE, {
+    d1Name: 'vulse-db',
+    r2Bucket: 'vulse-media',
+  })
   if (patched !== existing) await writeFile(wranglerPath, patched, 'utf8')
 
   const collectionsDir = join(cwd, 'src/vulse/collections')

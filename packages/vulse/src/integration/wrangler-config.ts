@@ -1,22 +1,41 @@
 import { access, readFile, writeFile } from 'node:fs/promises'
-import { join } from 'node:path'
+import { dirname, join } from 'node:path'
 import { patchWranglerToml, VULSE_MIGRATIONS_DIR, DEFAULT_COMPATIBILITY_DATE, type PatchOptions } from './wrangler-patch.js'
 
-const WRANGLER_FILES = ['wrangler.jsonc', 'wrangler.toml', 'wrangler.json'] as const
+export const WRANGLER_CONFIG_FILES = ['wrangler.jsonc', 'wrangler.toml', 'wrangler.json'] as const
+const WRANGLER_FILES = WRANGLER_CONFIG_FILES
 const DEFAULT_PATCH: PatchOptions = { d1Name: 'vulse-db', r2Bucket: 'vulse-media' }
 
 export type WranglerConfigFile = (typeof WRANGLER_FILES)[number]
+export const DEFAULT_WRANGLER_CONFIG_FILE: WranglerConfigFile = 'wrangler.jsonc'
+
+const WRANGLER_CONFIG_NOT_FOUND =
+  'No wrangler config found (wrangler.jsonc, wrangler.toml, or wrangler.json). Run this command from your Astro project root.'
 
 async function fileExists(path: string): Promise<boolean> {
   try { await access(path); return true } catch { return false }
 }
 
-/** Prefer the wrangler file Astro/Cloudflare already created. */
+/** Prefer the wrangler file Astro/Cloudflare already created in `cwd`. */
 export async function findWranglerConfig(cwd: string): Promise<WranglerConfigFile | null> {
   for (const file of WRANGLER_FILES) {
     if (await fileExists(join(cwd, file))) return file
   }
   return null
+}
+
+/** Walk up from `cwd` and return the path to the nearest wrangler config file. */
+export async function resolveWranglerConfigPath(cwd = process.cwd()): Promise<string> {
+  let dir = cwd
+  for (;;) {
+    for (const file of WRANGLER_FILES) {
+      const configPath = join(dir, file)
+      if (await fileExists(configPath)) return configPath
+    }
+    const parent = dirname(dir)
+    if (parent === dir) throw new Error(WRANGLER_CONFIG_NOT_FOUND)
+    dir = parent
+  }
 }
 
 export function isJsonWranglerConfig(file: WranglerConfigFile): boolean {

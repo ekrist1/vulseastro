@@ -56,7 +56,7 @@ export async function runSeedAdmin(opts: SeedOptions): Promise<void> {
   try {
     const secret = env.BETTER_AUTH_SECRET
     if (typeof secret !== 'string' || !secret) {
-      throw new Error('BETTER_AUTH_SECRET missing from wrangler.toml [vars] (or secrets).')
+      throw new Error('BETTER_AUTH_SECRET missing from wrangler config [vars] (or secrets).')
     }
 
     const result = await seedAdminUser(db, {

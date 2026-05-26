@@ -37,6 +37,12 @@ describe('setDatabaseId', () => {
     const twice = setDatabaseId(once, 'abc-123')
     expect(twice).toBe(once)
   })
+
+  it('replaces a JSONC database_id', () => {
+    const input = '"database_id": "old-id",\n'
+    const out = setDatabaseId(input, 'new-id')
+    expect(out).toBe('"database_id": "new-id",\n')
+  })
 })
 
 describe('applyDevVars', () => {

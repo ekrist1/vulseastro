@@ -4,7 +4,11 @@ import { randomBytes } from 'node:crypto'
 import { execSync } from 'node:child_process'
 import { createInterface } from 'node:readline/promises'
 import { stdin, stdout } from 'node:process'
-import { patchWranglerConfig, findWranglerConfig } from '../integration/wrangler-config.js'
+import {
+  DEFAULT_WRANGLER_CONFIG_FILE,
+  patchWranglerConfig,
+  findWranglerConfig,
+} from '../integration/wrangler-config.js'
 import { runMigrate } from './migrate.js'
 import { runSeedAdmin } from './seed-admin.js'
 import { PLACEHOLDER_AUTH_SECRET } from '../placeholder-auth-secret.js'
@@ -19,7 +23,7 @@ export interface SetupOptions {
 }
 
 const DEV_VARS_FILE = '.dev.vars'
-const WRANGLER_FILE = 'wrangler.toml'
+const WRANGLER_FILE = DEFAULT_WRANGLER_CONFIG_FILE
 const GITIGNORE_FILE = '.gitignore'
 
 const PLACEHOLDER_DB_ID = 'TODO_PASTE_ID_FROM_WRANGLER_OUTPUT'
@@ -38,16 +42,18 @@ export function generateSecret(): string {
 }
 
 /**
- * Set the D1 `database_id` in wrangler.toml. Replaces the placeholder if
- * present; otherwise replaces the existing id under the `# vulse:d1` block.
- * Idempotent: writing the same id twice yields the same output.
+ * Set the D1 `database_id` in a wrangler config (TOML or JSONC). Replaces the
+ * placeholder if present; otherwise replaces the existing id. Idempotent.
  */
-export function setDatabaseId(toml: string, id: string): string {
-  if (toml.includes(`database_id = "${id}"`)) return toml
-  if (toml.includes(PLACEHOLDER_DB_ID)) {
-    return toml.replace(PLACEHOLDER_DB_ID, id)
+export function setDatabaseId(config: string, id: string): string {
+  if (config.includes(`database_id = "${id}"`) || config.includes(`"database_id": "${id}"`)) return config
+  if (config.includes(PLACEHOLDER_DB_ID)) {
+    return config.replace(PLACEHOLDER_DB_ID, id)
   }
-  return toml.replace(/database_id = "[^"]*"/, `database_id = "${id}"`)
+  if (/database_id\s*=/.test(config)) {
+    return config.replace(/database_id = "[^"]*"/, `database_id = "${id}"`)
+  }
+  return config.replace(/"database_id"\s*:\s*"[^"]*"/, `"database_id": "${id}"`)
 }
 
 /**
