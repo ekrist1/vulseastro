@@ -74,7 +74,7 @@ async function signOut() {
         class="inline-flex items-center gap-1 rounded px-2 py-0.5 text-xs font-medium"
         :class="status.mode === 'development' ? 'bg-amber-100 text-amber-800' : 'bg-zinc-100 text-zinc-600'"
       >
-        {{ status.mode === 'development' ? 'DEV · local DB' : 'PROD · remote DB' }}
+        {{ status.mode === 'development' ? 'DEV · local DB' : 'PROD · remote D1' }}
         <span v-if="status.warningCount > 0" :title="`${status.warningCount} warning(s)`">⚠</span>
       </component>
     </div>
