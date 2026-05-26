@@ -22,6 +22,7 @@ export function injectVulseAdminRoutes({ injectRoute, logger, adminPath = '/admi
     { pattern: `${prefix}/users/[id]`, file: 'users/[id].astro' },
     { pattern: `${prefix}/settings`, file: 'settings/index.astro' },
     { pattern: `${prefix}/settings/auth`, file: 'settings/auth.astro' },
+    { pattern: `${prefix}/settings/status`, file: 'settings/status.astro' },
     { pattern: `${prefix}/media`, file: 'media.astro' },
     { pattern: `${prefix}/forms`, file: 'forms/index.astro' },
     { pattern: `${prefix}/forms/new`, file: 'forms/new.astro' },
