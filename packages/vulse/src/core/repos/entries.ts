@@ -271,6 +271,47 @@ export class EntriesRepo {
     return joinToEntry(shell, loc)
   }
 
+  /**
+   * Migrate content stored under the `'default'` sentinel locale to a concrete default
+   * locale. Single-locale sites write content under `'default'`; when the operator later
+   * configures a real default locale (e.g. `'en'`), those rows would otherwise be orphaned
+   * — `findById`/`findBySlug` query the configured locale and find nothing.
+   *
+   * Only the `'default'` sentinel is moved (never a concrete language → another, which would
+   * mislabel content). A sentinel row is skipped when migrating it would collide: the entry
+   * already has a row in `newDefault`, or another entry already owns `(collection, slug)`
+   * under `newDefault`. Idempotent. Returns the number of entries migrated.
+   */
+  async relabelSentinelLocale(newDefault: string): Promise<number> {
+    if (newDefault === DEFAULT_LOCALE) return 0
+
+    const sentinelRows = await this.db
+      .select({ entryId: entryLocales.entryId, collection: entryLocales.collection, slug: entryLocales.slug })
+      .from(entryLocales)
+      .where(eq(entryLocales.locale, DEFAULT_LOCALE))
+    if (sentinelRows.length === 0) return 0
+
+    const targetRows = await this.db
+      .select({ entryId: entryLocales.entryId, collection: entryLocales.collection, slug: entryLocales.slug })
+      .from(entryLocales)
+      .where(eq(entryLocales.locale, newDefault))
+    const targetEntryIds = new Set(targetRows.map((r) => r.entryId))
+    const slugKey = (collection: string, slug: string) => `${collection} ${slug}`
+    const takenSlugs = new Set(targetRows.map((r) => slugKey(r.collection, r.slug)))
+
+    const migratableIds = sentinelRows
+      .filter((r) => !targetEntryIds.has(r.entryId) && !takenSlugs.has(slugKey(r.collection, r.slug)))
+      .map((r) => r.entryId)
+    if (migratableIds.length === 0) return 0
+
+    await this.db.update(entryLocales).set({ locale: newDefault })
+      .where(and(eq(entryLocales.locale, DEFAULT_LOCALE), inArray(entryLocales.entryId, migratableIds)))
+    await this.db.update(entryRevisions).set({ locale: newDefault })
+      .where(and(eq(entryRevisions.locale, DEFAULT_LOCALE), inArray(entryRevisions.entryId, migratableIds)))
+
+    return migratableIds.length
+  }
+
   /** Returns every locale row for an entry — used by the admin to render the locale picker. */
   async listLocales(id: string): Promise<EntryLocaleSummary[]> {
     const rows = await this.db.select({
