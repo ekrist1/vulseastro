@@ -150,6 +150,8 @@ export class EntriesRepo {
     content: unknown
     createdBy: string
     status?: 'draft' | 'published'
+    /** Drafts-enabled collections: publish immediately on create (e.g. "Save & publish"). */
+    publish?: boolean
     locale?: string
     parentId?: string | null
     draftsEnabled?: boolean
@@ -158,7 +160,9 @@ export class EntriesRepo {
     const slug = await this.resolveUniqueSlug(input.collection, locale, input.slug)
     const now = new Date()
     const sortOrder = (await this.maxSortOrder(input.collection, input.parentId ?? null)) + 1
-    const publishNow = !input.draftsEnabled && (input.status ?? 'draft') === 'published'
+    const publishNow = input.draftsEnabled
+      ? input.publish === true
+      : (input.status ?? 'draft') === 'published'
 
     const entryId = nanoid()
     const shellRow = {
