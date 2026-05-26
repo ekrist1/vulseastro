@@ -1,0 +1,63 @@
+---
+import AdminShell from '../../components/AdminShell.astro'
+import { getRuntimeEnv } from '../../../server/env.js'
+import { getVulseStatus } from '../../../server/status.js'
+
+const status = getVulseStatus(getRuntimeEnv())
+
+const bindingRows = [
+  { label: 'D1 database (DB)', ok: status.bindings.db },
+  { label: 'R2 bucket (BUCKET)', ok: status.bindings.bucket },
+  { label: 'Form queue (FORM_QUEUE)', ok: status.bindings.queue },
+  { label: 'Cloudflare Images', ok: status.bindings.images },
+]
+const isDev = status.mode === 'development'
+---
+<AdminShell title="Status" activePath="/admin/settings/status">
+  <h1 class="mb-4 text-2xl font-semibold text-zinc-900">Status</h1>
+
+  <section class="mb-6 rounded-xl border bg-white p-4">
+    <h2 class="mb-2 text-sm font-semibold text-zinc-700">Environment</h2>
+    <div class="flex items-center gap-2">
+      <span
+        class="rounded px-2 py-0.5 text-xs font-medium"
+        class:list={[isDev ? 'bg-amber-100 text-amber-800' : 'bg-zinc-100 text-zinc-600']}
+      >
+        {isDev ? 'Development' : 'Production'}
+      </span>
+      <span class="text-sm text-zinc-700">Database: {status.database}</span>
+    </div>
+    <p class="mt-2 text-xs text-zinc-500">
+      Reflects the runtime mode (dev server vs deployed build). Cloudflare exposes no API to probe
+      a D1 binding directly, so local-vs-remote is inferred, not measured.
+    </p>
+  </section>
+
+  <section class="mb-6 rounded-xl border bg-white p-4">
+    <h2 class="mb-2 text-sm font-semibold text-zinc-700">Version</h2>
+    <p class="font-mono text-sm text-zinc-800">@vulsecms/core {status.version}</p>
+  </section>
+
+  <section class="mb-6 rounded-xl border bg-white p-4">
+    <h2 class="mb-2 text-sm font-semibold text-zinc-700">Bindings</h2>
+    <ul class="space-y-1 text-sm">
+      {bindingRows.map((b) => (
+        <li class="flex items-center gap-2">
+          <span class:list={[b.ok ? 'text-emerald-600' : 'text-zinc-400']}>{b.ok ? '✓' : '✗'}</span>
+          <span class="text-zinc-700">{b.label}</span>
+        </li>
+      ))}
+    </ul>
+  </section>
+
+  <section class="rounded-xl border bg-white p-4">
+    <h2 class="mb-2 text-sm font-semibold text-zinc-700">Warnings</h2>
+    {status.warnings.length === 0 ? (
+      <p class="text-sm text-emerald-700">All clear — no configuration warnings.</p>
+    ) : (
+      <ul class="space-y-1 text-sm text-amber-800">
+        {status.warnings.map((w) => <li class="flex items-start gap-2"><span>⚠</span><span>{w}</span></li>)}
+      </ul>
+    )}
+  </section>
+</AdminShell>
