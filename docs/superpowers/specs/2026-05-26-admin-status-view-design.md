@@ -66,11 +66,9 @@ interface VulseStatus {
   - `bucket` — `!!env.BUCKET`
   - `queue` — `!!env.FORM_QUEUE`
   - `images` — `!!(env.CF_IMAGES_ACCOUNT_HASH && env.CF_IMAGES_TOKEN)`
-- `warnings` — the agreed set of three checks:
+- `warnings` — the agreed set of two checks:
   1. **Placeholder auth secret** — `env.BETTER_AUTH_SECRET === 'dev-secret-change-me-in-production-32chars'`.
-  2. **Missing preview secret** — `!env.VULSE_PREVIEW_SECRET` (it falls back to
-     `BETTER_AUTH_SECRET`, so this is an advisory, not an error).
-  3. **Sign-up enabled in production** — `mode === 'production' && env.VULSE_ALLOW_MEMBER_SIGNUP === 'true'`.
+  2. **Sign-up enabled in production** — `mode === 'production' && env.VULSE_ALLOW_MEMBER_SIGNUP === 'true'`.
 
 `import.meta.env.DEV` is read inside this module so it is the single source of truth for mode.
 
