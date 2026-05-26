@@ -516,6 +516,11 @@ function morphdomFactory(morphAttrs2) {
 var morphdom = morphdomFactory(morphAttrs);
 var morphdom_esm_default = morphdom;
 
+// src/client/preview-root.ts
+function resolvePreviewRoot(scope, selector) {
+  return scope.querySelector(selector) ?? scope.body;
+}
+
 // src/client/live-preview-bridge.ts
 var ROOT = document.documentElement.dataset.vulsePreviewRoot ?? "main";
 window.addEventListener("message", async (event) => {
@@ -529,7 +534,7 @@ window.addEventListener("message", async (event) => {
   if (!res.ok) return;
   const html = await res.text();
   const doc2 = new DOMParser().parseFromString(html, "text/html");
-  const from = doc2.querySelector(ROOT);
-  const to = document.querySelector(ROOT);
+  const from = resolvePreviewRoot(doc2, ROOT);
+  const to = resolvePreviewRoot(document, ROOT);
   if (from && to) morphdom_esm_default(to, from, { childrenOnly: true });
 });

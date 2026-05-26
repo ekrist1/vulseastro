@@ -1,4 +1,5 @@
 import morphdom from 'morphdom'
+import { resolvePreviewRoot } from './preview-root'
 
 const ROOT = document.documentElement.dataset.vulsePreviewRoot ?? 'main'
 
@@ -14,7 +15,7 @@ window.addEventListener('message', async (event) => {
   if (!res.ok) return
   const html = await res.text()
   const doc = new DOMParser().parseFromString(html, 'text/html')
-  const from = doc.querySelector(ROOT)
-  const to = document.querySelector(ROOT)
+  const from = resolvePreviewRoot(doc, ROOT)
+  const to = resolvePreviewRoot(document, ROOT)
   if (from && to) morphdom(to, from, { childrenOnly: true })
 })
