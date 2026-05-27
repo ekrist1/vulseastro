@@ -3,6 +3,7 @@ import { env } from 'cloudflare:test'
 import { applyMigrations } from '../../src/core/migrations'
 import { createDb } from '../../src/core/db'
 import { createAuth } from '../../src/server/better-auth'
+import { SubmissionsRepo } from '../../src/core/repos/forms'
 import { formsRoutes } from '../../src/server/routes/forms'
 import { signUpAsAdmin, signUp, signIn, cookieFromResponse } from '../helpers/auth'
 
@@ -93,5 +94,39 @@ describe('forms admin routes', () => {
     const row = await get.json() as { ok: true; data: { definition: { fields: { name: string }[] } } }
     expect(row.data.definition.fields).toHaveLength(1)
     expect(row.data.definition.fields[0]!.name).toBe('email')
+  })
+
+  it('bulk delete is scoped to the requested form', async () => {
+    const db = createDb(env.DB)
+    const auth = await createAuth(db, { baseURL: 'http://localhost', secret: SECRET, allowSignUp: true })
+    const routes = formsRoutes(db, auth)
+    const cookie = await signUpAsAdmin(env, auth)
+
+    await routes.create(new Request('http://localhost/api/vulse/forms', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', cookie },
+      body: JSON.stringify(sampleForm),
+    }))
+    await routes.create(new Request('http://localhost/api/vulse/forms', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', cookie },
+      body: JSON.stringify({ ...sampleForm, handle: 'newsletter', label: 'Newsletter' }),
+    }))
+
+    const submissions = new SubmissionsRepo(db)
+    const contact = await submissions.create({ formHandle: 'contact', payload: { email: 'a@example.com' }, meta: {} })
+    const newsletter = await submissions.create({ formHandle: 'newsletter', payload: { email: 'b@example.com' }, meta: {} })
+
+    const res = await routes.bulkDeleteSubmissions(new Request('http://localhost/api/vulse/forms/contact/submissions', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', cookie },
+      body: JSON.stringify({ ids: [contact.id, newsletter.id, 'missing'] }),
+    }), { handle: 'contact' })
+
+    expect(res.status).toBe(200)
+    const body = await res.json() as { data: { deleted: number } }
+    expect(body.data.deleted).toBe(1)
+    expect(await submissions.findById(contact.id)).toBeNull()
+    expect(await submissions.findById(newsletter.id)).not.toBeNull()
   })
 })

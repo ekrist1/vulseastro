@@ -52,6 +52,7 @@ export async function updateBlueprint(
       })
     }
   }
+  ensureSafeRenames(parsed.fields)
 
   await ensureValidCrossField(db, parsed, handle)
 
@@ -184,6 +185,39 @@ async function ensureValidFieldList(
         seenSets.add(set.name)
         await ensureValidFieldList(db, set.fields, [...path, i, 'ui', 'sets', j, 'fields'], currentHandle)
       }
+    }
+
+    if (f.ui.kind === 'grid' && 'fields' in f.ui) {
+      await ensureValidFieldList(db, f.ui.fields, [...path, i, 'ui', 'fields'], currentHandle)
+    }
+  }
+}
+
+function ensureSafeRenames(fields: FieldDefinitionWithRename[]): void {
+  const sourceIndexes = new Map<string, number>()
+  for (let i = 0; i < fields.length; i++) {
+    const f = fields[i]!
+    if (f.previousName === undefined || f.previousName === f.name) continue
+    const existing = sourceIndexes.get(f.previousName)
+    if (existing !== undefined) {
+      throw new ValidationError(`previousName '${f.previousName}' is used by more than one field`, {
+        issues: [{ path: ['fields', i, 'previousName'] }],
+      })
+    }
+    sourceIndexes.set(f.previousName, i)
+  }
+
+  for (let i = 0; i < fields.length; i++) {
+    const f = fields[i]!
+    if (f.previousName === undefined || f.previousName === f.name) continue
+    const sourceIndex = sourceIndexes.get(f.name)
+    if (sourceIndex !== undefined) {
+      throw new ValidationError('Rename chains and swaps are not supported; rename one field at a time.', {
+        issues: [
+          { path: ['fields', i, 'name'] },
+          { path: ['fields', sourceIndex, 'previousName'] },
+        ],
+      })
     }
   }
 }

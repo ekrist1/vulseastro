@@ -81,7 +81,7 @@ export function formsRoutes(db: VulseDb, auth: Auth) {
       body: z.object({ ids: z.array(z.string()).min(1) }),
       requireRole: ['admin', 'editor'],
     }, async ({ params, body }) => {
-      const deleted = await submissions.deleteMany(body.ids)
+      const deleted = await submissions.deleteMany(body.ids, params.handle)
       return { deleted }
     }),
   }
