@@ -8,6 +8,7 @@ import { vulseBlueprintsPlugin } from './vite-plugin-blueprints.js'
 import { vulseAdminCssPlugin, vulseAdminFsAllow } from './vite-plugin-admin-css.js'
 import { createVulseViteLogger } from './vite-logger.js'
 import { vulseSuppressSourcemapsPlugin } from './vite-plugin-suppress-sourcemaps.js'
+import { vulseExternalizeNativePlugin } from './vite-plugin-externalize-native.js'
 import { generateBlueprintTypes } from './type-gen.js'
 import { initLoaderBinding } from './loader-binding.js'
 import { exportSchemaDocs } from './schema-docs-gen.js'
@@ -89,6 +90,7 @@ export default function vulse(opts: VulseOptions = {}): AstroIntegration {
           vite: {
             customLogger: createVulseViteLogger(),
             plugins: [
+              vulseExternalizeNativePlugin(),
               vulseSuppressSourcemapsPlugin(),
               vulseAdminCssPlugin(),
               tailwindcss(),
