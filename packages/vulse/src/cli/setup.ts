@@ -278,7 +278,10 @@ export async function runSetup(opts: SetupOptions = {}): Promise<void> {
       }
     }
 
-    stdout.write(`\nDone. Start your dev server and open /admin/login.\n\n`)
+    stdout.write(`\nDone. Start your dev server and open /admin/login.\n`)
+    stdout.write(`\nReady to deploy? The database above is for development.\n`)
+    stdout.write(`Create wrangler.production.toml with a production D1, then run:\n`)
+    stdout.write(`  npx vulse migrate --remote\n\n`)
   } finally {
     prompter.close()
   }
