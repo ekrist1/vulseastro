@@ -127,6 +127,9 @@ The same flows work as in [`installation.md#4-seed-your-first-admin`](installati
   ```bash
   npx vulse seed:admin --email you@company.com --remote
   ```
+  The `--remote` flag targets your live production D1 (requires `wrangler login`). Don't
+  omit it — without `--remote` the admin is created in your *local* dev database and
+  production login will fail with "Invalid email or password".
 - **Option A — Sign-up then promote:**
   Temporarily enable sign-up in production (`PUT /api/vulse/settings/allowMemberSignUp`), create the account, run `UPDATE user SET role='admin'`, and disable sign-up again.
 

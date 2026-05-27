@@ -79,11 +79,16 @@ npx vulse seed:admin --email you@example.com --password 'your-secure-password'
 |------|---------|
 | `--email <addr>` | Required. The user's email. |
 | `--password <pw>` | Optional. If omitted, a random password is generated and printed once. |
-| `--remote` | Target the production D1 instead of local. |
+| `--remote` | Target the live **production** D1 over the network instead of the local Miniflare DB. Requires that you're logged in (`wrangler login`). |
 
-The command creates the user via Better Auth (proper password hashing) and updates `role = 'admin'`. If a user with that email already exists, it just promotes them.
+The command creates the user via Better Auth (proper password hashing) and sets `role = 'admin'`. If a user with that email already exists it fails with a conflict error — delete the existing row or use a different email rather than re-running.
 
-The seed always runs migrations first, so it's safe to run on a fresh database.
+> **Seed production with `--remote`.** Your deployed Worker uses a *separate* D1 from
+> local dev. If you seed an admin without `--remote`, the user lands in your local
+> Miniflare DB and production login fails with "Invalid email or password" — the
+> production database has no such user. Always pass `--remote` when bootstrapping the
+> live site. (Password hashes are portable across local and remote, and do **not**
+> depend on `BETTER_AUTH_SECRET`.)
 
 ## `vulse collection:scaffold`
 
