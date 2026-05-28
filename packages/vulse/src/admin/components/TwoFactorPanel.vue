@@ -80,11 +80,20 @@ async function startEnroll() {
     error.value = res.status === 401 || res.status === 403 ? 'That password is not correct.' : res.message
     return
   }
-  totpURI.value = res.data.totpURI
-  backupCodes.value = res.data.backupCodes ?? []
-  phase.value = 'verifying'
-  const QRCode = await loadQRCode()
-  qrDataUrl.value = await QRCode.toDataURL(res.data.totpURI, { width: 220, margin: 1 })
+  try {
+    totpURI.value = res.data.totpURI
+    backupCodes.value = res.data.backupCodes ?? []
+    phase.value = 'verifying'
+    const QRCode = await loadQRCode()
+    qrDataUrl.value = await QRCode.toDataURL(res.data.totpURI, { width: 220, margin: 1 })
+  } catch {
+    totpURI.value = ''
+    qrDataUrl.value = ''
+    backupCodes.value = []
+    showBackupCodes.value = false
+    phase.value = 'enabling'
+    error.value = 'Could not generate the QR code. Please try again.'
+  }
 }
 
 async function verifyEnroll() {
