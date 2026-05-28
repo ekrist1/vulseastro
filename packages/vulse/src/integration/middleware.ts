@@ -87,8 +87,7 @@ export const onRequest = defineMiddleware(async (ctx, next) => {
   if (path.startsWith('/admin') && path !== '/admin/login') {
     try {
       const env = getRuntimeEnv()
-      const db = createDb(env.DB)
-      const rt = await getRuntime(env, await registryForRequest(db), new URL(ctx.request.url).origin)
+      const rt = await getRuntime(env, () => registryForRequest(createDb(env.DB)), new URL(ctx.request.url).origin)
       const session = await rt.auth.api.getSession({ headers: ctx.request.headers })
       if (!session) return ctx.redirect(`/admin/login?next=${encodeURIComponent(path)}`)
       ;(ctx.locals as { vulseUser?: typeof session.user }).vulseUser = session.user
