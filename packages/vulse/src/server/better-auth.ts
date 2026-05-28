@@ -1,4 +1,4 @@
-import { betterAuth } from 'better-auth'
+import { betterAuth, type Auth as BetterAuthInstance } from 'better-auth'
 import { drizzleAdapter } from 'better-auth/adapters/drizzle'
 import { twoFactor } from 'better-auth/plugins/two-factor'
 import type { VulseDb } from '../core/db.js'
@@ -20,13 +20,19 @@ function emailDomain(email: string): string | null {
   return email.split('@')[1]?.toLowerCase() ?? null
 }
 
-export async function createAuth(db: VulseDb, config: AuthConfig) {
+// Explicit return annotation avoids TS2742: the inferred shape would pull
+// internal zod paths (introduced by the two-factor plugin's typed endpoints)
+// into the emitted `.d.ts`, which is not portable across pnpm installs. We
+// use better-auth's exported base `Auth` type since all call sites use only
+// `.handler` and `.api.getSession` / `.api.requestPasswordReset` — none of
+// the plugin-specific typed endpoints.
+export async function createAuth(db: VulseDb, config: AuthConfig): Promise<BetterAuthInstance> {
   const settings = new SettingsRepo(db)
   const allowSignUp = config.allowSignUp ?? (await settings.get<boolean>('allowMemberSignUp')) ?? false
   const allowedDomains = (await settings.get<string[]>('allowedSignUpDomains')) ?? []
   const pluginEnv = config.env
 
-  return betterAuth({
+  const instance = betterAuth({
     baseURL: config.baseURL,
     secret: config.secret,
     database: drizzleAdapter(db, { provider: 'sqlite', schema }),
@@ -86,6 +92,12 @@ export async function createAuth(db: VulseDb, config: AuthConfig) {
       },
     },
   })
+  // Cast to the unparameterised public `Auth` shape. The full inferred type
+  // contains plugin endpoints whose body schemas reference zod internals via
+  // .pnpm paths; emitting that into our `.d.ts` is not portable. Our server
+  // code only uses `.handler`, `.api.getSession`, and `.api.requestPasswordReset`,
+  // all of which are present on the base shape.
+  return instance as unknown as BetterAuthInstance
 }
 
 export type Auth = Awaited<ReturnType<typeof createAuth>>
