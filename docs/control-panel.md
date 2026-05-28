@@ -22,6 +22,7 @@ The Vulse admin UI is served by your own Astro app under `/admin` (configurable 
 | `/admin/users` | User management (admin-only) |
 | `/admin/settings` | Site settings (site name, deploy hook, locales) |
 | `/admin/settings/auth` | Auth settings (sign-up toggle, domain allowlist) |
+| `/admin/settings/redirects` | URL redirects (admin-only) |
 | `/admin/settings/sets` | Reusable block sets |
 | `/admin/settings/globals` | Site-wide content sets (footer, contact info, etc.) |
 
@@ -98,6 +99,7 @@ Submissions appear under `/admin/forms/:handle/submissions` with detail, bulk de
 
 - **Site** — site name, deploy-hook URL, supported locales, default locale.
 - **Auth** — public sign-up toggle, allowed email domains.
+- **Redirects** — managed URL redirects, evaluated by Vulse's middleware before any page render. Each rule has a from-path (matched against the request pathname, case-insensitive and trailing-slash tolerant), a to URL (site-relative `/foo` or absolute `https://…`), and an HTTP status (`301`, `302`, `307`, or `308`). The original query string is preserved unless the target already has one. Disabled rules are skipped. Hits and last-hit timestamps are recorded for each rule. Admin-only.
 - **Sets** — reusable block sets ("Quote", "Callout", etc.) that appear inside the rich-text editor.
 - **Globals** — site-wide content sets exposed at `/api/vulse/public/globals` for use in your layouts.
 

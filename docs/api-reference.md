@@ -268,6 +268,34 @@ PUT /api/vulse/settings/:key         set one setting (admin)
 
 Auth-related keys (`allowMemberSignUp`, `allowedSignUpDomains`) invalidate the runtime cache on the next request.
 
+## Redirects
+
+```txt
+GET    /api/vulse/redirects              list all redirects (admin)
+POST   /api/vulse/redirects              create a redirect (admin)
+GET    /api/vulse/redirects/:id          get one redirect (admin)
+PATCH  /api/vulse/redirects/:id          update a redirect (admin)
+DELETE /api/vulse/redirects/:id          delete a redirect (admin)
+```
+
+`POST` / `PATCH` body:
+
+```json
+{
+  "fromPath": "/old-page",
+  "toUrl": "/new-page",
+  "status": 301,
+  "enabled": true
+}
+```
+
+- `fromPath` must start with `/`. Stored normalized (lower-cased, trailing slash trimmed) so middleware lookups are case-insensitive and trailing-slash tolerant.
+- `toUrl` is either site-relative (`/foo`) or an absolute URL (`https://…` or `http://…`).
+- `status` is one of `301`, `302`, `307`, `308` (default `301`).
+- `enabled` defaults to `true`. Disabled rules are skipped by the request middleware.
+
+The middleware evaluates redirects before any page render and skips `/admin/*`, `/api/*`, and asset paths (anything with a file extension). The original query string is preserved unless the target already has one. Each match increments a hit counter and updates `lastHitAt` for the rule.
+
 ## CORS
 
 The API is same-origin only. There is no built-in CORS allow-list — admin routes set `credentials: 'same-origin'` and public routes can be called from your own pages without preflight. If you need to call the API from another origin, add CORS headers in your worker entry.

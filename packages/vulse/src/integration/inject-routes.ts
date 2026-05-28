@@ -50,6 +50,8 @@ export function injectVulseRoutes({ injectRoute, logger }: InjectArgs) {
     { pattern: '/api/vulse/globals/[handle]/value', file: 'api-vulse-globals-value.js' },
     { pattern: '/api/vulse/public/globals', file: 'api-vulse-globals-public.js' },
     { pattern: '/api/vulse/public/globals/[handle]', file: 'api-vulse-globals-public-handle.js' },
+    { pattern: '/api/vulse/redirects', file: 'api-vulse-redirects.js' },
+    { pattern: '/api/vulse/redirects/[id]', file: 'api-vulse-redirects-id.js' },
     { pattern: '/api/auth/[...all]', file: 'api-auth.js' },
   ]
   for (const r of routes) {
