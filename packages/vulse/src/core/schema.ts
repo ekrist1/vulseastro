@@ -275,7 +275,7 @@ export const twoFactor = sqliteTable('twoFactor', {
   userId: text('user_id').notNull().references(() => user.id, { onDelete: 'cascade' }),
   secret: text('secret').notNull(),
   backupCodes: text('backup_codes').notNull(),
-  verified: integer('verified', { mode: 'boolean' }).notNull().default(true),
+  verified: integer('verified', { mode: 'boolean' }).notNull().default(false),
 }, (t) => ({
   byUser: index('two_factor_user_id').on(t.userId),
   bySecret: index('two_factor_secret').on(t.secret),
