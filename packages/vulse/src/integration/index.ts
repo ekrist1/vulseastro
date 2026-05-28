@@ -1,4 +1,5 @@
 import type { AstroIntegration } from 'astro'
+import { createRequire } from 'node:module'
 import { fileURLToPath } from 'node:url'
 import vue from '@astrojs/vue'
 import tailwindcss from '@tailwindcss/vite'
@@ -57,6 +58,14 @@ const OPTIMIZE_DEPS_EXCLUDE = [
 
 const VUE_INTEGRATION_NAME = '@astrojs/vue'
 
+/** Resolve a bare import for a dependency declared on @vulsecms/core. */
+const requireFromVulse = createRequire(
+  fileURLToPath(new URL('../../package.json', import.meta.url)),
+)
+function resolveVulseDep(specifier: string): string {
+  return requireFromVulse.resolve(specifier)
+}
+
 function hasVueIntegration(integrations: readonly AstroIntegration[]): boolean {
   return integrations.some((integration) => integration.name === VUE_INTEGRATION_NAME)
 }
@@ -110,6 +119,14 @@ export default function vulse(opts: VulseOptions = {}): AstroIntegration {
                 // keeps the DB open, which would otherwise fire a file-change ->
                 // full-reload on a loop. .astro is generated state. Ignore both.
                 ignored: ['**/.vulse/**', '**/.wrangler/**', '**/.astro/**'],
+              },
+            },
+            resolve: {
+              // pnpm keeps qrcode under @vulsecms/core; the playground (and other
+              // consumers) cannot resolve a bare `import('qrcode')` from admin UI
+              // without this alias.
+              alias: {
+                qrcode: resolveVulseDep('qrcode'),
               },
             },
             optimizeDeps: {
