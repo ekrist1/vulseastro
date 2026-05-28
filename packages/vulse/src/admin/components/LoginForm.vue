@@ -200,7 +200,7 @@ function cancelTwoFactor() {
       <input
         v-model="totpCode"
         :inputmode="useBackupCode ? 'text' : 'numeric'"
-        :autocomplete="useBackupCode ? 'one-time-code' : 'one-time-code'"
+        :autocomplete="useBackupCode ? 'off' : 'one-time-code'"
         :pattern="useBackupCode ? undefined : '[0-9]*'"
         autofocus
         class="mt-1 w-full rounded border px-3 py-2 font-mono tracking-widest"
