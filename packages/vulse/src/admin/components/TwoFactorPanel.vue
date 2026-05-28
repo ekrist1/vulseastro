@@ -1,15 +1,10 @@
 <script setup lang="ts">
 import { ref, onMounted, watch } from 'vue'
 
-// `qrcode` is imported dynamically: the package has a Node-leaning entry that
-// fails to resolve at SSR / workerd module-graph time, even though this
-// component only ever runs with `client:load`. Loading it inside the click
-// handler keeps it out of the SSR pass and out of the initial admin bundle.
-type QRCodeModule = typeof import('qrcode')
-let qrcodeMod: QRCodeModule | null = null
-async function loadQRCode(): Promise<QRCodeModule> {
-  if (!qrcodeMod) qrcodeMod = await import('qrcode')
-  return qrcodeMod
+async function generateQRSvg(text: string): Promise<string> {
+  // Use qrcode's toString/SVG path which avoids canvas/Node.js dependencies
+  const { toString } = await import('qrcode')
+  return toString(text, { type: 'svg', width: 220, margin: 1 })
 }
 
 const props = defineProps<{ initialEnabled: boolean }>()
@@ -24,7 +19,7 @@ const busy = ref(false)
 const enrollPassword = ref('')
 const enrollOtp = ref('')
 const totpURI = ref('')
-const qrDataUrl = ref('')
+const qrSvg = ref('')
 const backupCodes = ref<string[]>([])
 const showBackupCodes = ref(false)
 
@@ -40,7 +35,7 @@ function reset() {
   regeneratePassword.value = ''
   regenerateOpen.value = false
   totpURI.value = ''
-  qrDataUrl.value = ''
+  qrSvg.value = ''
   backupCodes.value = []
   showBackupCodes.value = false
   error.value = null
@@ -83,15 +78,13 @@ async function startEnroll() {
   try {
     totpURI.value = res.data.totpURI
     backupCodes.value = res.data.backupCodes ?? []
+    qrSvg.value = await generateQRSvg(res.data.totpURI)
     phase.value = 'verifying'
-    const QRCode = await loadQRCode()
-    qrDataUrl.value = await QRCode.toDataURL(res.data.totpURI, { width: 220, margin: 1 })
   } catch {
     totpURI.value = ''
-    qrDataUrl.value = ''
+    qrSvg.value = ''
     backupCodes.value = []
     showBackupCodes.value = false
-    phase.value = 'enabling'
     error.value = 'Could not generate the QR code. Please try again.'
   }
 }
@@ -200,7 +193,8 @@ onMounted(() => { phase.value = enabled.value ? 'enabled' : 'idle' })
         Scan this QR code with your authenticator app, then enter the 6-digit code to finish.
       </div>
       <div class="flex flex-col items-start gap-4 md:flex-row">
-        <img v-if="qrDataUrl" :src="qrDataUrl" alt="Scan to enroll" class="rounded border" width="220" height="220">
+        <!-- eslint-disable-next-line vue/no-v-html -->
+        <div v-if="qrSvg" class="rounded border" style="width:220px;height:220px" v-html="qrSvg" />
         <div class="flex-1 text-sm">
           <p class="mb-1 text-zinc-600">Can't scan? Add an account manually using this secret:</p>
           <code class="block break-all rounded bg-zinc-100 px-2 py-1 text-xs">{{ totpURI }}</code>

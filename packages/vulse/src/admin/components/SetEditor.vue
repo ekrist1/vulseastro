@@ -24,9 +24,24 @@ watch(label, (v) => {
   if (isCreate.value && !handleLocked.value) handle.value = slugify(v)
 })
 
+function slugifyFieldName(input: string): string {
+  return input.toLowerCase().normalize('NFKD').replace(/[̀-ͯ]/g, '')
+    .replace(/[^a-z0-9_]+/g, '_').replace(/^[^a-z_]+/, '').replace(/_+$/g, '')
+}
+
 function onHandleInput(e: Event) {
   handleLocked.value = true
-  handle.value = (e.target as HTMLInputElement).value
+  handle.value = slugify((e.target as HTMLInputElement).value)
+  ;(e.target as HTMLInputElement).value = handle.value
+}
+
+function onFieldNameInput(i: number, e: Event) {
+  const raw = (e.target as HTMLInputElement).value
+  const converted = slugifyFieldName(raw)
+  const field = fields[i]
+  if (!field) return
+  field.name = converted
+  ;(e.target as HTMLInputElement).value = converted
 }
 
 async function load() {
@@ -107,7 +122,7 @@ async function destroy() {
         </div>
         <div v-for="(f, i) in fields" :key="i" class="mb-3 rounded-lg border border-zinc-100 p-3">
           <div class="flex flex-wrap items-center gap-2">
-            <input v-model="f.name" placeholder="name" class="flex-1 rounded border border-zinc-300 px-2 py-1 text-sm" />
+            <input :value="f.name" placeholder="name" class="flex-1 rounded border border-zinc-300 px-2 py-1 text-sm" @input="onFieldNameInput(i, $event)" />
             <select v-model="f.ui.kind" class="rounded border border-zinc-300 px-2 py-1 text-sm">
               <option value="text">text</option>
               <option value="textarea">textarea</option>
