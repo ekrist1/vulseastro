@@ -47,6 +47,12 @@ const OPTIMIZE_DEPS_EXCLUDE = [
   '@babel/core',
   '@babel/preset-typescript',
   'blake3-wasm',
+  // Used only in the admin 2FA enrollment flow and loaded via dynamic
+  // `import('qrcode')`. The package's Node-leaning entry trips Vite's
+  // SSR dep optimizer (workerd doesn't expose Node fs); excluding it
+  // here defers resolution to runtime in the browser, which is the only
+  // place it's actually invoked.
+  'qrcode',
 ] as const
 
 const VUE_INTEGRATION_NAME = '@astrojs/vue'

@@ -1,6 +1,16 @@
 <script setup lang="ts">
 import { ref, onMounted, watch } from 'vue'
-import QRCode from 'qrcode'
+
+// `qrcode` is imported dynamically: the package has a Node-leaning entry that
+// fails to resolve at SSR / workerd module-graph time, even though this
+// component only ever runs with `client:load`. Loading it inside the click
+// handler keeps it out of the SSR pass and out of the initial admin bundle.
+type QRCodeModule = typeof import('qrcode')
+let qrcodeMod: QRCodeModule | null = null
+async function loadQRCode(): Promise<QRCodeModule> {
+  if (!qrcodeMod) qrcodeMod = await import('qrcode')
+  return qrcodeMod
+}
 
 const props = defineProps<{ initialEnabled: boolean }>()
 
@@ -73,6 +83,7 @@ async function startEnroll() {
   totpURI.value = res.data.totpURI
   backupCodes.value = res.data.backupCodes ?? []
   phase.value = 'verifying'
+  const QRCode = await loadQRCode()
   qrDataUrl.value = await QRCode.toDataURL(res.data.totpURI, { width: 220, margin: 1 })
 }
 
