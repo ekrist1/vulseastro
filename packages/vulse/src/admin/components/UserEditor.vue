@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import { onMounted, reactive, ref } from 'vue'
 import { adminApi } from '../client/api.js'
+import { useToast } from '../composables/toast.js'
+
+const toast = useToast()
 
 const props = defineProps<{ userId: string }>()
 
@@ -55,6 +58,7 @@ async function save() {
       role: form.role,
     })
     notice.value = 'User saved.'
+    toast.success('User saved.')
   } catch (e) {
     error.value = e instanceof Error ? e.message : 'Save failed'
   } finally {
@@ -73,6 +77,16 @@ async function sendResetEmail() {
     error.value = e instanceof Error ? e.message : 'Could not send reset email'
   } finally {
     resetSending.value = false
+  }
+}
+
+async function deleteUser() {
+  if (!confirm(`Delete user "${email.value}"? This cannot be undone.`)) return
+  try {
+    await adminApi.delete(`/api/vulse/users/${props.userId}`)
+    window.location.href = '/admin/users'
+  } catch (e) {
+    error.value = e instanceof Error ? e.message : 'Delete failed'
   }
 }
 
@@ -101,8 +115,9 @@ async function setPassword() {
 
 <template>
   <div>
-    <div class="mb-6 flex items-center gap-3">
+    <div class="mb-6 flex items-center justify-between">
       <a href="/admin/users" class="text-sm text-zinc-500 hover:text-zinc-800">← Users</a>
+      <button v-if="!loading" type="button" class="rounded-lg border border-red-200 px-4 py-2 text-sm text-red-700" @click="deleteUser">Delete user</button>
     </div>
 
     <div v-if="loading" class="text-sm text-zinc-500">Loading…</div>

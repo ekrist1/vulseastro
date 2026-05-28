@@ -77,6 +77,18 @@ export function usersRoutes(db: VulseDb, auth: Auth) {
       return { id: params.id, role: body.role }
     }),
 
+    delete: defineHandler(auth, {
+      params: z.object({ id: z.string() }),
+      requireRole: ['admin'],
+    }, async ({ params, auth: authCtx }) => {
+      if (params.id === authCtx.user?.id) throw new Error('You cannot delete your own account.')
+      const existing = await db.select({ id: userTable.id }).from(userTable).where(eq(userTable.id, params.id))
+      if (!existing.length) throw new NotFoundError(`User ${params.id} not found`)
+      await db.delete(accountTable).where(eq(accountTable.userId, params.id))
+      await db.delete(userTable).where(eq(userTable.id, params.id))
+      return { deleted: true }
+    }),
+
     resetPassword: defineHandler(auth, {
       params: z.object({ id: z.string() }),
       body: z.discriminatedUnion('action', [
