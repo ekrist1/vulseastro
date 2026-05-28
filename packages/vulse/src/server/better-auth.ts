@@ -1,5 +1,6 @@
 import { betterAuth } from 'better-auth'
 import { drizzleAdapter } from 'better-auth/adapters/drizzle'
+import { twoFactor } from 'better-auth/plugins/two-factor'
 import type { VulseDb } from '../core/db.js'
 import * as schema from '../core/schema.js'
 import { SettingsRepo } from '../core/repos/settings.js'
@@ -51,6 +52,14 @@ export async function createAuth(db: VulseDb, config: AuthConfig) {
     session: {
       cookieCache: { enabled: true, maxAge: 5 * 60 },
     },
+    plugins: [
+      // Optional second factor. Users start with `twoFactorEnabled=false` and
+      // can opt in from /admin/account; sign-in only challenges users who
+      // have explicitly enrolled, so 2FA is never required globally.
+      twoFactor({
+        issuer: 'Vulse',
+      }),
+    ],
     databaseHooks: {
       user: {
         create: {

@@ -31,6 +31,16 @@ describe('applyMigrations', () => {
     ])
   })
 
+  it('creates the better-auth two-factor table and column', async () => {
+    await applyMigrations(env.DB)
+    const tables = await env.DB.prepare(
+      `SELECT name FROM sqlite_master WHERE type='table' AND name = 'twoFactor'`
+    ).all<{ name: string }>()
+    expect(tables.results.map((r) => r.name)).toEqual(['twoFactor'])
+    const cols = await env.DB.prepare(`PRAGMA table_info(user)`).all<{ name: string }>()
+    expect(cols.results.map((c) => c.name)).toContain('two_factor_enabled')
+  })
+
   it('is idempotent on second run', async () => {
     await applyMigrations(env.DB)
     await expect(applyMigrations(env.DB)).resolves.not.toThrow()

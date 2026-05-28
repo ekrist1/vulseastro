@@ -20,6 +20,7 @@ The Vulse admin UI is served by your own Astro app under `/admin` (configurable 
 | `/admin/forms/:handle/submissions` | Submissions list |
 | `/admin/forms/:handle/submissions/:id` | Submission detail |
 | `/admin/users` | User management (admin-only) |
+| `/admin/account` | Your own profile and security settings (incl. 2FA) |
 | `/admin/settings` | Site settings (site name, deploy hook, locales) |
 | `/admin/settings/auth` | Auth settings (sign-up toggle, domain allowlist) |
 | `/admin/settings/redirects` | URL redirects (admin-only) |
@@ -99,6 +100,7 @@ Submissions appear under `/admin/forms/:handle/submissions` with detail, bulk de
 
 - **Site** — site name, deploy-hook URL, supported locales, default locale.
 - **Auth** — public sign-up toggle, allowed email domains.
+- **Account** (per-user, `/admin/account`) — your profile and **two-factor authentication**. 2FA is optional: any signed-in user can enable it for themselves and turn it off again at any time. Enrollment is the usual TOTP flow — confirm your password, scan the QR with an authenticator app (Google Authenticator, 1Password, Authy, …), and enter a verification code. Once enrolled, you'll be prompted for a code (or one of the 10 backup codes shown once at setup) on every subsequent sign-in. Backup codes can be regenerated from the same page.
 - **Redirects** — managed URL redirects, evaluated by Vulse's middleware before any page render. Each rule has a from-path (matched against the request pathname, case-insensitive and trailing-slash tolerant), a to URL (site-relative `/foo` or absolute `https://…`), and an HTTP status (`301`, `302`, `307`, or `308`). The original query string is preserved unless the target already has one. Disabled rules are skipped. Hits and last-hit timestamps are recorded for each rule. Admin-only.
 - **Sets** — reusable block sets ("Quote", "Callout", etc.) that appear inside the rich-text editor.
 - **Globals** — site-wide content sets exposed at `/api/vulse/public/globals` for use in your layouts.

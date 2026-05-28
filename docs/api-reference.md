@@ -34,6 +34,21 @@ GET  /api/auth/get-session
 
 The set-cookie response from `sign-in` is what authenticates subsequent admin requests. Use `vulse/client/auth` from the browser for a CSRF-safe wrapper.
 
+### Two-factor authentication
+
+2FA is optional and opt-in per user. When a user has enrolled, `POST /api/auth/sign-in/email` returns `{ twoFactorRedirect: true, twoFactorMethods: ['totp'] }` instead of issuing a session; the response also sets a short-lived `vulse_two-factor` cookie that carries the verification identifier. The client must then complete the flow by calling `verify-totp` (or `verify-backup-code`) with that cookie attached.
+
+```txt
+POST /api/auth/two-factor/enable                  body: { password, issuer? }   →  { totpURI, backupCodes[] }
+POST /api/auth/two-factor/verify-totp             body: { code, trustDevice? }  →  session
+POST /api/auth/two-factor/verify-backup-code      body: { code }                →  session (consumes one code)
+POST /api/auth/two-factor/disable                 body: { password }
+POST /api/auth/two-factor/generate-backup-codes   body: { password }            →  { backupCodes[] }
+POST /api/auth/two-factor/get-totp-uri            body: { password }            →  { totpURI }
+```
+
+`enable` only stores the secret; `user.twoFactorEnabled` does not flip to `true` until the user calls `verify-totp` with a valid code, so a half-finished enrollment is not enforced at the next sign-in. `disable` requires the current password and removes the requirement on subsequent sign-ins.
+
 ## Entries
 
 ```txt
