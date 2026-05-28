@@ -5,8 +5,6 @@ import { defineHandler } from '../handler.js'
 import { RedirectsRepo, normalizePath } from '../../core/repos/redirects.js'
 import { ConflictError, NotFoundError, ValidationError } from '../../core/errors.js'
 
-const STATUS_VALUES = [301, 302, 307, 308] as const
-
 const fromPathSchema = z.string().min(1).max(2048)
   .refine((v) => v.startsWith('/'), { message: 'from path must start with /' })
 
@@ -106,5 +104,3 @@ export function redirectsRoutes(db: VulseDb, auth: Auth) {
     }),
   }
 }
-
-export { STATUS_VALUES as REDIRECT_STATUSES }

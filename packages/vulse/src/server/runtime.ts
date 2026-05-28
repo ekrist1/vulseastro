@@ -49,8 +49,16 @@ export interface VulseRuntime {
 
 let cached: VulseRuntime | null = null
 
-export async function getRuntime(env: RuntimeEnv, registry: BlueprintRegistry, baseURL: string): Promise<VulseRuntime> {
+/**
+ * The registry may be a thunk so callers that build it solely to construct the
+ * runtime (per-request endpoints, middleware) don't pay for the D1 round-trips
+ * when the runtime is already cached — the thunk is only invoked on a cache miss.
+ */
+type RegistryProvider = BlueprintRegistry | (() => Promise<BlueprintRegistry>)
+
+export async function getRuntime(env: RuntimeEnv, registry: RegistryProvider, baseURL: string): Promise<VulseRuntime> {
   if (cached) return cached
+  const resolvedRegistry = typeof registry === 'function' ? await registry() : registry
   const db = createDb(env.DB)
   const auth = await createAuth(db, {
     baseURL: env.BETTER_AUTH_URL ?? baseURL,
@@ -64,10 +72,10 @@ export async function getRuntime(env: RuntimeEnv, registry: BlueprintRegistry, b
     ...(env.CF_IMAGES_TOKEN ? { token: env.CF_IMAGES_TOKEN } : {}),
   }
   cached = {
-    db, auth, registry,
-    sdk: createSdk(db, auth, registry, cfImages),
+    db, auth, registry: resolvedRegistry,
+    sdk: createSdk(db, auth, resolvedRegistry, cfImages),
     routes: {
-      entries: entriesRoutes(db, auth, registry),
+      entries: entriesRoutes(db, auth, resolvedRegistry),
       revisions: revisionsRoutes(db, auth),
       users: usersRoutes(db, auth),
       settings: settingsRoutes(db, auth),
@@ -79,7 +87,7 @@ export async function getRuntime(env: RuntimeEnv, registry: BlueprintRegistry, b
       }),
       search: searchRoutes(db, auth),
       preview: previewRoutes(auth, previewSecret(env)),
-      previewSessions: previewSessionsRoutes(db, auth, registry),
+      previewSessions: previewSessionsRoutes(db, auth, resolvedRegistry),
       forms: formsRoutes(db, auth),
       formSubmit: formSubmitRoutes(db, {
         ...(env.FORM_QUEUE ? { queue: env.FORM_QUEUE } : {}),
@@ -95,8 +103,5 @@ export async function getRuntime(env: RuntimeEnv, registry: BlueprintRegistry, b
 }
 
 export function invalidateRuntime(): void { cached = null }
-
-/** @deprecated use invalidateRuntime */
-export function _resetRuntime(): void { invalidateRuntime() }
 
 export type { RuntimeEnv } from './env.js'

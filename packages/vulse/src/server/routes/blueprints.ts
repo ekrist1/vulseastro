@@ -13,7 +13,7 @@ import {
   updateBlueprint,
 } from '../../core/blueprints/mutations.js'
 import { _resetRegistry } from '../../core/blueprints/load.js'
-import { _resetRuntime } from '../runtime.js'
+import { invalidateRuntime } from '../runtime.js'
 import { defineHandler } from '../handler.js'
 
 const paramsHandle = z.object({ handle: z.string() })
@@ -34,7 +34,7 @@ export function blueprintsRoutes(db: VulseDb, auth: Auth) {
     }, async ({ body }) => {
       const out = await createBlueprint(db, body)
       _resetRegistry()
-      _resetRuntime()
+      invalidateRuntime()
       return out
     }),
 
@@ -45,7 +45,7 @@ export function blueprintsRoutes(db: VulseDb, auth: Auth) {
     }, async ({ params, body }) => {
       const out = await updateBlueprint(db, params.handle, body)
       _resetRegistry()
-      _resetRuntime()
+      invalidateRuntime()
       return out
     }),
 
@@ -55,7 +55,7 @@ export function blueprintsRoutes(db: VulseDb, auth: Auth) {
     }, async ({ params }) => {
       await deleteBlueprint(db, params.handle)
       _resetRegistry()
-      _resetRuntime()
+      invalidateRuntime()
       return null
     }),
   }
