@@ -5,6 +5,5 @@ import { getRuntime } from '../runtime.js'
 
 export async function withRuntime(request: Request) {
   const env = getRuntimeEnv()
-  const db = createDb(env.DB)
-  return getRuntime(env, () => registryForRequest(db), new URL(request.url).origin)
+  return getRuntime(env, () => registryForRequest(createDb(env.DB)), new URL(request.url).origin)
 }

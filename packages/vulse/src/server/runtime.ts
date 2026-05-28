@@ -54,7 +54,7 @@ let cached: VulseRuntime | null = null
  * runtime (per-request endpoints, middleware) don't pay for the D1 round-trips
  * when the runtime is already cached — the thunk is only invoked on a cache miss.
  */
-type RegistryProvider = BlueprintRegistry | (() => Promise<BlueprintRegistry>)
+type RegistryProvider = BlueprintRegistry | (() => BlueprintRegistry | Promise<BlueprintRegistry>)
 
 export async function getRuntime(env: RuntimeEnv, registry: RegistryProvider, baseURL: string): Promise<VulseRuntime> {
   if (cached) return cached
