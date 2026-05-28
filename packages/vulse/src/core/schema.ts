@@ -225,6 +225,7 @@ export const user = sqliteTable('user', {
   image: text('image'),
   role: text('role', { enum: ['admin', 'editor', 'member'] }).notNull().default('member'),
   displayName: text('display_name'),
+  twoFactorEnabled: integer('two_factor_enabled', { mode: 'boolean' }).notNull().default(false),
   createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
   updatedAt: integer('updated_at', { mode: 'timestamp_ms' }).notNull(),
 })
@@ -264,3 +265,18 @@ export const verification = sqliteTable('verification', {
   createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
   updatedAt: integer('updated_at', { mode: 'timestamp_ms' }).notNull(),
 })
+
+// Better Auth two-factor plugin model. Stores the per-user TOTP secret and
+// encrypted backup codes. `verified` flips to true once the user confirms
+// their authenticator app produces the right code, at which point
+// `user.two_factor_enabled` is also flipped on by the plugin.
+export const twoFactor = sqliteTable('twoFactor', {
+  id: text('id').primaryKey(),
+  userId: text('user_id').notNull().references(() => user.id, { onDelete: 'cascade' }),
+  secret: text('secret').notNull(),
+  backupCodes: text('backup_codes').notNull(),
+  verified: integer('verified', { mode: 'boolean' }).notNull().default(false),
+}, (t) => ({
+  byUser: index('two_factor_user_id').on(t.userId),
+  bySecret: index('two_factor_secret').on(t.secret),
+}))

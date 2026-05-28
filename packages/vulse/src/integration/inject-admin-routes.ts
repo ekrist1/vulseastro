@@ -20,6 +20,7 @@ export function injectVulseAdminRoutes({ injectRoute, logger, adminPath = '/admi
     { pattern: `${prefix}/collections/[name]/[id]/revisions`, file: 'collections/[name]/[id]/revisions.astro' },
     { pattern: `${prefix}/users`, file: 'users/index.astro' },
     { pattern: `${prefix}/users/[id]`, file: 'users/[id].astro' },
+    { pattern: `${prefix}/account`, file: 'account.astro' },
     { pattern: `${prefix}/settings`, file: 'settings/index.astro' },
     { pattern: `${prefix}/settings/auth`, file: 'settings/auth.astro' },
     { pattern: `${prefix}/settings/status`, file: 'settings/status.astro' },
