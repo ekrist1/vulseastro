@@ -4,11 +4,47 @@ import { getRuntime } from '../server/runtime.js'
 import { getRuntimeEnv } from '../server/env.js'
 import { registryForRequest } from '../core/blueprints/load.js'
 import { previewSecret, verifyPreviewToken } from '../server/preview.js'
+import { RedirectsRepo } from '../core/repos/redirects.js'
 import { injectLivePreviewBridge, loadLivePreviewSession, type LivePreviewLocals } from './live-preview-middleware-helpers.js'
 
+function shouldCheckRedirect(path: string): boolean {
+  if (path.startsWith('/admin')) return false
+  if (path.startsWith('/api/')) return false
+  // Skip anything with a file extension (assets, sourcemaps, favicons, …).
+  if (/\.[^/]+$/.test(path)) return false
+  return true
+}
+
+function buildRedirectTarget(toUrl: string, sourceUrl: URL): string {
+  const absolute = /^https?:\/\//i.test(toUrl)
+    ? toUrl
+    : new URL(toUrl, sourceUrl).toString()
+  const target = new URL(absolute)
+  if (!target.search && sourceUrl.search) target.search = sourceUrl.search
+  return target.toString()
+}
+
 export const onRequest = defineMiddleware(async (ctx, next) => {
-  const path = new URL(ctx.request.url).pathname
+  const url = new URL(ctx.request.url)
+  const path = url.pathname
   const locals = ctx.locals as LivePreviewLocals
+
+  if (shouldCheckRedirect(path)) {
+    try {
+      const env = getRuntimeEnv()
+      const db = createDb(env.DB)
+      const repo = new RedirectsRepo(db)
+      const hit = await repo.findByPath(path)
+      if (hit && hit.enabled) {
+        // Fire-and-forget hit counter; do not block the redirect.
+        void repo.recordHit(hit.id).catch(() => {})
+        return ctx.redirect(buildRedirectTarget(hit.toUrl, url), hit.status)
+      }
+    } catch {
+      // DB unavailable (e.g. running before migrations applied) — fall through.
+    }
+  }
+
   let livePreviewToken: string | null = null
   let livePreviewTokenFromQuery = false
 

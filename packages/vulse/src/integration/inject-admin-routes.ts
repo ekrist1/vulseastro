@@ -35,6 +35,7 @@ export function injectVulseAdminRoutes({ injectRoute, logger, adminPath = '/admi
     { pattern: `${prefix}/settings/globals`, file: 'settings/globals/index.astro' },
     { pattern: `${prefix}/settings/globals/new`, file: 'settings/globals/new.astro' },
     { pattern: `${prefix}/settings/globals/[handle]`, file: 'settings/globals/[handle].astro' },
+    { pattern: `${prefix}/settings/redirects`, file: 'settings/redirects/index.astro' },
     { pattern: `${prefix}/schema/new`, file: 'schema/new.astro' },
     { pattern: `${prefix}/schema/[handle]`, file: 'schema/[handle].astro' },
   ]

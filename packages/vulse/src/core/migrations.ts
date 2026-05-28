@@ -4,6 +4,7 @@ import ftsSql from '../../migrations/0003_fts.sql?raw'
 import formsSql from '../../migrations/0004_forms.sql?raw'
 import globalsSql from '../../migrations/0005_globals.sql?raw'
 import previewSessionsSql from '../../migrations/0006_preview_sessions.sql?raw'
+import redirectsSql from '../../migrations/0007_redirects.sql?raw'
 
 const MIGRATIONS = [
   { id: '0000_init', sql: initSql },
@@ -14,6 +15,7 @@ const MIGRATIONS = [
   { id: '0004_forms', sql: formsSql },
   { id: '0005_globals', sql: globalsSql },
   { id: '0006_preview_sessions', sql: previewSessionsSql },
+  { id: '0007_redirects', sql: redirectsSql },
 ] as const
 
 function splitStatements(sql: string): string[] {

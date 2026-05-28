@@ -16,6 +16,7 @@ import { formSubmitRoutes } from './routes/form-submit.js'
 import { formUploadRoutes } from './routes/form-upload.js'
 import { globalsRoutes } from './routes/globals.js'
 import { globalsPublicRoutes } from './routes/globals-public.js'
+import { redirectsRoutes } from './routes/redirects.js'
 import { createSdk } from './sdk/index.js'
 import { previewSecret } from './preview.js'
 import type { Auth } from './better-auth.js'
@@ -42,6 +43,7 @@ export interface VulseRuntime {
     formUpload: ReturnType<typeof formUploadRoutes>
     globals: ReturnType<typeof globalsRoutes>
     globalsPublic: ReturnType<typeof globalsPublicRoutes>
+    redirects: ReturnType<typeof redirectsRoutes>
   }
 }
 
@@ -86,6 +88,7 @@ export async function getRuntime(env: RuntimeEnv, registry: BlueprintRegistry, b
       formUpload: formUploadRoutes(db, { bucket: env.BUCKET }),
       globals: globalsRoutes(db, auth),
       globalsPublic: globalsPublicRoutes(db),
+      redirects: redirectsRoutes(db, auth),
     },
   }
   return cached

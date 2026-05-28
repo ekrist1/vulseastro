@@ -168,6 +168,7 @@ async function signOut() {
         <div class="px-2 pt-4 text-xs uppercase tracking-wide text-zinc-500">Settings</div>
         <a href="/admin/settings" :class="subNavClass('/admin/settings', true)">Site</a>
         <a href="/admin/settings/auth" :class="subNavClass('/admin/settings/auth', true)">Auth</a>
+        <a href="/admin/settings/redirects" :class="subNavClass('/admin/settings/redirects', true)">Redirects</a>
         <a href="/admin/settings/status" :class="subNavClass('/admin/settings/status', true)">Status</a>
       </template>
     </nav>

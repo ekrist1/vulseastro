@@ -25,6 +25,7 @@ describe('applyMigrations', () => {
       'vulse_global_values',
       'vulse_media',
       'vulse_preview_sessions',
+      'vulse_redirects',
       'vulse_sets',
       'vulse_settings',
     ])
