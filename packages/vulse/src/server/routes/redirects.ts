@@ -3,7 +3,7 @@ import type { VulseDb } from '../../core/db.js'
 import type { Auth } from '../better-auth.js'
 import { defineHandler } from '../handler.js'
 import { RedirectsRepo, normalizePath } from '../../core/repos/redirects.js'
-import { ConflictError, NotFoundError } from '../../core/errors.js'
+import { ConflictError, NotFoundError, ValidationError } from '../../core/errors.js'
 
 const STATUS_VALUES = [301, 302, 307, 308] as const
 
@@ -14,6 +14,21 @@ const toUrlSchema = z.string().min(1).max(2048)
   .refine((v) => v.startsWith('/') || /^https?:\/\//i.test(v), {
     message: 'to url must be a site-relative path (/foo) or absolute URL (https://…)',
   })
+
+// Reject obvious self-redirects (`/foo` → `/foo`) that would loop in the
+// browser. Only checks site-relative targets — absolute URLs can't be
+// classified as same-site without knowing the configured host.
+function assertNotSelfLoop(fromPath: string, toUrl: string): void {
+  if (!toUrl.startsWith('/')) return
+  const normalizedFrom = normalizePath(fromPath)
+  const targetPath = normalizePath(toUrl.split('?')[0]!.split('#')[0]!)
+  if (normalizedFrom === targetPath) {
+    throw new ValidationError('Redirect target must differ from the source path', {
+      fromPath: normalizedFrom,
+      toUrl,
+    })
+  }
+}
 
 export function redirectsRoutes(db: VulseDb, auth: Auth) {
   const repo = new RedirectsRepo(db)
@@ -38,6 +53,7 @@ export function redirectsRoutes(db: VulseDb, auth: Auth) {
       }),
       requireRole: ['admin'],
     }, async ({ body, auth: authCtx }) => {
+      assertNotSelfLoop(body.fromPath, body.toUrl)
       const existing = await repo.findByPath(body.fromPath)
       if (existing) throw new ConflictError(`Redirect for ${normalizePath(body.fromPath)} already exists`)
       return await repo.create({
@@ -68,6 +84,7 @@ export function redirectsRoutes(db: VulseDb, auth: Auth) {
           if (clash) throw new ConflictError(`Redirect for ${normalized} already exists`)
         }
       }
+      assertNotSelfLoop(body.fromPath ?? current.fromPath, body.toUrl ?? current.toUrl)
       const patch: Parameters<typeof repo.update>[1] = {}
       if (body.fromPath !== undefined) patch.fromPath = body.fromPath
       if (body.toUrl !== undefined) patch.toUrl = body.toUrl

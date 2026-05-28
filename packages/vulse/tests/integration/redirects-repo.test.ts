@@ -2,10 +2,13 @@ import { describe, it, expect, beforeEach } from 'vitest'
 import { env } from 'cloudflare:test'
 import { applyMigrations } from '../../src/core/migrations'
 import { createDb } from '../../src/core/db'
-import { RedirectsRepo, normalizePath } from '../../src/core/repos/redirects'
+import { RedirectsRepo, normalizePath, loadRedirectsSnapshot, invalidateRedirectsCache } from '../../src/core/repos/redirects'
 
 describe('RedirectsRepo', () => {
-  beforeEach(async () => { await applyMigrations(env.DB) })
+  beforeEach(async () => {
+    await applyMigrations(env.DB)
+    invalidateRedirectsCache()
+  })
 
   it('normalizes paths consistently', () => {
     expect(normalizePath('/Foo/')).toBe('/foo')
@@ -56,11 +59,36 @@ describe('RedirectsRepo', () => {
     expect(after?.lastHitAt).not.toBeNull()
   })
 
-  it('delete removes the row', async () => {
+  it('delete removes the row and reports it', async () => {
     const repo = new RedirectsRepo(createDb(env.DB))
     const row = await repo.create({ fromPath: '/gone', toUrl: '/here' })
-    await repo.delete(row.id)
+    expect(await repo.delete(row.id)).toBe(true)
     expect(await repo.findById(row.id)).toBeNull()
+    expect(await repo.delete(row.id)).toBe(false)
+  })
+
+  it('snapshot cache returns only enabled rules and refreshes on write', async () => {
+    const db = createDb(env.DB)
+    const repo = new RedirectsRepo(db)
+
+    expect((await loadRedirectsSnapshot(db)).size).toBe(0)
+
+    const r1 = await repo.create({ fromPath: '/a', toUrl: '/aa' })
+    const r2 = await repo.create({ fromPath: '/b', toUrl: '/bb', enabled: false })
+
+    const snap = await loadRedirectsSnapshot(db)
+    expect(snap.size).toBe(1)
+    expect(snap.get('/a')?.id).toBe(r1.id)
+    expect(snap.get('/b')).toBeUndefined()
+
+    await repo.update(r2.id, { enabled: true })
+    const snap2 = await loadRedirectsSnapshot(db)
+    expect(snap2.size).toBe(2)
+
+    await repo.delete(r1.id)
+    const snap3 = await loadRedirectsSnapshot(db)
+    expect(snap3.size).toBe(1)
+    expect(snap3.has('/a')).toBe(false)
   })
 
   it('lists all redirects', async () => {

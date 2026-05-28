@@ -82,6 +82,7 @@ export class RedirectsRepo {
       createdBy: input.createdBy ?? null,
     }
     await this.db.insert(vulseRedirects).values(row)
+    invalidateRedirectsCache()
     return mapRow(row as typeof vulseRedirects.$inferSelect)
   }
 
@@ -97,18 +98,57 @@ export class RedirectsRepo {
     if (patch.status !== undefined) set.status = patch.status
     if (patch.enabled !== undefined) set.enabled = patch.enabled
     await this.db.update(vulseRedirects).set(set).where(eq(vulseRedirects.id, id))
+    invalidateRedirectsCache()
     return await this.findById(id)
   }
 
   async delete(id: string): Promise<boolean> {
     const res = await this.db.delete(vulseRedirects).where(eq(vulseRedirects.id, id))
-    return (res as { meta?: { changes?: number } }).meta?.changes ? true : true
+    const changes = (res as { meta?: { changes?: number } }).meta?.changes ?? 0
+    invalidateRedirectsCache()
+    return changes > 0
   }
 
   async recordHit(id: string): Promise<void> {
+    // Intentionally does NOT invalidate the snapshot cache: `hits` and
+    // `lastHitAt` are not consulted at lookup time, so a stale cached row
+    // is fine. Avoiding the invalidation prevents a refetch storm on hot
+    // redirects.
     await this.db
       .update(vulseRedirects)
       .set({ hits: sql`${vulseRedirects.hits} + 1`, lastHitAt: new Date() })
       .where(eq(vulseRedirects.id, id))
   }
+}
+
+// --- Snapshot cache ---
+//
+// The request middleware looks up redirects on every public page request, so
+// we cache the full set of enabled rules in module-local state. Each isolate
+// loads on first miss and refreshes after CACHE_TTL_MS, or immediately when a
+// write goes through this process (create/update/delete invalidate). Cross-
+// isolate invalidation relies on the TTL — acceptable for redirect rules.
+
+interface CacheSnapshot {
+  entries: Map<string, RedirectRow>
+  loadedAt: number
+}
+
+const CACHE_TTL_MS = 30_000
+let snapshotCache: CacheSnapshot | null = null
+
+export function invalidateRedirectsCache(): void {
+  snapshotCache = null
+}
+
+export async function loadRedirectsSnapshot(db: VulseDb): Promise<Map<string, RedirectRow>> {
+  const now = Date.now()
+  if (snapshotCache && now - snapshotCache.loadedAt < CACHE_TTL_MS) {
+    return snapshotCache.entries
+  }
+  const rows = await new RedirectsRepo(db).list()
+  const entries = new Map<string, RedirectRow>()
+  for (const r of rows) if (r.enabled) entries.set(r.fromPath, r)
+  snapshotCache = { entries, loadedAt: now }
+  return entries
 }

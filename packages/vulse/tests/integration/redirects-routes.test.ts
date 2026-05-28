@@ -96,6 +96,44 @@ describe('redirects routes', () => {
     expect(badProto.status).toBe(422)
   })
 
+  it('rejects self-referential redirects on create and update', async () => {
+    const { db, auth } = await makeContext()
+    const routes = redirectsRoutes(db, auth)
+    const cookie = await signUpAsAdmin(env, auth, 'admin-loop@x.com')
+
+    const same = await routes.create(new Request('http://localhost/api/vulse/redirects', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', cookie },
+      body: JSON.stringify({ fromPath: '/loop', toUrl: '/loop' }),
+    }))
+    expect(same.status).toBe(422)
+
+    const caseInsensitive = await routes.create(new Request('http://localhost/api/vulse/redirects', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', cookie },
+      body: JSON.stringify({ fromPath: '/Loop', toUrl: '/LOOP/' }),
+    }))
+    expect(caseInsensitive.status).toBe(422)
+
+    // Absolute target is allowed even when the path matches — we can't tell
+    // it's same-host from here.
+    const absolute = await routes.create(new Request('http://localhost/api/vulse/redirects', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', cookie },
+      body: JSON.stringify({ fromPath: '/foo', toUrl: 'https://other.example.com/foo' }),
+    }))
+    expect(absolute.status).toBe(200)
+    const created = await absolute.json() as OkBody<{ id: string }>
+
+    // But editing it to a same-path relative URL must fail.
+    const updateLoop = await routes.update(new Request('http://localhost/api/vulse/redirects/x', {
+      method: 'PATCH',
+      headers: { 'content-type': 'application/json', cookie },
+      body: JSON.stringify({ toUrl: '/foo' }),
+    }), { id: created.data.id })
+    expect(updateLoop.status).toBe(422)
+  })
+
   it('conflicts on duplicate from path', async () => {
     const { db, auth } = await makeContext()
     const routes = redirectsRoutes(db, auth)
