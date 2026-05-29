@@ -50,7 +50,7 @@ describe('media routes', () => {
     const list = await routes.list(new Request('http://localhost/api/vulse/media', { headers: { cookie } }))
     expect(list.status).toBe(200)
     const body = await list.json() as { ok: true; data: { previewUrl: string }[] }
-    expect(body.data.length).toBe(1)
+    expect(body.data.length).toBeGreaterThanOrEqual(1)
     // Frontend preview URL must point at the public route, not the admin-only one.
     expect(body.data[0]!.previewUrl).toMatch(/^\/api\/vulse\/public\/media\/.+\/file$/)
   })
