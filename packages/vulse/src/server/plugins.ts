@@ -70,7 +70,7 @@ function pluginContext(pluginId: string, env?: Record<string, unknown>): VulsePl
         await sendFormEmail(safeEnv as FormEmailEnv, {
           to: input.to,
           subject: input.subject,
-          body: input.body ?? input.text ?? input.html ?? '',
+          text: input.body ?? input.text ?? input.html ?? '',
         })
       },
     },

@@ -45,7 +45,7 @@ export async function createAuth(db: VulseDb, config: AuthConfig): Promise<Bette
         void sendEmail(emailEnv ?? {}, {
           to: user.email,
           subject: 'Reset your password',
-          body: `Click the link to reset your password:\n\n${url}\n\nIf you did not request this, you can ignore this email.`,
+          text: `Click the link to reset your password:\n\n${url}\n\nIf you did not request this, you can ignore this email.`,
         })
       },
     },

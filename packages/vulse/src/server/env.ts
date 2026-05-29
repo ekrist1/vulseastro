@@ -12,7 +12,8 @@ export interface RuntimeEnv {
   CF_IMAGES_ACCOUNT_HASH?: string
   CF_IMAGES_TOKEN?: string
   EMAIL_FROM?: string
-  EMAIL_API_TOKEN?: string
+  /** Cloudflare Email Routing send binding — declared as `[[send_email]]` in wrangler.toml. */
+  SEND_EMAIL?: SendEmail
 }
 
 export function getRuntimeEnv(): RuntimeEnv {

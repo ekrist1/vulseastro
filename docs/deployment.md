@@ -91,6 +91,11 @@ migrations_dir = "node_modules/@vulsecms/core/migrations"
 binding = "BUCKET"
 bucket_name = "vulse-media-prod"
 
+# Optional — Cloudflare Email Routing (password reset + form notifications)
+# Requires Email Routing set up for your domain in the Cloudflare dashboard.
+[[send_email]]
+name = "SEND_EMAIL"
+
 # Optional — Forms queue
 [[queues.producers]]
 queue = "vulse-form-queue"
@@ -104,6 +109,9 @@ max_batch_timeout = 30
 # Optional — Scheduled cron (every hour)
 [triggers]
 crons = ["0 * * * *"]
+
+[vars]
+EMAIL_FROM = "noreply@yourdomain.com"
 ```
 
 The `nodejs_compat` flag is required for media uploads.
@@ -139,6 +147,8 @@ wrangler secret put VULSE_PREVIEW_SECRET          # optional; falls back to BETT
 wrangler secret put CF_IMAGES_ACCOUNT_HASH
 wrangler secret put CF_IMAGES_TOKEN
 ```
+
+`EMAIL_FROM` (the sending address) is not a secret — put it in `[vars]` in `wrangler.production.toml`. The `SEND_EMAIL` binding handles authentication through Cloudflare's platform; no API token is needed.
 
 Generate a strong `BETTER_AUTH_SECRET`:
 
