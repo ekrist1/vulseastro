@@ -81,7 +81,7 @@ function renderImage(node: BlockNode, opts: RenderPmOptions): string {
   const caption = typeof node.attrs?.caption === 'string' ? node.attrs.caption : ''
   const imgSrc = opts.mediaUrl?.(id, 'hero')
   const img = imgSrc
-    ? `<img src="${esc(imgSrc)}" alt="${esc(alt)}" />`
+    ? `<img src="${esc(imgSrc)}" alt="${esc(alt)}" loading="lazy" decoding="async" />`
     : `<span class="text-zinc-400">[image: ${esc(id)}]</span>`
   const cap = caption ? `<figcaption>${esc(caption)}</figcaption>` : ''
   return `<figure data-vulse-block="image">${img}${cap}</figure>`

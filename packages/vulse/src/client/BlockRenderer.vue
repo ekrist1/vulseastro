@@ -28,7 +28,7 @@ const legacyBlocks = computed(() => (Array.isArray(props.blocks) ? props.blocks 
       <h4 v-else-if="b.type === 'heading' && b.level === 4">{{ b.text }}</h4>
       <p v-else-if="b.type === 'paragraph'">{{ b.text }}</p>
       <figure v-else-if="b.type === 'image'">
-        <img v-if="mediaUrl" :src="mediaUrl(b.mediaId, 'hero')" :alt="b.alt" />
+        <img v-if="mediaUrl" :src="mediaUrl(b.mediaId, 'hero')" :alt="b.alt" loading="lazy" decoding="async" />
         <span v-else class="text-zinc-400">[image: {{ b.mediaId }}]</span>
         <figcaption v-if="b.caption">{{ b.caption }}</figcaption>
       </figure>

@@ -49,7 +49,35 @@ describe('media routes', () => {
 
     const list = await routes.list(new Request('http://localhost/api/vulse/media', { headers: { cookie } }))
     expect(list.status).toBe(200)
-    const body = await list.json() as { ok: true; data: unknown[] }
+    const body = await list.json() as { ok: true; data: { previewUrl: string }[] }
     expect(body.data.length).toBe(1)
+    // Frontend preview URL must point at the public route, not the admin-only one.
+    expect(body.data[0]!.previewUrl).toMatch(/^\/api\/vulse\/public\/media\/.+\/file$/)
+  })
+
+  it('serves the public file without auth and with a long public cache', async () => {
+    const { routes, auth } = await makeContext()
+    const cookie = await signUpAsAdmin(env, auth)
+
+    const form = new FormData()
+    form.append('file', new File([PNG], 'pic.png', { type: 'image/png' }))
+    const up = await routes.upload(new Request('http://localhost/api/vulse/media', {
+      method: 'POST',
+      body: form,
+      headers: { cookie },
+    }))
+    const { data } = await up.json() as { data: { id: string } }
+
+    // No cookie — anonymous visitor.
+    const res = await routes.publicFile(new Request(`http://localhost/api/vulse/public/media/${data.id}/file`), { id: data.id })
+    expect(res.status).toBe(200)
+    expect(res.headers.get('content-type')).toBe('image/png')
+    expect(res.headers.get('cache-control')).toBe('public, max-age=31536000, immutable')
+  })
+
+  it('returns 404 for a missing public file', async () => {
+    const { routes } = await makeContext()
+    const res = await routes.publicFile(new Request('http://localhost/api/vulse/public/media/nope/file'), { id: 'nope' })
+    expect(res.status).toBe(404)
   })
 })

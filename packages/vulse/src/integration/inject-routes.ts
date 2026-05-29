@@ -31,6 +31,7 @@ export function injectVulseRoutes({ injectRoute, logger }: InjectArgs) {
     { pattern: '/api/vulse/media', file: 'api-vulse-media.js' },
     { pattern: '/api/vulse/media/[id]', file: 'api-vulse-media-id.js' },
     { pattern: '/api/vulse/media/[id]/file', file: 'api-vulse-media-file.js' },
+    { pattern: '/api/vulse/public/media/[id]/file', file: 'api-vulse-media-public-file.js' },
     { pattern: '/api/vulse/search', file: 'api-vulse-search.js' },
     { pattern: '/api/vulse/preview/start', file: 'api-vulse-preview-start.js' },
     { pattern: '/api/vulse/preview/stop', file: 'api-vulse-preview-stop.js' },

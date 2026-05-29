@@ -140,9 +140,13 @@ import BlockRenderer from '@vulsecms/core/client/BlockRenderer.astro'
 ---
 <BlockRenderer
   blocks={entry.data.body ?? []}
-  mediaUrl={(id) => `/api/vulse/media/${id}/file`}
+  mediaUrl={(id) => `/api/vulse/public/media/${id}/file`}
 />
 ```
+
+Use the **public** media route (`/api/vulse/public/media/:id/file`) on your site — the
+`/api/vulse/media/:id/file` route is admin-only. For compressed/responsive delivery, see
+[frontend.md → Image optimization](frontend.md#image-optimization).
 
 See [`frontend.md#blocks`](frontend.md#blocks) for styling hooks and custom-set rendering.
 

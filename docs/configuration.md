@@ -41,6 +41,7 @@ compatibility_flags = ["nodejs_compat"]
 | `VULSE_PREVIEW_SECRET` | optional | Signs the saved-draft Preview cookie. Falls back to `BETTER_AUTH_SECRET`. |
 | `CF_IMAGES_ACCOUNT_HASH` | optional | Cloudflare Images account hash for delivery URLs |
 | `CF_IMAGES_TOKEN` | optional | Cloudflare Images API token for variant registration |
+| `VULSE_IMAGE_TRANSFORM` | optional | `"true"` serves frontend images via Cloudflare Image Transformations (`/cdn-cgi/image`, `format=auto`). Needs Image Resizing + a custom domain. See [frontend.md → Image optimization](frontend.md#image-optimization). |
 
 In development put them under `[vars]` in `wrangler.toml`. In production use:
 
@@ -51,7 +52,10 @@ wrangler secret put CF_IMAGES_ACCOUNT_HASH
 wrangler secret put CF_IMAGES_TOKEN
 ```
 
-Without `CF_IMAGES_*`, media previews fall back to R2-proxied URLs (`/api/vulse/media/:id/file`).
+Frontend images are served from the public, cacheable route `/api/vulse/public/media/:id/file`.
+With `VULSE_IMAGE_TRANSFORM="true"` they are delivered through Cloudflare Image Transformations
+(compressed AVIF/WebP via `format=auto`); without it the original bytes are served. The
+admin-only `/api/vulse/media/:id/file` route is used by the admin UI.
 
 ## Integration options
 

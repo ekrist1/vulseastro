@@ -17,6 +17,9 @@ bucket_name = "vulse-media"
 [vars]
 BETTER_AUTH_SECRET = "dev-secret-change-me-in-production-32chars"
 VULSE_ALLOW_MEMBER_SIGNUP = "true"
+# Serve frontend images via Cloudflare Image Transformations (format=auto, compressed).
+# Needs Image Resizing + a custom domain — not processed in local dev or on workers.dev.
+# VULSE_IMAGE_TRANSFORM = "true"
 
 # vulse:form-queue — async submission processing (notify/confirmation emails, webhooks)
 # [[queues.producers]]

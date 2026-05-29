@@ -92,10 +92,23 @@ Use the **schema editor** to rename fields (or call `PATCH /api/vulse/blueprints
 
 Set `compatibility_flags = ["nodejs_compat"]` in `wrangler.toml`. The image-probe step reads dimensions from the uploaded buffer using Node-style streams.
 
+### Images on the public site return 403 / don't load
+
+Use the **public** media route on your frontend: `/api/vulse/public/media/:id/file`. The
+`/api/vulse/media/:id/file` route requires an admin/editor session and returns 403 for
+anonymous visitors. `BlockRenderer`'s `mediaUrl` and `VulseImage` should point at the public
+route (or `sdk.media.url(id)`), which scaffolded pages now do by default.
+
 ### Image previews show placeholders
 
-- Without `CF_IMAGES_ACCOUNT_HASH` and `CF_IMAGES_TOKEN`, Vulse falls back to R2-proxied URLs (`/api/vulse/media/:id/file`). This works, just isn't variant-optimised.
-- For Cloudflare Images, ensure both secrets are set and the bucket is connected to your Images account.
+- Frontend images are served from `/api/vulse/public/media/:id/file`. With
+  `VULSE_IMAGE_TRANSFORM="true"` they go through Cloudflare Image Transformations
+  (`format=auto`) for compressed AVIF/WebP; without it the original is served.
+- Transformations require Image Resizing enabled on the zone **and a custom domain** — they
+  are not processed on `workers.dev` or in local `wrangler dev`, so leave `VULSE_IMAGE_TRANSFORM`
+  unset there.
+- For the Cloudflare Images storage product, set `CF_IMAGES_ACCOUNT_HASH`/`CF_IMAGES_TOKEN` and
+  ensure images are uploaded to your Images account.
 
 ### Deleted media still appears in the picker
 
