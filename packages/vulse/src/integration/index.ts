@@ -1,4 +1,5 @@
 import type { AstroIntegration } from 'astro'
+import { createRequire } from 'node:module'
 import { fileURLToPath } from 'node:url'
 import vue from '@astrojs/vue'
 import tailwindcss from '@tailwindcss/vite'
@@ -8,6 +9,7 @@ import { vulseBlueprintsPlugin } from './vite-plugin-blueprints.js'
 import { vulseAdminCssPlugin, vulseAdminFsAllow } from './vite-plugin-admin-css.js'
 import { createVulseViteLogger } from './vite-logger.js'
 import { vulseSuppressSourcemapsPlugin } from './vite-plugin-suppress-sourcemaps.js'
+import { vulseExternalizeNativePlugin } from './vite-plugin-externalize-native.js'
 import { generateBlueprintTypes } from './type-gen.js'
 import { initLoaderBinding } from './loader-binding.js'
 import { exportSchemaDocs } from './schema-docs-gen.js'
@@ -46,9 +48,23 @@ const OPTIMIZE_DEPS_EXCLUDE = [
   '@babel/core',
   '@babel/preset-typescript',
   'blake3-wasm',
+  // Used only in the admin 2FA enrollment flow and loaded via dynamic
+  // `import('qrcode')`. The package's Node-leaning entry trips Vite's
+  // SSR dep optimizer (workerd doesn't expose Node fs); excluding it
+  // here defers resolution to runtime in the browser, which is the only
+  // place it's actually invoked.
+  'qrcode',
 ] as const
 
 const VUE_INTEGRATION_NAME = '@astrojs/vue'
+
+/** Resolve a bare import for a dependency declared on @vulsecms/core. */
+const requireFromVulse = createRequire(
+  fileURLToPath(new URL('../../package.json', import.meta.url)),
+)
+function resolveVulseDep(specifier: string): string {
+  return requireFromVulse.resolve(specifier)
+}
 
 function hasVueIntegration(integrations: readonly AstroIntegration[]): boolean {
   return integrations.some((integration) => integration.name === VUE_INTEGRATION_NAME)
@@ -89,6 +105,7 @@ export default function vulse(opts: VulseOptions = {}): AstroIntegration {
           vite: {
             customLogger: createVulseViteLogger(),
             plugins: [
+              vulseExternalizeNativePlugin(),
               vulseSuppressSourcemapsPlugin(),
               vulseAdminCssPlugin(),
               tailwindcss(),
@@ -102,6 +119,14 @@ export default function vulse(opts: VulseOptions = {}): AstroIntegration {
                 // keeps the DB open, which would otherwise fire a file-change ->
                 // full-reload on a loop. .astro is generated state. Ignore both.
                 ignored: ['**/.vulse/**', '**/.wrangler/**', '**/.astro/**'],
+              },
+            },
+            resolve: {
+              // pnpm keeps qrcode under @vulsecms/core; the playground (and other
+              // consumers) cannot resolve a bare `import('qrcode')` from admin UI
+              // without this alias.
+              alias: {
+                qrcode: resolveVulseDep('qrcode'),
               },
             },
             optimizeDeps: {

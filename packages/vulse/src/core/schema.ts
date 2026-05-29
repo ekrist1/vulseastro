@@ -99,6 +99,28 @@ export const settings = sqliteTable('vulse_settings', {
   updatedAt: integer('updated_at', { mode: 'timestamp_ms' }).notNull(),
 })
 
+// --- Redirects ---
+//
+// One row per managed URL redirect. `from_path` is the incoming pathname
+// (case-insensitive lookup via lower-cased unique index); `to_url` is either
+// an absolute URL or a site-relative path. The request middleware consults
+// this table for non-admin, non-API, non-asset paths.
+
+export const vulseRedirects = sqliteTable('vulse_redirects', {
+  id: text('id').primaryKey(),
+  fromPath: text('from_path').notNull(),
+  toUrl: text('to_url').notNull(),
+  status: integer('status').notNull().default(301),
+  enabled: integer('enabled', { mode: 'boolean' }).notNull().default(true),
+  hits: integer('hits').notNull().default(0),
+  lastHitAt: integer('last_hit_at', { mode: 'timestamp_ms' }),
+  createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
+  updatedAt: integer('updated_at', { mode: 'timestamp_ms' }).notNull(),
+  createdBy: text('created_by'),
+}, (t) => ({
+  uniqFrom: uniqueIndex('vulse_redirects_from_path').on(t.fromPath),
+}))
+
 // --- Forms ---
 
 export const vulseForms = sqliteTable('vulse_forms', {
@@ -203,6 +225,7 @@ export const user = sqliteTable('user', {
   image: text('image'),
   role: text('role', { enum: ['admin', 'editor', 'member'] }).notNull().default('member'),
   displayName: text('display_name'),
+  twoFactorEnabled: integer('two_factor_enabled', { mode: 'boolean' }).notNull().default(false),
   createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
   updatedAt: integer('updated_at', { mode: 'timestamp_ms' }).notNull(),
 })
@@ -242,3 +265,18 @@ export const verification = sqliteTable('verification', {
   createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
   updatedAt: integer('updated_at', { mode: 'timestamp_ms' }).notNull(),
 })
+
+// Better Auth two-factor plugin model. Stores the per-user TOTP secret and
+// encrypted backup codes. `verified` flips to true once the user confirms
+// their authenticator app produces the right code, at which point
+// `user.two_factor_enabled` is also flipped on by the plugin.
+export const twoFactor = sqliteTable('twoFactor', {
+  id: text('id').primaryKey(),
+  userId: text('user_id').notNull().references(() => user.id, { onDelete: 'cascade' }),
+  secret: text('secret').notNull(),
+  backupCodes: text('backup_codes').notNull(),
+  verified: integer('verified', { mode: 'boolean' }).notNull().default(false),
+}, (t) => ({
+  byUser: index('two_factor_user_id').on(t.userId),
+  bySecret: index('two_factor_secret').on(t.secret),
+}))

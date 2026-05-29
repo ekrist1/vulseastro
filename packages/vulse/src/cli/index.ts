@@ -28,9 +28,13 @@ program
   .command('migrate')
   .description('Apply Drizzle migrations to the configured D1 database')
   .option('--remote', 'Run against the remote D1 instead of local miniflare', false)
+  .option('-c, --config <path>', 'Wrangler config to target (e.g. wrangler.production.toml); defaults to WRANGLER_CONFIG or auto-detected')
   .action(async (opts) => {
     const { runMigrate } = await import('./migrate.js')
-    await runMigrate({ remote: !!opts.remote })
+    await runMigrate({
+      remote: !!opts.remote,
+      ...(opts.config !== undefined ? { config: opts.config } : {}),
+    })
   })
 
 program
@@ -39,12 +43,14 @@ program
   .option('--email <email>', 'Admin email (required)')
   .option('--password <password>', 'Password (generated if omitted)')
   .option('--remote', 'Run against the remote D1', false)
+  .option('-c, --config <path>', 'Wrangler config to target (e.g. wrangler.production.toml); defaults to WRANGLER_CONFIG or auto-detected')
   .action(async (opts) => {
     const { runSeedAdmin } = await import('./seed-admin.js')
     await runSeedAdmin({
       email: opts.email,
       ...(opts.password !== undefined ? { password: opts.password } : {}),
       remote: !!opts.remote,
+      ...(opts.config !== undefined ? { config: opts.config } : {}),
     })
   })
 
@@ -81,11 +87,13 @@ program
   .description('Generate AGENTS.md and docs/vulse-schema.* for AI-assisted frontend development')
   .option('--remote', 'Read schema from production D1 instead of local miniflare', false)
   .option('--out-dir <dir>', 'Directory for vulse-schema.md/json (default: docs)')
+  .option('-c, --config <path>', 'Wrangler config to target (e.g. wrangler.production.toml); defaults to WRANGLER_CONFIG or auto-detected')
   .action(async (opts) => {
     const { runSchemaExport } = await import('./schema-export.js')
     await runSchemaExport({
       remote: !!opts.remote,
       ...(opts.outDir !== undefined ? { docsDir: opts.outDir } : {}),
+      ...(opts.config !== undefined ? { config: opts.config } : {}),
     })
   })
 

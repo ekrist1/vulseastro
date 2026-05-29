@@ -280,9 +280,15 @@ import BlockRenderer from '@vulsecms/core/client/BlockRenderer.astro'
 
 <BlockRenderer
   blocks={entry.data.body ?? []}
-  mediaUrl={(id, variant) => `/api/vulse/media/${id}/file`}
+  mediaUrl={(id) => `/api/vulse/public/media/${id}/file`}
 />
 ```
+
+`/api/vulse/public/media/:id/file` is the **public, cacheable** media route. (The
+`/api/vulse/media/:id/file` route requires an admin/editor session and 403s for visitors —
+use the public one on your site.) For compressed, resized delivery, build the URL with the
+SDK instead — it applies Cloudflare Image Transformations (`format=auto`) when
+`VULSE_IMAGE_TRANSFORM` is enabled. See [Image optimization](#image-optimization).
 
 Legacy flat block arrays (a single array of node objects) are also supported.
 
@@ -315,7 +321,7 @@ defineProps<{ body: unknown }>()
   <BlockRenderer
     :blocks="body"
     :components="{ 'set:quote': QuoteSet }"
-    :media-url="(id) => `/api/vulse/media/${id}/file`"
+    :media-url="(id) => `/api/vulse/public/media/${id}/file`"
   />
 </template>
 ```
@@ -323,6 +329,64 @@ defineProps<{ body: unknown }>()
 Each set component receives a `data` prop with the field values matching the set's schema.
 
 > The Astro `BlockRenderer.astro` renders built-in blocks server-side without hydration. Custom sets output a placeholder unless you use the Vue renderer (hydrated with `client:load`) or map sets to your own Astro components manually.
+
+## Image optimization
+
+Media is stored in R2 and served through the **public, cacheable** route
+`/api/vulse/public/media/:id/file` (immutable per id, `Cache-Control: public, max-age=1y`).
+By itself this serves the original bytes. To deliver **compressed, resized, modern-format**
+images, enable Cloudflare Image Transformations.
+
+### Enable transformations
+
+Image Transformations require [Image Resizing](https://developers.cloudflare.com/images/transform-images/)
+enabled on the zone and a **custom domain** (they are not processed on `workers.dev` or in
+local `wrangler dev`). Then set:
+
+```toml
+[vars]
+VULSE_IMAGE_TRANSFORM = "true"
+```
+
+With it on, `sdk.media.url()` returns `/cdn-cgi/image/format=auto,quality=82,…/<source>` URLs.
+`format=auto` serves AVIF or WebP based on the browser's `Accept` header; when off, the SDK
+falls back to the plain public route, so images keep working everywhere.
+
+### Building URLs and srcsets
+
+```ts
+const { sdk } = await getRuntime(/* … */)
+
+sdk.media.url(id)                       // plain public route (or /cdn-cgi/image when enabled)
+sdk.media.url(id, { width: 800 })       // resized + format=auto + quality=82
+sdk.media.url(id, 'hero')               // named variant → mapped to a width on the transform path
+sdk.media.srcset(id, [400, 800, 1200])  // responsive srcset (null when transforms are disabled)
+```
+
+### `<VulseImage>` (Vue)
+
+The `VulseImage` component renders the public route with `loading="lazy"` and
+`decoding="async"`. Pass `width`/`height` to reserve layout space (avoid CLS) and an optional
+`srcset`/`sizes` for responsive delivery:
+
+```vue
+<script setup lang="ts">
+import VulseImage from '@vulsecms/core/client/components/VulseImage.vue'
+</script>
+
+<template>
+  <VulseImage
+    :asset="{ id: entry.data.main_image }"
+    :width="1600" :height="900"
+    sizes="(max-width: 768px) 100vw, 800px"
+    :srcset="srcset"
+    alt="Cover image"
+  />
+</template>
+```
+
+Built-in block images (from `BlockRenderer`) already render with `loading="lazy"` and
+`decoding="async"`, and are compressed automatically when you pass `sdk.media.url` as `mediaUrl`.
 
 ## Locales
 

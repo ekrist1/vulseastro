@@ -11,8 +11,11 @@ export interface RuntimeEnv {
   VULSE_ALLOW_MEMBER_SIGNUP?: string
   CF_IMAGES_ACCOUNT_HASH?: string
   CF_IMAGES_TOKEN?: string
+  /** When `"true"`, serve frontend images through Cloudflare Image Transformations (`/cdn-cgi/image`, format=auto). */
+  VULSE_IMAGE_TRANSFORM?: string
   EMAIL_FROM?: string
-  EMAIL_API_TOKEN?: string
+  /** Cloudflare Email Routing send binding — declared as `[[send_email]]` in wrangler.toml. */
+  SEND_EMAIL?: SendEmail
 }
 
 export function getRuntimeEnv(): RuntimeEnv {

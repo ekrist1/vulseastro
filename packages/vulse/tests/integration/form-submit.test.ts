@@ -151,7 +151,7 @@ describe('form process', () => {
       body: JSON.stringify({ name: 'Ada', email: 'ada@example.com' }),
     }), { handle: 'contact' })
     const row = await env.DB.prepare('SELECT id FROM vulse_form_submissions LIMIT 1').first<{ id: string }>()
-    await processSubmission({ DB: env.DB, EMAIL_FROM: 'noreply@example.com', EMAIL_API_TOKEN: 'x' }, row!.id)
+    await processSubmission({ DB: env.DB, EMAIL_FROM: 'noreply@example.com', SEND_EMAIL: {} as SendEmail }, row!.id)
     expect(sendSpy).toHaveBeenCalled()
     const status = await env.DB.prepare('SELECT status FROM vulse_form_submissions WHERE id = ?').bind(row!.id).first<{ status: string }>()
     expect(status?.status).toBe('processed')

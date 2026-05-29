@@ -53,4 +53,30 @@ describe('forms repos', () => {
       .where(eq(vulseFormUniqueValues.submissionId, sub.id))
     expect(uniqueLeft).toHaveLength(0)
   })
+
+  it('bulk deletes only matching submissions and reports actual count', async () => {
+    const db = createDb(env.DB)
+    const forms = new FormsRepo(db)
+    const subs = new SubmissionsRepo(db)
+
+    await forms.create(sampleForm)
+    await forms.create({ ...sampleForm, handle: 'newsletter', label: 'Newsletter' })
+
+    const contact = await subs.create({
+      formHandle: 'contact',
+      payload: { email: 'a@example.com' },
+      meta: {},
+    })
+    const newsletter = await subs.create({
+      formHandle: 'newsletter',
+      payload: { email: 'b@example.com' },
+      meta: {},
+    })
+
+    const deleted = await subs.deleteMany([contact.id, newsletter.id, contact.id, 'missing'], 'contact')
+
+    expect(deleted).toBe(1)
+    expect(await subs.findById(contact.id)).toBeNull()
+    expect(await subs.findById(newsletter.id)).not.toBeNull()
+  })
 })

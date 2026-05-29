@@ -13,6 +13,7 @@ Vulse is configured in three places:
 | `DB` | ✅ | D1 database — content, users, sessions, settings |
 | `BUCKET` | ✅ | R2 bucket — uploaded media files |
 | `FORM_QUEUE` | optional | Cloudflare Queue for async form processing — see [`forms.md`](forms.md) |
+| `SEND_EMAIL` | optional | Cloudflare Email Routing — password reset and form notification emails — see below |
 
 ```toml
 [[d1_databases]]
@@ -25,6 +26,27 @@ migrations_dir = "node_modules/@vulsecms/core/migrations"
 binding = "BUCKET"
 bucket_name = "vulse-media"
 ```
+
+### Email (`SEND_EMAIL`)
+
+Vulse uses [Cloudflare Email Routing](https://developers.cloudflare.com/email-routing/email-workers/send-email-workers/) to send password-reset and form-notification emails. When neither `SEND_EMAIL` nor `EMAIL_FROM` is set, Vulse falls back to logging emails to the console (useful for local development without any email setup).
+
+To enable real email sending:
+
+1. Configure Email Routing for your domain in the Cloudflare dashboard and verify a sending address.
+2. Add the binding and `EMAIL_FROM` var to `wrangler.toml`:
+
+```toml
+[[send_email]]
+name = "SEND_EMAIL"
+
+[vars]
+EMAIL_FROM = "noreply@yourdomain.com"
+```
+
+**Local development simulation** — `wrangler dev` simulates `send_email` bindings automatically. When the binding is declared, calling `.send()` logs the email payload to the wrangler console instead of actually sending it. Add the `[[send_email]]` block to your dev `wrangler.toml` to see what emails would be sent during local testing. See [local development docs](https://developers.cloudflare.com/email-routing/email-workers/local-development/).
+
+In production, keep `EMAIL_FROM` in `[vars]` (it is not a secret) but do not add a `wrangler secret` for it — the `SEND_EMAIL` binding handles authentication through Cloudflare's platform.
 
 The compatibility flag `nodejs_compat` is required for media uploads:
 
@@ -39,8 +61,10 @@ compatibility_flags = ["nodejs_compat"]
 | `BETTER_AUTH_SECRET` | ✅ | Session signing — use 32+ random chars in production |
 | `BETTER_AUTH_URL` | optional | Override the auth base URL (defaults to the request origin) |
 | `VULSE_PREVIEW_SECRET` | optional | Signs the saved-draft Preview cookie. Falls back to `BETTER_AUTH_SECRET`. |
+| `EMAIL_FROM` | optional | "From" address for outgoing emails, e.g. `noreply@yourdomain.com`. Required when `SEND_EMAIL` is configured. |
 | `CF_IMAGES_ACCOUNT_HASH` | optional | Cloudflare Images account hash for delivery URLs |
 | `CF_IMAGES_TOKEN` | optional | Cloudflare Images API token for variant registration |
+| `VULSE_IMAGE_TRANSFORM` | optional | `"true"` serves frontend images via Cloudflare Image Transformations (`/cdn-cgi/image`, `format=auto`). Needs Image Resizing + a custom domain. See [frontend.md → Image optimization](frontend.md#image-optimization). |
 
 In development put them under `[vars]` in `wrangler.toml`. In production use:
 
@@ -51,7 +75,10 @@ wrangler secret put CF_IMAGES_ACCOUNT_HASH
 wrangler secret put CF_IMAGES_TOKEN
 ```
 
-Without `CF_IMAGES_*`, media previews fall back to R2-proxied URLs (`/api/vulse/media/:id/file`).
+Frontend images are served from the public, cacheable route `/api/vulse/public/media/:id/file`.
+With `VULSE_IMAGE_TRANSFORM="true"` they are delivered through Cloudflare Image Transformations
+(compressed AVIF/WebP via `format=auto`); without it the original bytes are served. The
+admin-only `/api/vulse/media/:id/file` route is used by the admin UI.
 
 ## Integration options
 

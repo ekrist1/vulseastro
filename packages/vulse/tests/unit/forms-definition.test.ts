@@ -43,4 +43,15 @@ describe('FormDefinitionSchema', () => {
     const parsed = FormDefinitionSchema.parse({ ...contactForm, fields: [] })
     expect(parsed.fields).toEqual([])
   })
+
+  it('rejects duplicate field names', () => {
+    const duplicated = {
+      ...contactForm,
+      fields: [
+        { name: 'email', ui: { kind: 'email' as const }, optional: false },
+        { name: 'email', ui: { kind: 'text' as const }, optional: false },
+      ],
+    }
+    expect(() => FormDefinitionSchema.parse(duplicated)).toThrow(/Duplicate field name/)
+  })
 })

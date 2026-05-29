@@ -32,18 +32,18 @@ export async function processSubmission(env: ProcessEnv, submissionId: string): 
 
     const notifyEmails = def.settings.notifyEmails ?? []
     for (const email of notifyEmails) {
-      const body = renderTemplate(
+      const text = renderTemplate(
         'New submission for {{form.label}}\n\n{{email}}',
         ctx,
       )
-      await sendFormEmail(env, { to: email, subject: `New ${def.label} submission`, body })
+      await sendFormEmail(env, { to: email, subject: `New ${def.label} submission`, text })
     }
 
     for (const action of def.actions) {
       if (action.type === 'notify') {
         for (const email of action.emails) {
-          const body = renderTemplate(action.template ?? 'New submission', ctx)
-          await sendFormEmail(env, { to: email, subject: `New ${def.label} submission`, body })
+          const text = renderTemplate(action.template ?? 'New submission', ctx)
+          await sendFormEmail(env, { to: email, subject: `New ${def.label} submission`, text })
         }
       }
       if (action.type === 'confirmation') {
@@ -52,7 +52,7 @@ export async function processSubmission(env: ProcessEnv, submissionId: string): 
           await sendFormEmail(env, {
             to: String(to),
             subject: renderTemplate(action.subject, ctx),
-            body: renderTemplate(action.bodyTemplate, ctx),
+            text: renderTemplate(action.bodyTemplate, ctx),
           })
         }
       }
@@ -68,7 +68,7 @@ export async function processSubmission(env: ProcessEnv, submissionId: string): 
         await sendFormEmail(env, {
           to: String(to),
           subject: renderTemplate(conf.subject, ctx),
-          body: renderTemplate(conf.bodyTemplate, ctx),
+          text: renderTemplate(conf.bodyTemplate, ctx),
         })
       }
     }

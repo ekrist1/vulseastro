@@ -23,7 +23,7 @@ const legacyBlocks = Array.isArray(blocks) ? (blocks as Block[]) : []
       if (b.type === 'paragraph') return <p>{b.text}</p>
       if (b.type === 'image') return (
         <figure>
-          {mediaUrl ? <img src={mediaUrl(b.mediaId, 'hero')} alt={b.alt} /> : <span class="text-zinc-400">[image: {b.mediaId}]</span>}
+          {mediaUrl ? <img src={mediaUrl(b.mediaId, 'hero')} alt={b.alt} loading="lazy" decoding="async" /> : <span class="text-zinc-400">[image: {b.mediaId}]</span>}
           {b.caption && <figcaption>{b.caption}</figcaption>}
         </figure>
       )

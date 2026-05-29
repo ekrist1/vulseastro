@@ -1,5 +1,5 @@
 import { access, readFile, writeFile } from 'node:fs/promises'
-import { dirname, join } from 'node:path'
+import { dirname, isAbsolute, join } from 'node:path'
 import { patchWranglerToml, VULSE_MIGRATIONS_DIR, DEFAULT_COMPATIBILITY_DATE, type PatchOptions } from './wrangler-patch.js'
 
 export const WRANGLER_CONFIG_FILES = ['wrangler.jsonc', 'wrangler.toml', 'wrangler.json'] as const
@@ -24,8 +24,17 @@ export async function findWranglerConfig(cwd: string): Promise<WranglerConfigFil
   return null
 }
 
-/** Walk up from `cwd` and return the path to the nearest wrangler config file. */
-export async function resolveWranglerConfigPath(cwd = process.cwd()): Promise<string> {
+/**
+ * Walk up from `cwd` and return the path to the nearest wrangler config file.
+ * When `configFile` is given (e.g. `wrangler.production.toml`), that exact file is
+ * resolved relative to `cwd` (or used as-is when absolute) instead of auto-detecting.
+ */
+export async function resolveWranglerConfigPath(cwd = process.cwd(), configFile?: string): Promise<string> {
+  if (configFile) {
+    const path = isAbsolute(configFile) ? configFile : join(cwd, configFile)
+    if (await fileExists(path)) return path
+    throw new Error(`Wrangler config not found: ${configFile}`)
+  }
   let dir = cwd
   for (;;) {
     for (const file of WRANGLER_FILES) {
@@ -40,6 +49,17 @@ export async function resolveWranglerConfigPath(cwd = process.cwd()): Promise<st
 
 export function isJsonWranglerConfig(file: WranglerConfigFile): boolean {
   return file === 'wrangler.jsonc' || file === 'wrangler.json'
+}
+
+/**
+ * Map an arbitrary wrangler config filename (e.g. `wrangler.production.toml`)
+ * to the canonical {@link WranglerConfigFile} that selects its patch format.
+ * Extension decides: `.toml` → TOML patcher, `.json`/`.jsonc` → JSONC patcher.
+ */
+export function wranglerConfigFormat(fileName: string): WranglerConfigFile {
+  if (fileName.endsWith('.toml')) return 'wrangler.toml'
+  if (fileName.endsWith('.json')) return 'wrangler.json'
+  return 'wrangler.jsonc'
 }
 
 /**
@@ -149,18 +169,37 @@ export function patchWranglerConfig(
 /**
  * Patch an existing wrangler config so migrations point at the bundled package SQL
  * (and D1/R2/nodejs_compat are present). Never creates a config from scratch —
- * that belongs to `vulse setup`, not to every `astro dev`/`build`. Returns the
- * patched file, or null when no wrangler config exists.
+ * that belongs to `vulse setup`, not to every `astro dev`/`build`.
+ *
+ * When `configFile` is given (e.g. from `WRANGLER_CONFIG=wrangler.production.toml`
+ * or `vulse migrate --config`), that exact file is patched instead of auto-detecting
+ * the default config in `cwd` — this lets production/staging configs be kept and
+ * targeted without overwriting the dev `wrangler.toml`. Throws if the named file
+ * does not exist (an explicit selection that's missing is a mistake, not a no-op).
+ *
+ * Returns the patched file's name/path, or null when no config could be found.
  */
 export async function ensureWranglerConfig(
   cwd: string,
   opts: PatchOptions = DEFAULT_PATCH,
-): Promise<WranglerConfigFile | null> {
-  const existing = await findWranglerConfig(cwd)
-  if (!existing) return null
-  const path = join(cwd, existing)
+  configFile?: string,
+): Promise<string | null> {
+  let path: string
+  let format: WranglerConfigFile
+  if (configFile) {
+    path = isAbsolute(configFile) ? configFile : join(cwd, configFile)
+    if (!(await fileExists(path))) {
+      throw new Error(`Wrangler config not found: ${configFile}`)
+    }
+    format = wranglerConfigFormat(configFile)
+  } else {
+    const existing = await findWranglerConfig(cwd)
+    if (!existing) return null
+    path = join(cwd, existing)
+    format = existing
+  }
   const before = await readFile(path, 'utf8')
-  const after = patchWranglerConfig(before, existing, opts)
+  const after = patchWranglerConfig(before, format, opts)
   if (after !== before) await writeFile(path, after, 'utf8')
-  return existing
+  return configFile ?? format
 }

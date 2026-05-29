@@ -1,0 +1,13 @@
+---
+import AdminShell from '../../../components/AdminShell.astro'
+import RedirectList from '../../../components/RedirectList.vue'
+---
+<AdminShell title="Redirects" activePath="/admin/settings/redirects">
+  <h1 class="text-2xl font-semibold mb-4">Redirects</h1>
+  <p class="text-sm text-zinc-600 mb-4">
+    Match incoming paths and forward them to another URL. From-paths are
+    matched against the request pathname, case-insensitive, and the original
+    query string is preserved unless the target already has one.
+  </p>
+  <RedirectList client:load />
+</AdminShell>

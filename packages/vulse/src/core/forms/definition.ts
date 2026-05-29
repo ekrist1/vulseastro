@@ -91,12 +91,31 @@ export const FormActionSchema = z.discriminatedUnion('type', [
 
 export type FormAction = z.infer<typeof FormActionSchema>
 
+function rejectDuplicateFormFields(
+  def: { fields: Array<{ name: string }> },
+  ctx: z.RefinementCtx,
+): void {
+  const seen = new Map<string, number>()
+  def.fields.forEach((field, index) => {
+    const firstIndex = seen.get(field.name)
+    if (firstIndex !== undefined) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['fields', index, 'name'],
+        message: `Duplicate field name '${field.name}' also used at fields.${firstIndex}.name.`,
+      })
+      return
+    }
+    seen.set(field.name, index)
+  })
+}
+
 export const FormDefinitionSchema = z.object({
   handle: z.string().regex(handleRegex),
   label: z.string().min(1),
   fields: z.array(FormFieldDefinitionSchema).default([]),
   settings: FormSettingsSchema,
   actions: z.array(FormActionSchema).default([]),
-})
+}).superRefine(rejectDuplicateFormFields)
 
 export type FormDefinition = z.infer<typeof FormDefinitionSchema>

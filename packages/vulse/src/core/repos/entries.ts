@@ -117,9 +117,33 @@ export class EntriesRepo {
     return message.includes('UNIQUE constraint failed') && message.includes('slug')
   }
 
+  private async assertValidParent(collection: string, parentId: string | null): Promise<void> {
+    if (parentId === null) return
+    if (parentId.trim() === '') {
+      throw new ValidationError('Parent entry id cannot be empty.', {
+        field: 'parentId',
+        issues: [{ path: ['parentId'], message: 'Parent entry id cannot be empty.' }],
+      })
+    }
+
+    const parent = await this.findShellById(parentId)
+    if (!parent) {
+      throw new ValidationError('Parent entry not found.', {
+        field: 'parentId',
+        issues: [{ path: ['parentId'], message: 'Parent entry not found.' }],
+      })
+    }
+    if (parent.collection !== collection) {
+      throw new ValidationError('Parent entry must belong to the same collection.', {
+        field: 'parentId',
+        issues: [{ path: ['parentId'], message: 'Parent entry must belong to the same collection.' }],
+      })
+    }
+  }
+
   async maxSortOrder(collection: string, parentId: string | null): Promise<number> {
     const conds = [eq(entries.collection, collection)]
-    conds.push(parentId ? eq(entries.parentId, parentId) : isNull(entries.parentId))
+    conds.push(parentId !== null ? eq(entries.parentId, parentId) : isNull(entries.parentId))
     const [row] = await this.db.select({ max: sql<number>`coalesce(max(${entries.sortOrder}), 0)` })
       .from(entries)
       .where(and(...conds))
@@ -158,17 +182,20 @@ export class EntriesRepo {
   }): Promise<EntryRow> {
     const locale = input.locale ?? DEFAULT_LOCALE
     const slug = await this.resolveUniqueSlug(input.collection, locale, input.slug)
+    const parentId = input.parentId ?? null
+    await this.assertValidParent(input.collection, parentId)
     const now = new Date()
-    const sortOrder = (await this.maxSortOrder(input.collection, input.parentId ?? null)) + 1
+    const sortOrder = (await this.maxSortOrder(input.collection, parentId)) + 1
     const publishNow = input.draftsEnabled
       ? input.publish === true
       : (input.status ?? 'draft') === 'published'
+    const initialStatus = publishNow ? 'published' : 'draft'
 
     const entryId = nanoid()
     const shellRow = {
       id: entryId,
       collection: input.collection,
-      parentId: input.parentId ?? null,
+      parentId,
       sortOrder,
       createdAt: now,
       updatedAt: now,
@@ -179,7 +206,7 @@ export class EntriesRepo {
       collection: input.collection,
       locale,
       slug,
-      status: publishNow ? 'published' as const : (input.status ?? 'draft'),
+      status: initialStatus as 'draft' | 'published',
       version: 1,
       content: input.draftsEnabled && !publishNow ? {} : input.content,
       draftContent: input.draftsEnabled && !publishNow ? input.content : null,
@@ -223,19 +250,23 @@ export class EntriesRepo {
     content: unknown
     updatedBy: string
     status?: 'draft' | 'published'
+    publish?: boolean
     draftsEnabled?: boolean
   }): Promise<EntryRow> {
     const shell = await this.findShellById(entryId)
     if (!shell) throw new NotFoundError(`Entry ${entryId} not found`)
     const slug = await this.resolveUniqueSlug(shell.collection, input.locale, input.slug)
     const now = new Date()
-    const publishNow = !input.draftsEnabled && (input.status ?? 'draft') === 'published'
+    const publishNow = input.draftsEnabled
+      ? input.publish === true
+      : (input.status ?? 'draft') === 'published'
+    const initialStatus = publishNow ? 'published' : 'draft'
     const localeRow = {
       entryId,
       collection: shell.collection,
       locale: input.locale,
       slug,
-      status: publishNow ? 'published' as const : (input.status ?? 'draft'),
+      status: initialStatus as 'draft' | 'published',
       version: 1,
       content: input.draftsEnabled && !publishNow ? {} : input.content,
       draftContent: input.draftsEnabled && !publishNow ? input.content : null,
@@ -369,6 +400,7 @@ export class EntriesRepo {
       opts.orderBy === 'publishedAt' ? [direction(entryLocales.publishedAt)] as const
       : opts.orderBy === 'createdAt' ? [direction(entries.createdAt)] as const
       : opts.orderBy === 'updatedAt' ? [direction(entryLocales.updatedAt)] as const
+      : opts.orderBy === 'sortOrder' ? [direction(entries.sortOrder), desc(entryLocales.updatedAt)] as const
       : [asc(entries.sortOrder), desc(entryLocales.updatedAt)] as const
 
     const base = this.db.select({ shell: entries, loc: entryLocales })
@@ -417,6 +449,7 @@ export class EntriesRepo {
   async move(collection: string, id: string, input: { parentId: string | null; sortOrder?: number }): Promise<EntryShell> {
     const shell = await this.findShellById(id)
     if (!shell || shell.collection !== collection) throw new NotFoundError(`Entry ${id} not found`)
+    await this.assertValidParent(collection, input.parentId)
     if (await this.wouldCreateCycle(id, input.parentId)) {
       throw new ValidationError('An entry cannot be moved under itself or one of its descendants.')
     }

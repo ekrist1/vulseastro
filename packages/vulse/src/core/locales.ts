@@ -1,6 +1,7 @@
 import type { VulseDb } from './db.js'
 import { SettingsRepo } from './repos/settings.js'
 import { DEFAULT_LOCALE } from './repos/entries.js'
+import { ValidationError } from './errors.js'
 
 export const LOCALES_KEY = 'locales'
 export const DEFAULT_LOCALE_KEY = 'defaultLocale'
@@ -39,7 +40,10 @@ export async function resolveLocale(db: VulseDb, candidate: string | null | unde
   const cfg = await readLocalesConfig(db)
   if (!candidate || candidate === DEFAULT_LOCALE) return cfg.defaultLocale
   if (!cfg.locales.includes(candidate)) {
-    throw new Error(`Unknown locale '${candidate}'. Supported: ${cfg.locales.join(', ')}`)
+    throw new ValidationError(`Unknown locale '${candidate}'. Supported: ${cfg.locales.join(', ')}`, {
+      field: 'locale',
+      supported: cfg.locales,
+    })
   }
   return candidate
 }

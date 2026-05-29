@@ -60,6 +60,20 @@ function normalize(value: unknown): unknown {
   return value
 }
 
+function arrayValue(value: unknown, op: Operator): unknown[] {
+  if (!Array.isArray(value)) {
+    throw new ValidationError(`Operator '${op}' requires an array value`)
+  }
+  return value
+}
+
+function betweenValue(value: unknown): [unknown, unknown] {
+  if (!Array.isArray(value) || value.length !== 2) {
+    throw new ValidationError(`Operator 'between' requires a two-item array value`)
+  }
+  return [value[0], value[1]]
+}
+
 function compileCondition(c: Condition): SQL {
   validateField(c.field)
   const f = fieldSql(c.field)
@@ -77,16 +91,16 @@ function compileCondition(c: Condition): SQL {
     case 'isNull': return sql`${f} IS NULL`
     case 'notNull': return sql`${f} IS NOT NULL`
     case 'between': {
-      const [lo, hi] = v as [unknown, unknown]
+      const [lo, hi] = betweenValue(v)
       return sql`${f} BETWEEN ${normalize(lo)} AND ${normalize(hi)}`
     }
     case 'in': {
-      const arr = (v as unknown[]) ?? []
+      const arr = arrayValue(v, c.op)
       if (arr.length === 0) return sql`1 = 0`
       return sql`${f} IN (${sql.join(arr.map((x) => sql`${normalize(x)}`), sql`, `)})`
     }
     case 'notIn': {
-      const arr = (v as unknown[]) ?? []
+      const arr = arrayValue(v, c.op)
       if (arr.length === 0) return sql`1 = 1`
       return sql`${f} NOT IN (${sql.join(arr.map((x) => sql`${normalize(x)}`), sql`, `)})`
     }
@@ -95,6 +109,15 @@ function compileCondition(c: Condition): SQL {
       return sql`EXISTS (SELECT 1 FROM json_each(${entryLocales.content}, ${jsonPath(c.field)}) WHERE value = ${normalize(v)})`
     }
     default: throw new ValidationError(`Unknown operator: ${(c as Condition).op}`)
+  }
+}
+
+function validateWindow(spec: EntryQuerySpec): void {
+  if (spec.limit !== undefined && (!Number.isInteger(spec.limit) || spec.limit < 0)) {
+    throw new ValidationError('Query limit must be a non-negative integer')
+  }
+  if (spec.offset !== undefined && (!Number.isInteger(spec.offset) || spec.offset < 0)) {
+    throw new ValidationError('Query offset must be a non-negative integer')
   }
 }
 
@@ -141,6 +164,7 @@ function buildOrder(spec: EntryQuerySpec): SQL[] {
 }
 
 export async function runEntryQuery(db: VulseDb, spec: EntryQuerySpec): Promise<EntryRow[]> {
+  validateWindow(spec)
   const base = db.select({ shell: entries, loc: entryLocales })
     .from(entries)
     .innerJoin(entryLocales, eq(entryLocales.entryId, entries.id))
@@ -153,6 +177,7 @@ export async function runEntryQuery(db: VulseDb, spec: EntryQuerySpec): Promise<
 }
 
 export async function countEntryQuery(db: VulseDb, spec: EntryQuerySpec): Promise<number> {
+  validateWindow(spec)
   const [row] = await db.select({ n: sql<number>`count(*)` })
     .from(entries)
     .innerJoin(entryLocales, eq(entryLocales.entryId, entries.id))

@@ -31,6 +31,7 @@ export function injectVulseRoutes({ injectRoute, logger }: InjectArgs) {
     { pattern: '/api/vulse/media', file: 'api-vulse-media.js' },
     { pattern: '/api/vulse/media/[id]', file: 'api-vulse-media-id.js' },
     { pattern: '/api/vulse/media/[id]/file', file: 'api-vulse-media-file.js' },
+    { pattern: '/api/vulse/public/media/[id]/file', file: 'api-vulse-media-public-file.js' },
     { pattern: '/api/vulse/search', file: 'api-vulse-search.js' },
     { pattern: '/api/vulse/preview/start', file: 'api-vulse-preview-start.js' },
     { pattern: '/api/vulse/preview/stop', file: 'api-vulse-preview-stop.js' },
@@ -50,6 +51,8 @@ export function injectVulseRoutes({ injectRoute, logger }: InjectArgs) {
     { pattern: '/api/vulse/globals/[handle]/value', file: 'api-vulse-globals-value.js' },
     { pattern: '/api/vulse/public/globals', file: 'api-vulse-globals-public.js' },
     { pattern: '/api/vulse/public/globals/[handle]', file: 'api-vulse-globals-public-handle.js' },
+    { pattern: '/api/vulse/redirects', file: 'api-vulse-redirects.js' },
+    { pattern: '/api/vulse/redirects/[id]', file: 'api-vulse-redirects-id.js' },
     { pattern: '/api/auth/[...all]', file: 'api-auth.js' },
   ]
   for (const r of routes) {

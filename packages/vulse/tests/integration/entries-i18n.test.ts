@@ -53,6 +53,41 @@ describe('EntriesRepo i18n', () => {
     expect(locales.map((l) => l.locale).sort()).toEqual(['en', 'fr'])
   })
 
+  it('uses publish, not status alone, when creating a drafts-enabled locale', async () => {
+    const repo = new EntriesRepo(createDb(env.DB))
+    const draftBase = await repo.create({
+      collection: 'post', locale: 'en', slug: 'draft-base',
+      content: { title: 'EN' }, createdBy: 'u1',
+    })
+    const draftFr = await repo.createLocale(draftBase.id, {
+      locale: 'fr',
+      slug: 'draft-fr',
+      content: { title: 'FR draft' },
+      updatedBy: 'u1',
+      status: 'published',
+      draftsEnabled: true,
+    })
+    expect(draftFr.status).toBe('draft')
+    expect(draftFr.content).toEqual({})
+    expect(draftFr.draftContent).toEqual({ title: 'FR draft' })
+
+    const publishedBase = await repo.create({
+      collection: 'post', locale: 'en', slug: 'published-base',
+      content: { title: 'EN' }, createdBy: 'u1',
+    })
+    const publishedFr = await repo.createLocale(publishedBase.id, {
+      locale: 'fr',
+      slug: 'published-fr',
+      content: { title: 'FR published' },
+      updatedBy: 'u1',
+      publish: true,
+      draftsEnabled: true,
+    })
+    expect(publishedFr.status).toBe('published')
+    expect(publishedFr.content).toEqual({ title: 'FR published' })
+    expect(publishedFr.draftContent).toBeNull()
+  })
+
   it('list returns only rows for the requested locale', async () => {
     const repo = new EntriesRepo(createDb(env.DB))
     const a = await repo.create({ collection: 'post', locale: 'en', slug: 'a', content: { title: 'A' }, createdBy: 'u1' })

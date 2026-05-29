@@ -34,6 +34,21 @@ GET  /api/auth/get-session
 
 The set-cookie response from `sign-in` is what authenticates subsequent admin requests. Use `vulse/client/auth` from the browser for a CSRF-safe wrapper.
 
+### Two-factor authentication
+
+2FA is optional and opt-in per user. When a user has enrolled, `POST /api/auth/sign-in/email` returns `{ twoFactorRedirect: true, twoFactorMethods: ['totp'] }` instead of issuing a session; the response also sets a short-lived `vulse_two-factor` cookie that carries the verification identifier. The client must then complete the flow by calling `verify-totp` (or `verify-backup-code`) with that cookie attached.
+
+```txt
+POST /api/auth/two-factor/enable                  body: { password, issuer? }   →  { totpURI, backupCodes[] }
+POST /api/auth/two-factor/verify-totp             body: { code, trustDevice? }  →  session
+POST /api/auth/two-factor/verify-backup-code      body: { code }                →  session (consumes one code)
+POST /api/auth/two-factor/disable                 body: { password }
+POST /api/auth/two-factor/generate-backup-codes   body: { password }            →  { backupCodes[] }
+POST /api/auth/two-factor/get-totp-uri            body: { password }            →  { totpURI }
+```
+
+`enable` only stores the secret; `user.twoFactorEnabled` does not flip to `true` until the user calls `verify-totp` with a valid code, so a half-finished enrollment is not enforced at the next sign-in. `disable` requires the current password and removes the requirement on subsequent sign-ins.
+
 ## Entries
 
 ```txt
@@ -138,7 +153,8 @@ Body:
 ```txt
 GET    /api/vulse/media                  list (admin)
 GET    /api/vulse/media/:id              one record
-GET    /api/vulse/media/:id/file         the file (public; signed URL not required for R2 proxy)
+GET    /api/vulse/media/:id/file         the file (admin/editor only — used by the admin UI)
+GET    /api/vulse/public/media/:id/file  the file (public, cacheable — use on your frontend)
 POST   /api/vulse/media                  upload (multipart, admin)
 PATCH  /api/vulse/media/:id              update alt text
 DELETE /api/vulse/media/:id              soft-delete (purged by cron after 7 days)
@@ -267,6 +283,34 @@ PUT /api/vulse/settings/:key         set one setting (admin)
 `PUT` body: `{ "value": <any JSON> }`.
 
 Auth-related keys (`allowMemberSignUp`, `allowedSignUpDomains`) invalidate the runtime cache on the next request.
+
+## Redirects
+
+```txt
+GET    /api/vulse/redirects              list all redirects (admin)
+POST   /api/vulse/redirects              create a redirect (admin)
+GET    /api/vulse/redirects/:id          get one redirect (admin)
+PATCH  /api/vulse/redirects/:id          update a redirect (admin)
+DELETE /api/vulse/redirects/:id          delete a redirect (admin)
+```
+
+`POST` / `PATCH` body:
+
+```json
+{
+  "fromPath": "/old-page",
+  "toUrl": "/new-page",
+  "status": 301,
+  "enabled": true
+}
+```
+
+- `fromPath` must start with `/`. Stored normalized (lower-cased, trailing slash trimmed) so middleware lookups are case-insensitive and trailing-slash tolerant.
+- `toUrl` is either site-relative (`/foo`) or an absolute URL (`https://…` or `http://…`).
+- `status` is one of `301`, `302`, `307`, `308` (default `301`).
+- `enabled` defaults to `true`. Disabled rules are skipped by the request middleware.
+
+The middleware evaluates redirects before any page render and skips `/admin/*`, `/api/*`, and asset paths (anything with a file extension). The original query string is preserved unless the target already has one. Each match increments a hit counter and updates `lastHitAt` for the rule.
 
 ## CORS
 

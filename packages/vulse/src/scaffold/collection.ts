@@ -140,7 +140,7 @@ export function generateShowPage(input: CollectionScaffoldInput): string {
     ? `import BlockRenderer from '${VULSE_PACKAGE}/client/BlockRenderer.astro'\n`
     : ''
   const blockRender = hasBlocks || (input.fields ?? []).length === 0
-    ? `\n  <BlockRenderer blocks={content.body ?? []} mediaUrl={(id) => \`/api/vulse/media/\${id}/file\`} />`
+    ? `\n  <BlockRenderer blocks={content.body ?? []} mediaUrl={(id) => \`/api/vulse/public/media/\${id}/file\`} />`
     : ''
 
   return `---
