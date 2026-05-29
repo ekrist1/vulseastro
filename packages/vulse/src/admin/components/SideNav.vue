@@ -227,10 +227,6 @@ async function signOut() {
             <span>Status</span>
           </span>
         </a>
-        <a href="/admin/settings" :class="subNavClass('/admin/settings', true)">Site</a>
-        <a href="/admin/settings/auth" :class="subNavClass('/admin/settings/auth', true)">Auth</a>
-        <a href="/admin/settings/redirects" :class="subNavClass('/admin/settings/redirects', true)">Redirects</a>
-        <a href="/admin/settings/status" :class="subNavClass('/admin/settings/status', true)">Status</a>
       </template>
     </nav>
   </aside>
