@@ -153,7 +153,8 @@ Body:
 ```txt
 GET    /api/vulse/media                  list (admin)
 GET    /api/vulse/media/:id              one record
-GET    /api/vulse/media/:id/file         the file (public; signed URL not required for R2 proxy)
+GET    /api/vulse/media/:id/file         the file (admin/editor only — used by the admin UI)
+GET    /api/vulse/public/media/:id/file  the file (public, cacheable — use on your frontend)
 POST   /api/vulse/media                  upload (multipart, admin)
 PATCH  /api/vulse/media/:id              update alt text
 DELETE /api/vulse/media/:id              soft-delete (purged by cron after 7 days)

@@ -70,6 +70,7 @@ export async function getRuntime(env: RuntimeEnv, registry: RegistryProvider, ba
   const cfImages = {
     ...(env.CF_IMAGES_ACCOUNT_HASH ? { accountHash: env.CF_IMAGES_ACCOUNT_HASH } : {}),
     ...(env.CF_IMAGES_TOKEN ? { token: env.CF_IMAGES_TOKEN } : {}),
+    ...(env.VULSE_IMAGE_TRANSFORM === 'true' ? { transform: true } : {}),
   }
   cached = {
     db, auth, registry: resolvedRegistry,

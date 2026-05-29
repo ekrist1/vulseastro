@@ -6,7 +6,7 @@ import { MediaRepo, type MediaRow } from '../../core/repos/media.js'
 import { defineHandler } from '../handler.js'
 import { putToR2, deleteFromR2 } from '../r2.js'
 import { probeDimensions } from '../image-probe.js'
-import { buildDeliveryUrl, type CfImagesConfig } from '../cf-images.js'
+import { buildDeliveryUrl, publicMediaPath, type CfImagesConfig } from '../cf-images.js'
 import { AccessDeniedError, NotFoundError, ValidationError } from '../../core/errors.js'
 import { fail, ok } from '../envelope.js'
 
@@ -40,7 +40,8 @@ export function mediaRoutes(db: VulseDb, auth: Auth, mediaEnv: MediaEnv) {
     return {
       ...row,
       deliveryUrl,
-      previewUrl: deliveryUrl ?? `/api/vulse/media/${row.id}/file`,
+      // Public, cacheable route — works for both the admin UI and anonymous visitors.
+      previewUrl: deliveryUrl ?? publicMediaPath(row.id),
     }
   }
 
@@ -127,6 +128,28 @@ export function mediaRoutes(db: VulseDb, auth: Auth, mediaEnv: MediaEnv) {
         const headers = new Headers()
         if (obj.httpMetadata?.contentType) headers.set('content-type', obj.httpMetadata.contentType)
         headers.set('cache-control', 'private, max-age=3600')
+        return new Response(obj.body, { headers })
+      } catch (err) {
+        return fail(err)
+      }
+    },
+
+    // Public, unauthenticated media delivery for the frontend. Media bytes are
+    // immutable per id (the r2Key never changes), so this is safe to cache hard
+    // at the edge — which is also what lets Cloudflare Image Transformations
+    // (`/cdn-cgi/image/…`) sit in front of it for compressed, resized delivery.
+    publicFile: async (_request: Request, rawParams: Record<string, string>): Promise<Response> => {
+      try {
+        const id = rawParams.id
+        if (!id) throw new ValidationError('id required')
+        const row = await repo.findById(id)
+        if (!row || row.deletedAt) throw new NotFoundError(`Media ${id} not found`)
+        const obj = await mediaEnv.bucket.get(row.r2Key)
+        if (!obj) throw new NotFoundError(`Media file ${id} not found`)
+        const headers = new Headers()
+        if (obj.httpMetadata?.contentType) headers.set('content-type', obj.httpMetadata.contentType)
+        headers.set('cache-control', 'public, max-age=31536000, immutable')
+        if (obj.httpEtag) headers.set('etag', obj.httpEtag)
         return new Response(obj.body, { headers })
       } catch (err) {
         return fail(err)
