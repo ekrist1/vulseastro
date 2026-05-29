@@ -4,6 +4,7 @@ import { resolveCliPlatform } from './platform.js'
 export interface SchemaExportOptions {
   remote?: boolean
   docsDir?: string
+  config?: string
 }
 
 export async function runSchemaExport(opts: SchemaExportOptions = {}): Promise<void> {
@@ -12,7 +13,10 @@ export async function runSchemaExport(opts: SchemaExportOptions = {}): Promise<v
   let dispose: (() => Promise<void>) | undefined
 
   try {
-    const platform = await resolveCliPlatform(opts.remote ? { remote: true } : {})
+    const platform = await resolveCliPlatform({
+      ...(opts.remote ? { remote: true } : {}),
+      ...(opts.config !== undefined ? { config: opts.config } : {}),
+    })
     db = platform.db
     dispose = platform.dispose
   } catch {

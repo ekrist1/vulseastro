@@ -33,8 +33,9 @@ export function markD1BindingRemote(content: string, isToml: boolean): string {
 }
 
 /** Resolves the D1 binding via wrangler (local miniflare or remote). */
-export async function resolveCliPlatform(opts: { remote?: boolean } = {}): Promise<CliPlatform> {
-  const configPath = await resolveWranglerConfigPath()
+export async function resolveCliPlatform(opts: { remote?: boolean; config?: string } = {}): Promise<CliPlatform> {
+  const configFile = opts.config ?? process.env.WRANGLER_CONFIG
+  const configPath = await resolveWranglerConfigPath(process.cwd(), configFile)
   const { getPlatformProxy } = await import('wrangler')
 
   // For --remote, point the proxy at a temp config with the DB binding flagged remote
