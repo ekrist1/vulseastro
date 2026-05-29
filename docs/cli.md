@@ -52,7 +52,8 @@ Apply bundled migrations to D1.
 
 ```bash
 npx vulse migrate              # local miniflare D1
-npx vulse migrate --remote     # production D1
+npx vulse migrate --remote     # remote D1 of the default wrangler config
+npx vulse migrate --remote -c wrangler.production.toml   # production D1
 ```
 
 The command:
@@ -63,7 +64,17 @@ The command:
 
 Already-applied IDs are skipped, so re-running is safe.
 
-See [`upgrading.md#migrations`](upgrading.md#migrations) for more context.
+| Flag | Purpose |
+|------|---------|
+| `--remote` | Run against the remote D1 instead of local Miniflare. Requires `wrangler login`. |
+| `-c, --config <path>` | Wrangler config to target, e.g. `wrangler.production.toml`. Falls back to the `WRANGLER_CONFIG` environment variable, then to the auto-detected `wrangler.toml`. |
+
+> **`--remote` alone targets your default config's database.** If you keep a separate
+> `wrangler.production.toml`, pass `-c wrangler.production.toml` (or set `WRANGLER_CONFIG`) so
+> migrations apply to the production `database_id` — otherwise `--remote` resolves the
+> `database_id` in your dev `wrangler.toml`.
+
+See [`upgrading.md#migrations`](upgrading.md#migrations) and [`deployment.md`](deployment.md) for more context.
 
 ## `vulse seed:admin`
 
@@ -71,7 +82,7 @@ Create or promote a user to the `admin` role. Useful for bootstrapping the first
 
 ```bash
 npx vulse seed:admin --email you@example.com
-npx vulse seed:admin --email you@example.com --remote
+npx vulse seed:admin --email you@example.com --remote -c wrangler.production.toml
 npx vulse seed:admin --email you@example.com --password 'your-secure-password'
 ```
 
@@ -80,15 +91,17 @@ npx vulse seed:admin --email you@example.com --password 'your-secure-password'
 | `--email <addr>` | Required. The user's email. |
 | `--password <pw>` | Optional. If omitted, a random password is generated and printed once. |
 | `--remote` | Target the live **production** D1 over the network instead of the local Miniflare DB. Requires that you're logged in (`wrangler login`). |
+| `-c, --config <path>` | Wrangler config to target, e.g. `wrangler.production.toml`. Falls back to `WRANGLER_CONFIG`, then the auto-detected `wrangler.toml`. Pair with `--remote` so the production `database_id` is used. |
 
 The command creates the user via Better Auth (proper password hashing) and sets `role = 'admin'`. If a user with that email already exists it fails with a conflict error — delete the existing row or use a different email rather than re-running.
 
-> **Seed production with `--remote`.** Your deployed Worker uses a *separate* D1 from
+> **Seed production with `--remote` (and `-c`).** Your deployed Worker uses a *separate* D1 from
 > local dev. If you seed an admin without `--remote`, the user lands in your local
 > Miniflare DB and production login fails with "Invalid email or password" — the
 > production database has no such user. Always pass `--remote` when bootstrapping the
-> live site. (Password hashes are portable across local and remote, and do **not**
-> depend on `BETTER_AUTH_SECRET`.)
+> live site, plus `-c wrangler.production.toml` (or `WRANGLER_CONFIG`) so `--remote`
+> resolves the production database rather than your dev config's. (Password hashes are
+> portable across local and remote, and do **not** depend on `BETTER_AUTH_SECRET`.)
 
 ## `vulse collection:scaffold`
 
@@ -140,7 +153,7 @@ Generate committed AI-friendly schema docs from your Vulse content model.
 
 ```bash
 npx vulse schema:export
-npx vulse schema:export --remote
+npx vulse schema:export --remote -c wrangler.production.toml
 ```
 
 | Output | Purpose |
@@ -152,6 +165,7 @@ npx vulse schema:export --remote
 | Flag | Purpose |
 |------|---------|
 | `--remote` | Read collections, sets, and globals from production D1 instead of local miniflare. |
+| `-c, --config <path>` | Wrangler config to target, e.g. `wrangler.production.toml`. Falls back to `WRANGLER_CONFIG`, then the auto-detected `wrangler.toml`. Pair with `--remote` to read the production database. |
 | `--out-dir <dir>` | Directory for `vulse-schema.md` and `vulse-schema.json` (default: `docs`). `AGENTS.md` always writes to the project root. |
 
 When D1 is unavailable, the command falls back to code blueprints in `src/vulse/collections/` and omits sets/globals (with a warning in the output).

@@ -192,8 +192,10 @@ Cloudflare Pages and Workers need bindings declared at the platform level, not j
 The runtime applies migrations on the first request after a deploy. If you want to apply them ahead of time:
 
 ```bash
-npx vulse migrate --remote
+npx vulse migrate --remote -c wrangler.production.toml
 ```
+
+(Pass `-c wrangler.production.toml`, or set `WRANGLER_CONFIG`, so `--remote` targets your production `database_id` rather than the dev `wrangler.toml`.)
 
 Check the ledger to see what's applied:
 

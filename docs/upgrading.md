@@ -6,8 +6,8 @@ How to pull a new Vulse version into your Astro project and apply any new migrat
 
 ```bash
 pnpm update vulse
-npx vulse migrate            # local D1
-npx vulse migrate --remote   # production D1
+npx vulse migrate                                        # local D1
+npx vulse migrate --remote -c wrangler.production.toml   # production D1
 ```
 
 After the install you should:
@@ -35,11 +35,12 @@ The runtime applies them automatically the first time the worker boots after a d
 ### Targeting
 
 ```bash
-npx vulse migrate            # local miniflare D1
-npx vulse migrate --remote   # production D1 in your Cloudflare account
+npx vulse migrate                                        # local miniflare D1
+npx vulse migrate --remote                               # remote D1 of the default config
+npx vulse migrate --remote -c wrangler.production.toml   # production D1 in your Cloudflare account
 ```
 
-Both forms read `wrangler.toml` to find the right binding.
+Without `-c` (or `WRANGLER_CONFIG`), the command reads the auto-detected `wrangler.toml` to find the binding — so `--remote` targets *its* `database_id`. If you keep a separate `wrangler.production.toml`, pass `-c wrangler.production.toml` so migrations apply to production. See [`deployment.md`](deployment.md).
 
 ### Listing what's bundled
 
