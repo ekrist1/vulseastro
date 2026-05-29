@@ -85,12 +85,14 @@ export function mediaRoutes(db: VulseDb, auth: Auth, mediaEnv: MediaEnv) {
         }
         const dims = probeDimensions(buf, file.type)
         const { key } = await putToR2({ bucket: mediaEnv.bucket }, buf, file.type)
+        const defaultAlt = file.name ? file.name.replace(/\.[^.]+$/, '').replace(/[-_]/g, ' ') : null
         const row = await repo.create({
           r2Key: key,
           mime: file.type,
           size: file.size,
           ...(dims?.width !== undefined ? { width: dims.width } : {}),
           ...(dims?.height !== undefined ? { height: dims.height } : {}),
+          alt: defaultAlt,
           uploadedBy: authCtx.user!.id,
         })
         return ok(withUrls(row))
