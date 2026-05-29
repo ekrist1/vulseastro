@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { adminApi } from '../client/api.js'
 
 interface MediaItem {
@@ -16,6 +16,15 @@ interface MediaItem {
 const items = ref<MediaItem[]>([])
 const uploading = ref(false)
 const error = ref<string | null>(null)
+const query = ref('')
+
+const filtered = computed(() => {
+  const q = query.value.trim().toLowerCase()
+  if (!q) return items.value
+  return items.value.filter(m =>
+    (m.alt ?? '').toLowerCase().includes(q)
+  )
+})
 
 function previewSrc(item: MediaItem): string {
   return item.deliveryUrl ?? item.previewUrl
@@ -58,6 +67,8 @@ async function softDelete(id: string) {
 
 async function setAlt(id: string, alt: string) {
   await adminApi.patch(`/api/vulse/media/${id}`, { alt })
+  const item = items.value.find(m => m.id === id)
+  if (item) item.alt = alt
 }
 
 onMounted(load)
@@ -65,7 +76,7 @@ onMounted(load)
 
 <template>
   <div>
-    <div class="mb-4 flex items-center gap-3">
+    <div class="mb-4 flex flex-wrap items-center gap-3">
       <label class="vulse-button-primary cursor-pointer rounded px-4 py-2 text-sm font-medium">
         Upload
         <input
@@ -76,6 +87,12 @@ onMounted(load)
           @change="onFiles(($event.target as HTMLInputElement).files)"
         />
       </label>
+      <input
+        v-model="query"
+        type="search"
+        placeholder="Search assets…"
+        class="vulse-input w-56 text-sm"
+      />
       <span v-if="uploading" class="text-sm text-zinc-500">Uploading…</span>
     </div>
 
@@ -88,8 +105,12 @@ onMounted(load)
       No assets yet. Upload images to get started.
     </div>
 
+    <p v-else-if="filtered.length === 0" class="text-sm text-zinc-500">
+      No assets match "{{ query }}".
+    </p>
+
     <div v-else class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-      <div v-for="m in items" :key="m.id" class="space-y-2 rounded border border-zinc-200 bg-white p-2">
+      <div v-for="m in filtered" :key="m.id" class="space-y-2 rounded border border-zinc-200 bg-white p-2">
         <img :src="previewSrc(m)" :alt="m.alt ?? ''" class="aspect-square w-full rounded object-cover" />
         <input
           :value="m.alt ?? ''"
