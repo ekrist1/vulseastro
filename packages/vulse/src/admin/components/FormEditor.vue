@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { adminApi, AdminApiError } from '../client/api.js'
+import { useToast } from '../composables/toast.js'
+
+const toast = useToast()
 import type { FormDefinition, FormFieldDefinition } from '../../core/forms/definition.js'
 
 interface FormRow {
@@ -128,6 +131,7 @@ async function save() {
       window.location.href = `/admin/forms/${handle.value}`
     } else {
       await adminApi.put(`/api/vulse/forms/${props.handle}`, body)
+      toast.success('Form saved.')
     }
   } catch (e) {
     error.value = formatApiError(e)

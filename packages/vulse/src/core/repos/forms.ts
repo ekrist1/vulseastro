@@ -190,13 +190,19 @@ export class SubmissionsRepo {
     await this.db.delete(vulseFormSubmissions).where(eq(vulseFormSubmissions.id, id))
   }
 
-  async deleteMany(ids: string[]): Promise<number> {
+  async deleteMany(ids: string[], formHandle?: string): Promise<number> {
     if (ids.length === 0) return 0
-    for (const id of ids) {
-      await this.db.delete(vulseFormUniqueValues).where(eq(vulseFormUniqueValues.submissionId, id))
-    }
+    const uniqueIds = [...new Set(ids)]
     let deleted = 0
-    for (const id of ids) {
+    for (const id of uniqueIds) {
+      const conditions = [eq(vulseFormSubmissions.id, id)]
+      if (formHandle !== undefined) conditions.push(eq(vulseFormSubmissions.formHandle, formHandle))
+      const row = await this.db.select({ id: vulseFormSubmissions.id })
+        .from(vulseFormSubmissions)
+        .where(and(...conditions))
+        .get()
+      if (!row) continue
+      await this.db.delete(vulseFormUniqueValues).where(eq(vulseFormUniqueValues.submissionId, id))
       await this.db.delete(vulseFormSubmissions).where(eq(vulseFormSubmissions.id, id))
       deleted++
     }

@@ -37,7 +37,13 @@ export default function vulse(opts: VulseOptions = {}): AstroIntegration {
     name: 'vulse',
     hooks: {
       'astro:config:setup': async (params) => {
-        const { default: createVulseIntegration } = await import('./integration/index.js')
+        // Opaque specifier (+ @vite-ignore) so the bundler never follows this into the
+        // integration module. The integration pulls build-only/native deps (tailwind
+        // oxide, tsx, babel); if rollup bundled it into a runtime/prerender/client
+        // environment it would choke on those. The integration only ever runs at
+        // config-eval time (Node), where this resolves from disk relative to dist/.
+        const entry = './integration/index.js'
+        const { default: createVulseIntegration } = await import(/* @vite-ignore */ entry)
         const integration = createVulseIntegration(opts)
         await integration.hooks?.['astro:config:setup']?.(params)
       },

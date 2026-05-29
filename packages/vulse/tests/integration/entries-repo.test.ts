@@ -54,4 +54,31 @@ describe('EntriesRepo', () => {
     expect(found.map((e) => e.slug).sort()).toEqual(['a', 'b'])
     expect(await repo.findManyByIds([])).toEqual([])
   })
+
+  it('keeps tree parents inside the same collection', async () => {
+    const repo = new EntriesRepo(createDb(env.DB))
+    const post = await repo.create({ collection: 'post', slug: 'post-parent', content: {}, createdBy: 'u1' })
+    const page = await repo.create({ collection: 'page', slug: 'page-parent', content: {}, createdBy: 'u1' })
+    const child = await repo.create({ collection: 'page', slug: 'child', content: {}, createdBy: 'u1', parentId: page.id })
+
+    await expect(repo.create({
+      collection: 'page',
+      slug: 'bad-child',
+      content: {},
+      createdBy: 'u1',
+      parentId: post.id,
+    })).rejects.toThrow(/same collection/)
+    await expect(repo.move('page', child.id, { parentId: post.id })).rejects.toThrow(/same collection/)
+    await expect(repo.move('page', child.id, { parentId: 'missing' })).rejects.toThrow(/Parent entry not found/)
+  })
+
+  it('honors explicit sortOrder direction', async () => {
+    const repo = new EntriesRepo(createDb(env.DB))
+    await repo.create({ collection: 'post', slug: 'a', content: {}, createdBy: 'u1' })
+    await repo.create({ collection: 'post', slug: 'b', content: {}, createdBy: 'u1' })
+    await repo.create({ collection: 'post', slug: 'c', content: {}, createdBy: 'u1' })
+
+    const desc = await repo.list({ collection: 'post', orderBy: 'sortOrder', order: 'desc' })
+    expect(desc.map((e) => e.slug)).toEqual(['c', 'b', 'a'])
+  })
 })

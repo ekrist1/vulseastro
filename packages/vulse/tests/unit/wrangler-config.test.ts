@@ -1,8 +1,8 @@
 import { describe, it, expect } from 'vitest'
-import { mkdtemp, writeFile } from 'node:fs/promises'
+import { mkdtemp, readFile, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
-import { patchWranglerJsonc, patchWranglerConfig, resolveWranglerConfigPath } from '../../src/integration/wrangler-config'
+import { patchWranglerJsonc, patchWranglerConfig, resolveWranglerConfigPath, ensureWranglerConfig, wranglerConfigFormat } from '../../src/integration/wrangler-config'
 
 /** Parse the way wrangler does: tolerate line comments and trailing commas. */
 function parseJsonc(input: string): unknown {
@@ -109,5 +109,57 @@ describe('resolveWranglerConfigPath', () => {
     const dir = await mkdtemp(join(tmpdir(), 'vulse-wrangler-'))
 
     await expect(resolveWranglerConfigPath(dir)).rejects.toThrow(/No wrangler config found/)
+  })
+
+  it('resolves an explicit config file relative to cwd', async () => {
+    const dir = await mkdtemp(join(tmpdir(), 'vulse-wrangler-'))
+    await writeFile(join(dir, 'wrangler.toml'), 'name = "dev"\n', 'utf8')
+    await writeFile(join(dir, 'wrangler.production.toml'), 'name = "prod"\n', 'utf8')
+
+    await expect(resolveWranglerConfigPath(dir, 'wrangler.production.toml'))
+      .resolves.toBe(join(dir, 'wrangler.production.toml'))
+  })
+
+  it('throws when the explicit config file is missing', async () => {
+    const dir = await mkdtemp(join(tmpdir(), 'vulse-wrangler-'))
+
+    await expect(resolveWranglerConfigPath(dir, 'wrangler.production.toml'))
+      .rejects.toThrow(/Wrangler config not found: wrangler\.production\.toml/)
+  })
+})
+
+describe('wranglerConfigFormat', () => {
+  it('selects the TOML patcher for .toml files regardless of stem', () => {
+    expect(wranglerConfigFormat('wrangler.production.toml')).toBe('wrangler.toml')
+  })
+
+  it('selects the JSONC patcher for .json / .jsonc files', () => {
+    expect(wranglerConfigFormat('wrangler.staging.json')).toBe('wrangler.json')
+    expect(wranglerConfigFormat('wrangler.staging.jsonc')).toBe('wrangler.jsonc')
+  })
+})
+
+describe('ensureWranglerConfig', () => {
+  it('patches the explicitly named config, not the default wrangler.toml', async () => {
+    const dir = await mkdtemp(join(tmpdir(), 'vulse-wrangler-'))
+    await writeFile(join(dir, 'wrangler.toml'), 'name = "dev"\n', 'utf8')
+    await writeFile(join(dir, 'wrangler.production.toml'), 'name = "prod"\n', 'utf8')
+
+    const result = await ensureWranglerConfig(dir, undefined, 'wrangler.production.toml')
+    expect(result).toBe('wrangler.production.toml')
+
+    const prod = await readFile(join(dir, 'wrangler.production.toml'), 'utf8')
+    expect(prod).toContain('nodejs_compat')
+    // The dev config must be left untouched.
+    const dev = await readFile(join(dir, 'wrangler.toml'), 'utf8')
+    expect(dev).toBe('name = "dev"\n')
+  })
+
+  it('throws when the explicitly named config is missing', async () => {
+    const dir = await mkdtemp(join(tmpdir(), 'vulse-wrangler-'))
+    await writeFile(join(dir, 'wrangler.toml'), 'name = "dev"\n', 'utf8')
+
+    await expect(ensureWranglerConfig(dir, undefined, 'wrangler.production.toml'))
+      .rejects.toThrow(/Wrangler config not found/)
   })
 })

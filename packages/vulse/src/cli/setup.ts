@@ -278,7 +278,13 @@ export async function runSetup(opts: SetupOptions = {}): Promise<void> {
       }
     }
 
-    stdout.write(`\nDone. Start your dev server and open /admin/login.\n\n`)
+    stdout.write(`\nDone. Start your dev server and open /admin/login.\n`)
+    stdout.write(`\nReady to deploy? The database above is for development.\n`)
+    stdout.write(`Create wrangler.production.toml with a production D1, then target it\n`)
+    stdout.write(`with WRANGLER_CONFIG (no file swapping needed):\n`)
+    stdout.write(`  npx vulse migrate --remote -c wrangler.production.toml\n`)
+    stdout.write(`  WRANGLER_CONFIG=wrangler.production.toml pnpm build\n`)
+    stdout.write(`  wrangler deploy -c dist/server/wrangler.json\n\n`)
   } finally {
     prompter.close()
   }

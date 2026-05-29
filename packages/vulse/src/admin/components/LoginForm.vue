@@ -10,6 +10,12 @@ const passwordError = ref<string | null>(null)
 const loading = ref(false)
 const forgotPasswordHref = computed(() => `/forgot-password?next=${encodeURIComponent(safeNext(props.next))}`)
 
+// Step: 'credentials' (email + password) → 'twoFactor' (TOTP / backup code).
+const step = ref<'credentials' | 'twoFactor'>('credentials')
+const totpCode = ref('')
+const totpError = ref<string | null>(null)
+const useBackupCode = ref(false)
+
 function safeNext(raw: string): string {
   // Only allow same-origin path redirects; reject protocol-relative ("//evil")
   // and absolute URLs.
@@ -21,6 +27,7 @@ function clearErrors() {
   error.value = null
   emailError.value = null
   passwordError.value = null
+  totpError.value = null
 }
 
 function validate() {
@@ -55,9 +62,14 @@ async function submit() {
       credentials: 'same-origin',
       body: JSON.stringify({ email: email.value.trim(), password: password.value }),
     })
-    const body = await res.json().catch(() => null)
+    const body = await res.json().catch(() => null) as { twoFactorRedirect?: boolean } | null
     if (!res.ok) {
       error.value = authErrorMessage(res.status, body)
+      return
+    }
+    if (body?.twoFactorRedirect) {
+      step.value = 'twoFactor'
+      totpCode.value = ''
       return
     }
     window.location.href = safeNext(props.next)
@@ -67,10 +79,62 @@ async function submit() {
     loading.value = false
   }
 }
+
+async function submitTotp() {
+  totpError.value = null
+  const code = totpCode.value.trim().replace(/\s+/g, '')
+  if (!code) {
+    totpError.value = useBackupCode.value
+      ? 'Enter one of your backup codes.'
+      : 'Enter the 6-digit code from your authenticator app.'
+    return
+  }
+  loading.value = true
+  try {
+    const endpoint = useBackupCode.value
+      ? '/api/auth/two-factor/verify-backup-code'
+      : '/api/auth/two-factor/verify-totp'
+    const res = await fetch(endpoint, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      credentials: 'same-origin',
+      body: JSON.stringify({ code }),
+    })
+    if (!res.ok) {
+      totpError.value = useBackupCode.value
+        ? 'That backup code is not valid. Each code works only once.'
+        : 'That code is not valid. Try again.'
+      return
+    }
+    window.location.href = safeNext(props.next)
+  } catch {
+    totpError.value = 'Could not reach the verification service. Please try again.'
+  } finally {
+    loading.value = false
+  }
+}
+
+function toggleBackupCode() {
+  useBackupCode.value = !useBackupCode.value
+  totpCode.value = ''
+  totpError.value = null
+}
+
+function cancelTwoFactor() {
+  step.value = 'credentials'
+  totpCode.value = ''
+  totpError.value = null
+  useBackupCode.value = false
+}
 </script>
 
 <template>
-  <form novalidate class="w-80 space-y-4 rounded-xl border bg-white p-6 shadow-sm" @submit.prevent="submit">
+  <form
+    v-if="step === 'credentials'"
+    novalidate
+    class="w-80 space-y-4 rounded-xl border bg-white p-6 shadow-sm"
+    @submit.prevent="submit"
+  >
     <h1 class="text-2xl font-semibold">Sign in</h1>
     <label class="block">
       <span class="text-sm text-zinc-600">Email</span>
@@ -117,5 +181,49 @@ async function submit() {
     <p class="text-center text-sm text-zinc-500">
       <a :href="forgotPasswordHref" class="text-zinc-600 underline hover:text-zinc-900">Forgot password?</a>
     </p>
+  </form>
+
+  <form
+    v-else
+    novalidate
+    class="w-80 space-y-4 rounded-xl border bg-white p-6 shadow-sm"
+    @submit.prevent="submitTotp"
+  >
+    <h1 class="text-2xl font-semibold">Two-factor code</h1>
+    <p class="text-sm text-zinc-600">
+      {{ useBackupCode
+        ? 'Enter one of the backup codes you saved when you enabled 2FA.'
+        : 'Enter the 6-digit code from your authenticator app to finish signing in.' }}
+    </p>
+    <label class="block">
+      <span class="text-sm text-zinc-600">{{ useBackupCode ? 'Backup code' : 'Authenticator code' }}</span>
+      <input
+        v-model="totpCode"
+        :inputmode="useBackupCode ? 'text' : 'numeric'"
+        :autocomplete="useBackupCode ? 'off' : 'one-time-code'"
+        :pattern="useBackupCode ? undefined : '[0-9]*'"
+        autofocus
+        class="mt-1 w-full rounded border px-3 py-2 font-mono tracking-widest"
+        :class="totpError && 'border-red-400'"
+        :aria-invalid="!!totpError"
+        @input="totpError = null"
+      />
+      <span v-if="totpError" class="mt-1 block text-sm text-red-600">{{ totpError }}</span>
+    </label>
+    <button
+      type="submit"
+      :disabled="loading"
+      class="vulse-button-primary w-full rounded px-4 py-2 font-medium disabled:opacity-50"
+    >
+      {{ loading ? 'Verifying…' : 'Verify' }}
+    </button>
+    <div class="flex justify-between text-sm">
+      <button type="button" class="text-zinc-600 underline hover:text-zinc-900" @click="toggleBackupCode">
+        {{ useBackupCode ? 'Use authenticator app' : 'Use a backup code' }}
+      </button>
+      <button type="button" class="text-zinc-600 underline hover:text-zinc-900" @click="cancelTwoFactor">
+        Cancel
+      </button>
+    </div>
   </form>
 </template>

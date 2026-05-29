@@ -80,7 +80,7 @@ Every hook receives a second `ctx` argument:
 ```ts
 ctx.env        // Cloudflare env bindings and secrets available to Vulse
 ctx.logger     // debug/info/warn/error with the plugin id prefix
-ctx.email.send // simple email helper using EMAIL_FROM and EMAIL_API_TOKEN
+ctx.email.send // email helper using the SEND_EMAIL binding + EMAIL_FROM var
 ```
 
 ## Spam filter before storage
@@ -186,13 +186,17 @@ export function welcomeEmailPlugin() {
 }
 ```
 
-The email helper uses the same environment variables as Vulse form email:
+The email helper uses Cloudflare Email Routing — the same binding as Vulse form email and password reset. Add the binding and from-address to `wrangler.toml`:
 
 ```toml
+[[send_email]]
+name = "SEND_EMAIL"
+
 [vars]
 EMAIL_FROM = "hello@example.com"
-EMAIL_API_TOKEN = "..."
 ```
+
+See [`configuration.md#email-send_email`](configuration.md#email-send_email) for full setup including local dev simulation.
 
 ## Registration allow/deny rule
 

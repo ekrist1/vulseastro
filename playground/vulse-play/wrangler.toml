@@ -20,6 +20,16 @@ VULSE_ALLOW_MEMBER_SIGNUP = "true"
 # Serve frontend images via Cloudflare Image Transformations (format=auto, compressed).
 # Needs Image Resizing + a custom domain — not processed in local dev or on workers.dev.
 # VULSE_IMAGE_TRANSFORM = "true"
+# EMAIL_FROM = "noreply@yourdomain.com"
+
+# vulse:send-email — Cloudflare Email Routing (password reset + form notifications)
+# Requires Email Routing configured for your domain in the Cloudflare dashboard.
+# Local dev: wrangler simulates the binding — emails are logged, never actually sent.
+# Docs: https://developers.cloudflare.com/email-routing/email-workers/send-email-workers/
+#       https://developers.cloudflare.com/email-routing/email-workers/local-development/
+#
+# [[send_email]]
+# name = "SEND_EMAIL"
 
 # vulse:form-queue — async submission processing (notify/confirmation emails, webhooks)
 # [[queues.producers]]

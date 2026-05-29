@@ -59,4 +59,29 @@ describe('publish on create (drafts-enabled collection)', () => {
     const { data } = await res.json() as { data: { status: string } }
     expect(data.status).toBe('draft')
   })
+
+  it('does not publish a drafts-enabled entry from status alone', async () => {
+    const { routes, cookie } = await ctx()
+    const res = await routes.create(
+      createReq(cookie, {
+        slug: 'n3',
+        content: { title: 'N3', slug: 'n3', body: 'b' },
+        status: 'published',
+      }),
+      { collection: 'note' },
+    )
+    expect(res.status).toBe(200)
+    const { data } = await res.json() as {
+      data: {
+        status: string
+        content: Record<string, unknown>
+        draftContent: Record<string, unknown> | null
+        hasUnpublishedChanges: boolean
+      }
+    }
+    expect(data.status).toBe('draft')
+    expect(data.content).toEqual({})
+    expect(data.draftContent).toMatchObject({ title: 'N3' })
+    expect(data.hasUnpublishedChanges).toBe(true)
+  })
 })

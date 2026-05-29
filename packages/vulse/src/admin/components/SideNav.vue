@@ -81,9 +81,12 @@ async function signOut() {
 
     <div v-if="userEmail" class="border-y border-zinc-100 px-4 py-2 text-xs">
       <div class="font-mono text-zinc-700">{{ userEmail }}</div>
-      <button type="button" class="mt-1 text-zinc-500 hover:text-zinc-900" @click="signOut">
-        Sign out
-      </button>
+      <div class="mt-1 flex items-center gap-3">
+        <a href="/admin/account" class="text-zinc-500 hover:text-zinc-900">Account</a>
+        <button type="button" class="text-zinc-500 hover:text-zinc-900" @click="signOut">
+          Sign out
+        </button>
+      </div>
     </div>
 
     <nav class="px-2 pb-6">
@@ -168,6 +171,7 @@ async function signOut() {
         <div class="px-2 pt-4 text-xs uppercase tracking-wide text-zinc-500">Settings</div>
         <a href="/admin/settings" :class="subNavClass('/admin/settings', true)">Site</a>
         <a href="/admin/settings/auth" :class="subNavClass('/admin/settings/auth', true)">Auth</a>
+        <a href="/admin/settings/redirects" :class="subNavClass('/admin/settings/redirects', true)">Redirects</a>
         <a href="/admin/settings/status" :class="subNavClass('/admin/settings/status', true)">Status</a>
       </template>
     </nav>

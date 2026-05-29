@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { adminApi, AdminApiError } from '../client/api.js'
+import { useToast } from '../composables/toast.js'
+
+const toast = useToast()
 import { fieldDescriptorsFromDefinitions } from '../client/form-from-zod.js'
 import type { FieldDescriptor } from '../client/form-from-zod.js'
 import type { FieldDefinition } from '../../core/blueprints/definition.js'
@@ -150,6 +153,7 @@ async function saveDefinition() {
     } else {
       await adminApi.put(`/api/vulse/globals/${props.handle}`, body)
       ensureContentFields()
+      toast.success('Definition saved.')
     }
   } catch (e) {
     error.value = formatApiError(e)
@@ -165,6 +169,7 @@ async function saveValue() {
   savingValue.value = true
   try {
     await adminApi.put(`/api/vulse/globals/${props.handle}/value`, { ...content })
+    toast.success('Content saved.')
   } catch (e) {
     if (e instanceof AdminApiError) applyValueErrors(e)
     else error.value = 'Save failed'

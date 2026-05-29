@@ -130,6 +130,7 @@ export function entriesRoutes(db: VulseDb, auth: Auth, reg: BlueprintRegistry) {
         slug: z.string(),
         content: z.unknown(),
         status: z.enum(['draft', 'published']).optional(),
+        publish: z.boolean().optional(),
       }),
     }, async ({ params, body, auth: authCtx }) => {
       const bp = blueprintFor(params.collection)
@@ -144,6 +145,7 @@ export function entriesRoutes(db: VulseDb, auth: Auth, reg: BlueprintRegistry) {
         content: validated,
         updatedBy: authCtx.user.id,
         ...(body.status !== undefined ? { status: body.status } : {}),
+        ...(body.publish !== undefined ? { publish: body.publish } : {}),
         draftsEnabled: bp.drafts === true,
       })
     }),

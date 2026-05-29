@@ -114,6 +114,20 @@ export default {
 
 Without a `FORM_QUEUE` binding, submissions are still stored in D1 — but the async side-effects don't run automatically. You can re-process manually by reading rows from `vulse_form_submissions` (e.g. in a one-off worker, or your own cron).
 
+### Email for form notifications
+
+Notification and confirmation emails require [Cloudflare Email Routing](https://developers.cloudflare.com/email-routing/email-workers/send-email-workers/) configured for your domain. Add to `wrangler.toml`:
+
+```toml
+[[send_email]]
+name = "SEND_EMAIL"
+
+[vars]
+EMAIL_FROM = "noreply@yourdomain.com"
+```
+
+Without these, form submissions are still stored and `FORM_QUEUE` still processes them — email steps are skipped and the submission is marked `failed` with error `email_not_configured`. See [`configuration.md#email-send_email`](configuration.md#email-send_email) for full setup and local simulation.
+
 ## Plugin hooks
 
 Use the plugin system in [`plugins.md`](plugins.md) for custom form behavior.

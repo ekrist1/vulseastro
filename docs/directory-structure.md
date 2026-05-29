@@ -42,6 +42,8 @@ export default defineConfig({
 })
 ```
 
+> For production deploys, add a `configPath: process.env.WRANGLER_CONFIG` option to the adapter so builds can target `wrangler.production.toml` without overwriting `wrangler.toml`. See [installation.md](installation.md#1-prerequisites) and [deployment.md](deployment.md).
+
 The integration:
 
 - Mounts admin pages under `/admin`.

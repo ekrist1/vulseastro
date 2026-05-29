@@ -1,0 +1,32 @@
+---
+import AdminShell from '../components/AdminShell.astro'
+import TwoFactorPanel from '../components/TwoFactorPanel.vue'
+
+const vulseUser = (Astro.locals as { vulseUser?: { email?: string; name?: string; twoFactorEnabled?: boolean } }).vulseUser
+const user = {
+  email: vulseUser?.email ?? '',
+  name: vulseUser?.name ?? '',
+  twoFactorEnabled: Boolean(vulseUser?.twoFactorEnabled),
+}
+---
+<AdminShell title="Account" activePath="/admin/account">
+  <h1 class="text-2xl font-semibold mb-6">Account</h1>
+
+  <section class="rounded-xl border bg-white p-6 mb-6">
+    <h2 class="text-base font-semibold mb-2">Profile</h2>
+    <dl class="grid grid-cols-[max-content_1fr] gap-x-6 gap-y-1 text-sm">
+      <dt class="text-zinc-500">Name</dt><dd>{user.name}</dd>
+      <dt class="text-zinc-500">Email</dt><dd class="font-mono">{user.email}</dd>
+    </dl>
+  </section>
+
+  <section class="rounded-xl border bg-white p-6">
+    <h2 class="text-base font-semibold mb-1">Two-factor authentication</h2>
+    <p class="text-sm text-zinc-600 mb-4">
+      Add a second step at sign-in using an authenticator app (Google
+      Authenticator, 1Password, Authy, etc.). Optional, and you can turn it off
+      again at any time.
+    </p>
+    <TwoFactorPanel client:load initialEnabled={user.twoFactorEnabled} />
+  </section>
+</AdminShell>

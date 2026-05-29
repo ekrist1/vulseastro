@@ -88,6 +88,17 @@ describe('runEntryQuery', () => {
     await expect(runEntryQuery(db, spec({ where: { combine: 'and', nodes: [{ field: 'content.bad path', op: 'eq', value: 1 }] } }))).rejects.toThrow()
   })
 
+  it('rejects malformed operator values and windows with validation errors', async () => {
+    const db = await seed()
+    await expect(runEntryQuery(db, spec({
+      where: { combine: 'and', nodes: [{ field: 'createdBy', op: 'in', value: 'u1' }] },
+    }))).rejects.toThrow(/requires an array/)
+    await expect(runEntryQuery(db, spec({
+      where: { combine: 'and', nodes: [{ field: 'content.views', op: 'between', value: [1] }] },
+    }))).rejects.toThrow(/two-item array/)
+    await expect(runEntryQuery(db, spec({ limit: -1 }))).rejects.toThrow(/limit/)
+  })
+
   it('scopes to descendants with and without depth', async () => {
     const repo = new EntriesRepo(createDb(env.DB))
     const root = await repo.create({ collection: 'docs', slug: 'root', content: { t: 'root' }, createdBy: 'u1', status: 'published' })

@@ -1,6 +1,6 @@
 {
   "name": "@vulsecms/core",
-  "version": "0.1.0-beta.12",
+  "version": "0.1.0-beta.18",
   "description": "Astro-native headless CMS for Cloudflare (D1, R2, Workers)",
   "license": "MIT",
   "repository": {
@@ -109,15 +109,18 @@
     "jose": "^6.2.3",
     "morphdom": "^2.7.8",
     "nanoid": "^5.0.0",
+    "qrcode": "^1.5.4",
     "tailwindcss": "^4",
     "typescript": "^5.6.0",
     "vue": "^3.5.34"
   },
   "devDependencies": {
+    "@better-auth/utils": "0.4.0",
     "@cloudflare/vitest-pool-workers": "^0.6.0",
     "@cloudflare/workers-types": "^4.20240320.0",
     "@types/diff": "^8.0.0",
     "@types/node": "^22.0.0",
+    "@types/qrcode": "^1.5.6",
     "astro": "^6.3.7",
     "drizzle-kit": "^0.31.10",
     "esbuild": "^0.25.12",
