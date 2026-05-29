@@ -1,17 +1,23 @@
 export interface EmailEnv {
+  /** Cloudflare Email Routing send binding — declared as `[[send_email]]` in wrangler.toml. */
+  SEND_EMAIL?: SendEmail
+  /** The "From" address used on outgoing emails, e.g. `noreply@yourdomain.com`. */
   EMAIL_FROM?: string
-  EMAIL_API_TOKEN?: string
 }
 
 export async function sendEmail(
   env: EmailEnv,
-  input: { to: string; subject: string; body: string },
+  input: { to: string; subject: string; text: string },
 ): Promise<'sent' | 'logged'> {
-  if (!env.EMAIL_FROM || !env.EMAIL_API_TOKEN) {
-    console.log(`[vulse-email] to=${input.to} subject=${input.subject}\n${input.body}`)
+  if (!env.SEND_EMAIL || !env.EMAIL_FROM) {
+    console.log(`[vulse-email] to=${input.to} subject=${input.subject}\n${input.text}`)
     return 'logged'
   }
-  // Placeholder: real Email Workers integration documented in README.
-  console.log(`[vulse-email] to=${input.to} subject=${input.subject}`)
+  await env.SEND_EMAIL.send({
+    from: env.EMAIL_FROM,
+    to: input.to,
+    subject: input.subject,
+    text: input.text,
+  })
   return 'sent'
 }

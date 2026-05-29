@@ -17,6 +17,16 @@ bucket_name = "vulse-media"
 [vars]
 BETTER_AUTH_SECRET = "dev-secret-change-me-in-production-32chars"
 VULSE_ALLOW_MEMBER_SIGNUP = "true"
+# EMAIL_FROM = "noreply@yourdomain.com"
+
+# vulse:send-email — Cloudflare Email Routing (password reset + form notifications)
+# Requires Email Routing configured for your domain in the Cloudflare dashboard.
+# Local dev: wrangler simulates the binding — emails are logged, never actually sent.
+# Docs: https://developers.cloudflare.com/email-routing/email-workers/send-email-workers/
+#       https://developers.cloudflare.com/email-routing/email-workers/local-development/
+#
+# [[send_email]]
+# name = "SEND_EMAIL"
 
 # vulse:form-queue — async submission processing (notify/confirmation emails, webhooks)
 # [[queues.producers]]
