@@ -41,15 +41,26 @@ export function useEntrySearch(collections: () => string[]) {
           continue
         }
 
-        const rows = await adminApi.get<
-          { id: string; content?: { title?: string }; slug?: string }[]
-        >(`/api/vulse/entries/${collection}`)
-        for (const row of rows) {
-          merged.push({
-            id: row.id,
-            collection,
-            title: row.content?.title ?? row.slug ?? row.id,
-          })
+        type EntryRow = { id: string; content?: { title?: string }; slug?: string }
+        type PageResult = { items: EntryRow[]; total: number; page: number; pageSize: number }
+        let page = 1
+        let fetched = 0
+        let total = Infinity
+        while (fetched < total) {
+          const result = await adminApi.get<PageResult>(
+            `/api/vulse/entries/${collection}?page=${page}`,
+          )
+          total = result.total
+          for (const row of result.items) {
+            merged.push({
+              id: row.id,
+              collection,
+              title: row.content?.title ?? row.slug ?? row.id,
+            })
+          }
+          fetched += result.items.length
+          if (fetched >= total || result.items.length === 0) break
+          page++
         }
       }
 

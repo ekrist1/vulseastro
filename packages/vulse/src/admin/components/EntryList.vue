@@ -15,8 +15,14 @@ const props = defineProps<{
   defaultLocale?: string
 }>()
 
-const rows = ref<{ id: string; status: string; slug?: string; hasUnpublishedChanges?: boolean; content?: Record<string, unknown> }[]>([])
+type EntryItem = { id: string; status: string; slug?: string; hasUnpublishedChanges?: boolean; content?: Record<string, unknown> }
+
+const rows = ref<EntryItem[]>([])
 const loading = ref(true)
+const page = ref(1)
+const total = ref(0)
+const pageSize = ref(250)
+const totalPages = computed(() => Math.max(1, Math.ceil(total.value / pageSize.value)))
 const activeLocale = ref(
   resolveActiveLocale(props.supportedLocales, props.entryLocale, props.defaultLocale),
 )
@@ -27,10 +33,20 @@ async function load() {
   try {
     const qs = new URLSearchParams()
     qs.set('locale', activeLocale.value)
-    rows.value = await adminApi.get(`/api/vulse/entries/${props.collection}?${qs.toString()}`)
+    qs.set('page', String(page.value))
+    const result = await adminApi.get(`/api/vulse/entries/${props.collection}?${qs.toString()}`)
+    rows.value = result.items
+    total.value = result.total
+    pageSize.value = result.pageSize
   } finally {
     loading.value = false
   }
+}
+
+function goToPage(n: number) {
+  if (n < 1 || n > totalPages.value) return
+  page.value = n
+  void load()
 }
 
 function switchLocale(next: string) {
@@ -48,7 +64,7 @@ onMounted(() => {
 })
 
 watch(activeLocale, () => {
-  if (!props.tree) void load()
+  if (!props.tree) { page.value = 1; void load() }
 })
 </script>
 
@@ -124,6 +140,27 @@ watch(activeLocale, () => {
           </tr>
         </tbody>
       </table>
+    </div>
+
+    <div v-if="!tree && totalPages > 1" class="mt-3 flex items-center justify-between text-sm text-zinc-500">
+      <span>{{ total }} entries</span>
+      <div class="flex items-center gap-1">
+        <button
+          :disabled="page <= 1"
+          class="rounded border border-zinc-200 px-2 py-1 hover:bg-zinc-50 disabled:opacity-40"
+          @click="goToPage(page - 1)"
+        >
+          &lsaquo; Prev
+        </button>
+        <span class="px-2">{{ page }} / {{ totalPages }}</span>
+        <button
+          :disabled="page >= totalPages"
+          class="rounded border border-zinc-200 px-2 py-1 hover:bg-zinc-50 disabled:opacity-40"
+          @click="goToPage(page + 1)"
+        >
+          Next &rsaquo;
+        </button>
+      </div>
     </div>
   </div>
 </template>

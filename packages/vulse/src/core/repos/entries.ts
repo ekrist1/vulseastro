@@ -381,6 +381,26 @@ export class EntriesRepo {
     return joinToEntry(shell, loc)
   }
 
+  async count(opts: Omit<ListOptions, 'limit' | 'offset' | 'orderBy' | 'order'>): Promise<number> {
+    const locale = opts.locale ?? DEFAULT_LOCALE
+    const conditions = [
+      eq(entries.collection, opts.collection),
+      eq(entryLocales.locale, locale),
+    ]
+    if (opts.status) conditions.push(eq(entryLocales.status, opts.status))
+    if (opts.parentId !== undefined) {
+      conditions.push(opts.parentId === null ? isNull(entries.parentId) : eq(entries.parentId, opts.parentId))
+    }
+    if (opts.createdBy) conditions.push(eq(entries.createdBy, opts.createdBy))
+    if (opts.publishedAfter) conditions.push(gte(entryLocales.publishedAt, opts.publishedAfter))
+    if (opts.publishedBefore) conditions.push(lte(entryLocales.publishedAt, opts.publishedBefore))
+    const [row] = await this.db.select({ n: sql<number>`count(*)` })
+      .from(entries)
+      .innerJoin(entryLocales, eq(entryLocales.entryId, entries.id))
+      .where(and(...conditions))
+    return Number(row?.n ?? 0)
+  }
+
   async list(opts: ListOptions): Promise<EntryRow[]> {
     const locale = opts.locale ?? DEFAULT_LOCALE
     const conditions = [

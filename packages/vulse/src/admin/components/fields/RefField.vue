@@ -31,11 +31,11 @@ async function loadOptions(search = '') {
       return
     }
 
-    const rows = await adminApi.get<{ id: string; content?: { title?: string }; slug?: string }[]>(
+    const result = await adminApi.get<{ items: { id: string; content?: { title?: string }; slug?: string }[] }>(
       `/api/vulse/entries/${props.refTarget}`,
     )
     const needle = search.trim().toLowerCase()
-    options.value = rows
+    options.value = result.items
       .map((row) => ({
         id: row.id,
         title: row.content?.title ?? row.slug ?? row.id,

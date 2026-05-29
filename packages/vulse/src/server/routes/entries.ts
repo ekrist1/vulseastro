@@ -49,16 +49,27 @@ export function entriesRoutes(db: VulseDb, auth: Auth, reg: BlueprintRegistry) {
     list: defineHandler(auth, { params: paramsByCollection }, async ({ params, url, auth: authCtx }) => {
       const bp = blueprintFor(params.collection)
       const locale = await resolveLocaleParam(db, url.searchParams.get('locale'))
+      const PAGE_SIZE = 250
+      const page = Math.max(1, parseInt(url.searchParams.get('page') ?? '1', 10) || 1)
+      const limit = PAGE_SIZE
+      const offset = (page - 1) * PAGE_SIZE
+
       if (!(await evaluate(bp, 'read', { user: authCtx.user }))) {
-        return await entries.list({ collection: params.collection, locale, status: 'published' })
+        const listOpts = { collection: params.collection, locale, status: 'published' as const, limit, offset }
+        const [items, total] = await Promise.all([entries.list(listOpts), entries.count(listOpts)])
+        return { items, total, page, pageSize: PAGE_SIZE }
       }
       const parentRaw = url.searchParams.get('parentId')
       const parentId = parentRaw === 'root' || parentRaw === '' ? null : parentRaw ?? undefined
-      return await entries.list({
+      const listOpts = {
         collection: params.collection,
         locale,
+        limit,
+        offset,
         ...(parentId !== undefined ? { parentId } : {}),
-      })
+      }
+      const [items, total] = await Promise.all([entries.list(listOpts), entries.count(listOpts)])
+      return { items, total, page, pageSize: PAGE_SIZE }
     }),
 
     tree: defineHandler(auth, {
