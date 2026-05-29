@@ -67,6 +67,7 @@
     "./client/components/SessionGuard.astro": "./src/client/components/SessionGuard.astro",
     "./client/BlockRenderer.vue": "./src/client/BlockRenderer.vue",
     "./client/BlockRenderer.astro": "./src/client/BlockRenderer.astro",
+    "./client/EntryRenderer.vue": "./src/client/EntryRenderer.vue",
     "./client/components/FormRenderer.astro": "./src/client/components/FormRenderer.astro",
     "./admin.css": "./src/admin/styles/admin.css"
   },

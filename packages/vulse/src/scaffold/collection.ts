@@ -2,7 +2,12 @@ import { VULSE_PACKAGE } from '../package-name.js'
 
 export interface ScaffoldField {
   name: string
+  label?: string
   ui: { kind: string }
+  /** Grid columns (nested fields). */
+  fields?: ScaffoldField[]
+  /** Replicator sets. */
+  sets?: { name: string; label?: string; fields: ScaffoldField[] }[]
 }
 
 export interface CollectionScaffoldInput {
@@ -12,6 +17,8 @@ export interface CollectionScaffoldInput {
   indexRoute?: string
   titleField?: string
   fields?: ScaffoldField[]
+  /** Frontend target for the generated show page. Defaults to 'astro'. */
+  framework?: 'astro' | 'vue'
 }
 
 export interface ScaffoldFile {
@@ -32,6 +39,14 @@ export function deriveUrlSegment(showRoute: string, indexRoute?: string): string
   const showBase = showRoute.replace(/\{slug\}/g, '').replace(/\/$/, '')
   if (!showBase || showBase === '/') return ''
   return showBase.replace(/^\//, '')
+}
+
+export function pascalHandle(handle: string): string {
+  return handle
+    .split(/[-_]/g)
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join('')
 }
 
 export function resolveTitleField(input: CollectionScaffoldInput): string {
@@ -161,6 +176,98 @@ if (!entry) return new Response(null, { status: 404, statusText: 'Not found' })
 `
 }
 
+interface FieldDescriptor {
+  name: string
+  label?: string
+  kind: string
+  fields?: FieldDescriptor[]
+  sets?: { name: string; label?: string; fields: FieldDescriptor[] }[]
+}
+
+function toFieldDescriptors(fields: ScaffoldField[]): FieldDescriptor[] {
+  return fields.map((f) => {
+    const d: FieldDescriptor = { name: f.name, kind: f.ui.kind }
+    if (f.label) d.label = f.label
+    if (f.fields?.length) d.fields = toFieldDescriptors(f.fields)
+    if (f.sets?.length) {
+      d.sets = f.sets.map((s) => ({
+        name: s.name,
+        ...(s.label ? { label: s.label } : {}),
+        fields: toFieldDescriptors(s.fields),
+      }))
+    }
+    return d
+  })
+}
+
+function buildFieldDescriptors(input: CollectionScaffoldInput): FieldDescriptor[] {
+  const fields = input.fields ?? []
+  if (fields.length > 0) return toFieldDescriptors(fields)
+  // Mirror the default blueprint (title + blocks body) when no fields are known.
+  return [
+    { name: resolveTitleField(input), kind: 'text' },
+    { name: 'body', kind: 'blocks' },
+  ]
+}
+
+/** Relative path from the show page back to src/components/<Component>.vue. */
+function componentImportPath(segment: string, component: string): string {
+  // src/pages/[slug].astro -> depth 1; src/pages/<segment>/[slug].astro -> depth 2+
+  const depth = 1 + (segment ? segment.split('/').filter(Boolean).length : 0)
+  return `${'../'.repeat(depth)}components/${component}.vue`
+}
+
+export function generateVueComponent(input: CollectionScaffoldInput): string {
+  const titleField = resolveTitleField(input)
+  const descriptor = JSON.stringify(buildFieldDescriptors(input), null, 2)
+
+  return `<script setup lang="ts">
+import EntryRenderer from '${VULSE_PACKAGE}/client/EntryRenderer.vue'
+
+// Generated starting point — customize freely.
+const props = defineProps<{
+  content: Record<string, unknown>
+  mediaBase?: string
+}>()
+
+// Field kinds captured from the blueprint at scaffold time so rendering is
+// unambiguous (asset vs text, grid vs replicator). Edit to taste.
+const fields = ${descriptor}
+</script>
+
+<template>
+  <EntryRenderer
+    :content="props.content"
+    :fields="fields"
+    :mediaBase="props.mediaBase"
+    titleField="${titleField}"
+  />
+</template>
+`
+}
+
+export function generateVueShowPage(input: CollectionScaffoldInput): string {
+  const component = `${pascalHandle(input.handle)}Entry`
+  const segment = deriveUrlSegment(input.showRoute, input.indexRoute)
+  const importPath = componentImportPath(segment, component)
+
+  return `---
+import { useCollection } from '${VULSE_PACKAGE}/server'
+import ${component} from '${importPath}'
+
+// Reads content from D1 per request, so it must render on demand. Required when
+// the project uses Astro's default \`output: 'static'\` — otherwise a dynamic
+// route errors with "getStaticPaths() function is required for dynamic routes".
+export const prerender = false
+
+const slug = Astro.params.slug!
+const { entry, content } = await useCollection(Astro, '${input.handle}', { slug })
+if (!entry) return new Response(null, { status: 404, statusText: 'Not found' })
+---
+<${component} client:load content={content} mediaBase="/api/vulse/public/media" />
+`
+}
+
 export function generateIndexPage(input: CollectionScaffoldInput): string | null {
   const indexRoute = input.indexRoute?.trim()
   if (!indexRoute || indexRoute === '/') return null
@@ -239,6 +346,7 @@ export function scaffoldCliCommand(
   if (input.label && input.label !== input.handle) {
     parts.push(`--label '${input.label.replace(/'/g, "'\\''")}'`)
   }
+  if (input.framework === 'vue') parts.push('--framework vue')
   const titleField = resolveTitleField(input)
   if (titleField !== 'title') parts.push(`--title-field ${titleField}`)
   return parts.join(' \\\n  ')
@@ -256,6 +364,7 @@ export function generateCollectionScaffoldFiles(
   const includeContentConfig = opts.includeContentConfig ?? false
   const includeIndex = opts.includeIndex ?? !!input.indexRoute?.trim()
 
+  const isVue = input.framework === 'vue'
   const segment = deriveUrlSegment(input.showRoute, input.indexRoute)
   const showPath = segment ? `src/pages/${segment}/[slug].astro` : 'src/pages/[slug].astro'
   const files: ScaffoldFile[] = []
@@ -267,7 +376,17 @@ export function generateCollectionScaffoldFiles(
     })
   }
 
-  files.push({ path: showPath, content: generateShowPage(input) })
+  files.push({
+    path: showPath,
+    content: isVue ? generateVueShowPage(input) : generateShowPage(input),
+  })
+
+  if (isVue) {
+    files.push({
+      path: `src/components/${pascalHandle(input.handle)}Entry.vue`,
+      content: generateVueComponent(input),
+    })
+  }
 
   if (includeIndex) {
     const indexContent = generateIndexPage(input)
