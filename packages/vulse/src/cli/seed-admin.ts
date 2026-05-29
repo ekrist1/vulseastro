@@ -4,7 +4,7 @@ import { ConflictError } from '../core/errors.js'
 import { createAuth } from '../server/better-auth.js'
 import { PLACEHOLDER_AUTH_SECRET } from '../server/placeholder-auth-secret.js'
 
-export interface SeedOptions { email?: string; remote?: boolean; password?: string }
+export interface SeedOptions { email?: string; remote?: boolean; password?: string; config?: string }
 export interface SeedResult { email: string; tempPassword: string }
 
 export interface SeedAdminUserOptions {
@@ -50,9 +50,10 @@ export async function runSeedAdmin(opts: SeedOptions): Promise<void> {
   }
 
   const { resolveCliPlatform } = await import('./platform.js')
-  const { db, env, dispose } = await resolveCliPlatform(
-    opts.remote !== undefined ? { remote: opts.remote } : {},
-  )
+  const { db, env, dispose } = await resolveCliPlatform({
+    ...(opts.remote !== undefined ? { remote: opts.remote } : {}),
+    ...(opts.config !== undefined ? { config: opts.config } : {}),
+  })
   try {
     const secret = env.BETTER_AUTH_SECRET
     if (typeof secret !== 'string' || !secret) {

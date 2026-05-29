@@ -49,12 +49,17 @@ import vulse from '@vulsecms/core/integration'
 
 export default defineConfig({
   output: 'server',
-  adapter: cloudflare({ platformProxy: { enabled: true } }),
+  adapter: cloudflare({
+    platformProxy: { enabled: true },
+    // Let production/CI builds select a config without overwriting wrangler.toml.
+    // Unset in dev → the adapter auto-detects wrangler.toml. See deployment.md.
+    ...(process.env.WRANGLER_CONFIG ? { configPath: process.env.WRANGLER_CONFIG } : {}),
+  }),
   integrations: [vulse()],
 })
 ```
 
-The `platformProxy: { enabled: true }` flag is required so the dev server can resolve D1 and R2 bindings against your local wrangler state.
+The `platformProxy: { enabled: true }` flag is required so the dev server can resolve D1 and R2 bindings against your local wrangler state. The `configPath` line lets a production build target `wrangler.production.toml` via `WRANGLER_CONFIG=… pnpm build` without copying it over `wrangler.toml` — see [deployment.md](deployment.md).
 
 ## 2. Run the setup wizard (recommended)
 
@@ -68,7 +73,7 @@ It will create the D1 database and splice the `database_id` into `wrangler.toml`
 
 Skip ahead to [section 5](#5-verify-the-install) once it finishes. For non-interactive use (`--yes`, `--email`, `--password`), see [`cli.md`](cli.md#vulse-setup).
 
-> **Development only** — `npx vulse setup` creates a local development database and writes `wrangler.toml` as your dev config. Your production site will use a separate D1 database. The same migrations apply to both — run `npx vulse migrate --remote` against your production database to bring its schema up to date without recreating anything. You never need to edit `wrangler.toml` back and forth: keep a separate `wrangler.production.toml` for production. See [deployment.md](deployment.md).
+> **Development only** — `npx vulse setup` creates a local development database and writes `wrangler.toml` as your dev config. Your production site will use a separate D1 database. The same migrations apply to both — run `npx vulse migrate --remote -c wrangler.production.toml` against your production database to bring its schema up to date without recreating anything. You never overwrite `wrangler.toml`: keep a separate `wrangler.production.toml` and select it per command (`-c`/`WRANGLER_CONFIG`). See [deployment.md](deployment.md).
 
 The sections below describe the same steps performed manually — useful if you prefer full control or need to recover a partial setup.
 
