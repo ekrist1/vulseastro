@@ -73,6 +73,8 @@ describe('media routes', () => {
     expect(res.status).toBe(200)
     expect(res.headers.get('content-type')).toBe('image/png')
     expect(res.headers.get('cache-control')).toBe('public, max-age=31536000, immutable')
+    // Drain the R2 body stream so Miniflare's isolated storage can tear down cleanly.
+    await res.arrayBuffer()
   })
 
   it('returns 404 for a missing public file', async () => {
