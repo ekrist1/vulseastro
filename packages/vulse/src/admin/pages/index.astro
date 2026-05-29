@@ -13,11 +13,12 @@ const reg = rt.registry
 const counts: { name: string; label: string; total: number; published: number }[] = []
 for (const bp of reg.list()) {
   const all = await rt.routes.entries.list(new Request(Astro.request.url, { headers: Astro.request.headers }), { collection: bp.name })
-  const body = await all.json() as { ok: true; data: { status: string }[] } | { ok: false }
-  const list = body.ok ? body.data : []
+  const body = await all.json() as { ok: true; data: { items: { status: string }[]; total: number } } | { ok: false }
+  const list = body.ok ? body.data.items : []
+  const totalCount = body.ok ? body.data.total : 0
   counts.push({
     name: bp.name, label: bp.label,
-    total: list.length,
+    total: totalCount,
     published: list.filter((e) => e.status === 'published').length,
   })
 }

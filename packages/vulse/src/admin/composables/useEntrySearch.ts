@@ -41,10 +41,10 @@ export function useEntrySearch(collections: () => string[]) {
           continue
         }
 
-        const rows = await adminApi.get<
-          { id: string; content?: { title?: string }; slug?: string }[]
+        const result = await adminApi.get<
+          { items: { id: string; content?: { title?: string }; slug?: string }[] }
         >(`/api/vulse/entries/${collection}`)
-        for (const row of rows) {
+        for (const row of result.items) {
           merged.push({
             id: row.id,
             collection,
