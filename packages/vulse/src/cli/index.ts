@@ -61,6 +61,8 @@ program
   .option('--index <path>', 'Index route, e.g. /blog (omit for show-only)')
   .option('--label <label>', 'Collection label for generated files')
   .option('--title-field <field>', 'Title field used in templates')
+  .option('--framework <framework>', "Show page target: 'astro' (default) or 'vue'", 'astro')
+  .option('--vue', 'Shorthand for --framework vue', false)
   .option('--static', 'Add vulseLoader() to content.config.ts for SSG getCollection()', false)
   .option('--force', 'Overwrite existing scaffold files', false)
   .option('--skip-blueprint', 'Skip src/vulse/collections/<handle>.ts', false)
@@ -74,6 +76,7 @@ program
       ...(opts.index !== undefined ? { index: opts.index } : {}),
       ...(opts.label !== undefined ? { label: opts.label } : {}),
       ...(opts.titleField !== undefined ? { titleField: opts.titleField } : {}),
+      framework: opts.vue ? 'vue' : (opts.framework ?? 'astro'),
       force: !!opts.force,
       static: !!opts.static,
       skipBlueprint: !!opts.skipBlueprint,

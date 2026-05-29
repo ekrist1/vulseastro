@@ -221,6 +221,7 @@ const isCreate = computed(() => props.handle === null);
 
 const scaffoldShowRoute = ref('')
 const scaffoldIndexRoute = ref('')
+const scaffoldFramework = ref<'astro' | 'vue'>('astro')
 const scaffoldOpen = ref(true)
 const copyNotice = ref<string | null>(null)
 
@@ -245,9 +246,37 @@ const scaffoldInput = computed(() => ({
   label: label.value || handle.value,
   showRoute: scaffoldShowRoute.value,
   indexRoute: scaffoldIndexRoute.value,
+  framework: scaffoldFramework.value,
   fields: fields
     .filter((f) => f.name.trim())
-    .map((f) => ({ name: f.name, ui: { kind: f.ui.kind } })),
+    .map((f) => {
+      const descriptor: {
+        name: string
+        label?: string
+        ui: { kind: string }
+        fields?: { name: string; label?: string; ui: { kind: string } }[]
+        sets?: { name: string; label?: string; fields: { name: string; label?: string; ui: { kind: string } }[] }[]
+      } = { name: f.name, ...(f.label ? { label: f.label } : {}), ui: { kind: f.ui.kind } }
+      if (f.ui.kind === 'grid') {
+        descriptor.fields = f.ui.fields.map((n) => ({
+          name: n.name,
+          ...(n.label ? { label: n.label } : {}),
+          ui: { kind: n.ui.kind },
+        }))
+      }
+      if (f.ui.kind === 'replicator') {
+        descriptor.sets = f.ui.sets.map((s) => ({
+          name: s.name,
+          ...(s.label ? { label: s.label } : {}),
+          fields: s.fields.map((n) => ({
+            name: n.name,
+            ...(n.label ? { label: n.label } : {}),
+            ui: { kind: n.ui.kind },
+          })),
+        }))
+      }
+      return descriptor
+    }),
 }))
 
 const scaffoldCommand = computed(() => scaffoldCliCommand(scaffoldInput.value))
@@ -1694,7 +1723,8 @@ async function save() {
         <div>
           <h2 class="text-sm font-semibold text-zinc-800">Scaffold frontend</h2>
           <p class="mt-1 text-xs text-zinc-500">
-            Generate a code blueprint and SSR Astro index/show pages. Add <code class="font-mono text-xs">--static</code> for an optional Content Layer loader snippet.
+            Generate a code blueprint and SSR Astro index/show pages. Switch the framework to Vue to emit a generic
+            <code class="font-mono text-xs">EntryRenderer</code> wrapper mounted as an island. Add <code class="font-mono text-xs">--static</code> for an optional Content Layer loader snippet.
             Run the CLI locally or copy the files below.
           </p>
         </div>
@@ -1717,6 +1747,14 @@ async function save() {
             <span class="font-medium text-zinc-700">Index route</span>
             <input v-model="scaffoldIndexRoute" class="mt-1 w-full rounded border border-zinc-300 px-2 py-1.5 font-mono text-xs" placeholder="/blog" />
             <span class="mt-1 block text-xs text-zinc-400">Leave empty to skip the index page.</span>
+          </label>
+          <label class="block text-sm">
+            <span class="font-medium text-zinc-700">Framework</span>
+            <select v-model="scaffoldFramework" class="mt-1 w-full rounded border border-zinc-300 px-2 py-1.5 text-xs">
+              <option value="astro">Astro</option>
+              <option value="vue">Vue (island)</option>
+            </select>
+            <span class="mt-1 block text-xs text-zinc-400">Vue emits a generic EntryRenderer wrapper mounted as an island.</span>
           </label>
         </div>
 

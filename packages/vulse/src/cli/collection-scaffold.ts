@@ -7,6 +7,7 @@ export interface CollectionScaffoldCliOptions {
   index?: string
   label?: string
   titleField?: string
+  framework?: 'astro' | 'vue'
   force?: boolean
   static?: boolean
   skipBlueprint?: boolean
@@ -35,6 +36,7 @@ export async function runCollectionScaffold(opts: CollectionScaffoldCliOptions):
     showRoute,
     indexRoute,
     ...(opts.titleField ? { titleField: opts.titleField } : {}),
+    ...(opts.framework ? { framework: opts.framework } : {}),
   }, {
     ...(opts.force ? { force: true } : {}),
     ...(opts.static ? { static: true } : {}),

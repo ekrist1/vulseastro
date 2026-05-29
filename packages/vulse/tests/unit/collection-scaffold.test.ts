@@ -55,6 +55,56 @@ describe('collection scaffold', () => {
     expect(indexPage?.content).not.toContain('getCollection')
   })
 
+  it('generates a Vue island show page and per-collection wrapper', () => {
+    const input = {
+      handle: 'blog',
+      label: 'Blog',
+      showRoute: '/blog/{slug}',
+      indexRoute: '/blog',
+      framework: 'vue' as const,
+      fields: [
+        { name: 'title', ui: { kind: 'text' } },
+        { name: 'cover', ui: { kind: 'asset' } },
+        { name: 'body', ui: { kind: 'blocks' } },
+      ],
+    }
+    const files = generateCollectionScaffoldFiles(input, { includeContentConfig: false })
+    expect(files.map((f) => f.path)).toEqual([
+      'src/vulse/collections/blog.ts',
+      'src/pages/blog/[slug].astro',
+      'src/components/BlogEntry.vue',
+      'src/pages/blog/index.astro',
+    ])
+
+    const showPage = files.find((f) => f.path === 'src/pages/blog/[slug].astro')!
+    expect(showPage.content).toContain('export const prerender = false')
+    expect(showPage.content).toContain("useCollection(Astro, 'blog'")
+    expect(showPage.content).toContain('client:load')
+    // import depth: src/pages/blog/[slug].astro -> src/components/BlogEntry.vue
+    expect(showPage.content).toContain("import BlogEntry from '../../components/BlogEntry.vue'")
+
+    const wrapper = files.find((f) => f.path === 'src/components/BlogEntry.vue')!
+    expect(wrapper.content).toContain("import EntryRenderer from '@vulsecms/core/client/EntryRenderer.vue'")
+    expect(wrapper.content).toContain('"kind": "asset"')
+    expect(wrapper.content).toContain('"kind": "blocks"')
+    expect(wrapper.content).toContain('titleField="title"')
+
+    expect(scaffoldCliCommand(input)).toContain('--framework vue')
+  })
+
+  it('uses ../components depth for a root-level Vue show page', () => {
+    const files = generateCollectionScaffoldFiles({
+      handle: 'page',
+      label: 'Page',
+      showRoute: '/{slug}',
+      indexRoute: '',
+      framework: 'vue',
+    })
+    const showPage = files.find((f) => f.path === 'src/pages/[slug].astro')!
+    expect(showPage.content).toContain("import PageEntry from '../components/PageEntry.vue'")
+    expect(files.some((f) => f.path === 'src/components/PageEntry.vue')).toBe(true)
+  })
+
   it('patches content.config.ts without duplicating collection', () => {
     const existing = `import { defineCollection, z } from 'astro:content'
 import { vulseLoader } from '@vulsecms/core/loader'
@@ -125,6 +175,39 @@ describe('writeCollectionScaffold', () => {
     const config = await readFile(join(cwd, 'src/content.config.ts'), 'utf8')
     expect(config).toContain('blog: defineCollection')
     expect(config).toContain('vulseLoader')
+  })
+
+  it('writes the Vue component and island page for framework vue', async () => {
+    const result = await writeCollectionScaffold(cwd, {
+      handle: 'blog',
+      label: 'Blog',
+      showRoute: '/blog/{slug}',
+      indexRoute: '/blog',
+      framework: 'vue',
+    })
+
+    expect(result.written).toContain('src/components/BlogEntry.vue')
+    expect(result.written).toContain('src/pages/blog/[slug].astro')
+    const wrapper = await readFile(join(cwd, 'src/components/BlogEntry.vue'), 'utf8')
+    expect(wrapper).toContain('EntryRenderer')
+  })
+
+  it('skips the Vue component too when --skip-pages is set', async () => {
+    const result = await writeCollectionScaffold(
+      cwd,
+      {
+        handle: 'blog',
+        label: 'Blog',
+        showRoute: '/blog/{slug}',
+        indexRoute: '/blog',
+        framework: 'vue',
+      },
+      { skipPages: true },
+    )
+
+    expect(result.written).toContain('src/vulse/collections/blog.ts')
+    expect(result.written).not.toContain('src/components/BlogEntry.vue')
+    expect(result.written.some((p) => p.startsWith('src/pages/'))).toBe(false)
   })
 
   it('skips existing files unless forced', async () => {

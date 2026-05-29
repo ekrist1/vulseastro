@@ -43,7 +43,11 @@ export async function writeCollectionScaffold(
     includeBlueprint: !opts.skipBlueprint,
     includeContentConfig: false,
     includeIndex: !opts.skipPages && !!input.indexRoute?.trim(),
-  }).filter((file) => !opts.skipPages || !file.path.startsWith('src/pages/'))
+  }).filter(
+    (file) =>
+      !opts.skipPages ||
+      (!file.path.startsWith('src/pages/') && !/^src\/components\/.*Entry\.vue$/.test(file.path)),
+  )
 
   for (const file of files) {
     const abs = join(cwd, file.path)
