@@ -1,0 +1,83 @@
+{
+  "version": 1,
+  "name": "Podcast",
+  "description": "A podcast site: hosts and episodes with audio, show notes, and per-episode guests.",
+  "blueprints": [
+    {
+      "handle": "host",
+      "label": "Host",
+      "singleton": false,
+      "preview": { "path": "/hosts/{slug}" },
+      "fields": [
+        { "name": "name", "label": "Name", "ui": { "kind": "text" }, "optional": false },
+        { "name": "slug", "label": "Slug", "ui": { "kind": "text" }, "optional": false },
+        { "name": "bio", "label": "Bio", "ui": { "kind": "textarea" }, "optional": true },
+        { "name": "photo", "label": "Photo", "ui": { "kind": "asset" }, "optional": true },
+        {
+          "name": "social_links",
+          "label": "Social links",
+          "ui": {
+            "kind": "grid",
+            "mode": "table",
+            "addLabel": "Add link",
+            "fields": [
+              {
+                "name": "platform",
+                "label": "Platform",
+                "ui": {
+                  "kind": "select",
+                  "options": [
+                    { "key": "x", "label": "X / Twitter" },
+                    { "key": "instagram", "label": "Instagram" },
+                    { "key": "youtube", "label": "YouTube" },
+                    { "key": "website", "label": "Website" }
+                  ]
+                },
+                "optional": false
+              },
+              { "name": "url", "label": "URL", "ui": { "kind": "link" }, "optional": false }
+            ]
+          },
+          "optional": true
+        }
+      ]
+    },
+    {
+      "handle": "podcast_episode",
+      "label": "Podcast episode",
+      "singleton": false,
+      "drafts": true,
+      "seo": true,
+      "seoMapping": { "metaTitle": "title", "metaDescription": "description", "ogImage": "cover_image" },
+      "preview": { "path": "/episodes/{slug}" },
+      "fields": [
+        { "name": "title", "label": "Title", "ui": { "kind": "text" }, "optional": false },
+        { "name": "slug", "label": "Slug", "ui": { "kind": "text" }, "optional": false },
+        { "name": "episode_number", "label": "Episode number", "ui": { "kind": "text" }, "optional": true },
+        { "name": "season", "label": "Season", "ui": { "kind": "text" }, "optional": true },
+        { "name": "description", "label": "Description", "ui": { "kind": "textarea" }, "optional": true },
+        { "name": "cover_image", "label": "Cover image", "ui": { "kind": "asset" }, "optional": true },
+        { "name": "audio", "label": "Audio", "ui": { "kind": "asset" }, "optional": true },
+        { "name": "published_at", "label": "Published at", "ui": { "kind": "date" }, "optional": true },
+        { "name": "duration", "label": "Duration", "ui": { "kind": "text" }, "optional": true },
+        { "name": "hosts", "label": "Hosts", "ui": { "kind": "entries", "collections": ["host"] }, "optional": true },
+        {
+          "name": "guests",
+          "label": "Guests",
+          "ui": {
+            "kind": "grid",
+            "mode": "stacked",
+            "addLabel": "Add guest",
+            "fields": [
+              { "name": "name", "label": "Name", "ui": { "kind": "text" }, "optional": false },
+              { "name": "bio", "label": "Bio", "ui": { "kind": "textarea" }, "optional": true },
+              { "name": "photo", "label": "Photo", "ui": { "kind": "asset" }, "optional": true }
+            ]
+          },
+          "optional": true
+        },
+        { "name": "show_notes", "label": "Show notes", "ui": { "kind": "blocks" }, "optional": false }
+      ]
+    }
+  ]
+}

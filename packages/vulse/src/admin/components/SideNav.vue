@@ -154,6 +154,9 @@ async function signOut() {
         <a href="/admin/schema/new" :class="navClass('/admin/schema/new')" class="text-zinc-600">
           + New collection
         </a>
+        <a v-if="isAdmin" href="/admin/schema/import" :class="navClass('/admin/schema/import')" class="text-zinc-600">
+          ↓ Import / templates
+        </a>
       </div>
 
       <a v-if="isAdmin" href="/admin/settings/sets" :class="navClass('/admin/settings/sets')">

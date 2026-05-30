@@ -1,0 +1,61 @@
+{
+  "version": 1,
+  "name": "Documentation site",
+  "description": "Structured product/technical documentation: pages grouped into sections, written by authors.",
+  "blueprints": [
+    {
+      "handle": "author",
+      "label": "Author",
+      "singleton": false,
+      "fields": [
+        { "name": "name", "label": "Name", "ui": { "kind": "text" }, "optional": false },
+        { "name": "bio", "label": "Bio", "ui": { "kind": "textarea" }, "optional": true },
+        { "name": "avatar", "label": "Avatar", "ui": { "kind": "asset" }, "optional": true }
+      ]
+    },
+    {
+      "handle": "documentation_section",
+      "label": "Documentation section",
+      "singleton": false,
+      "fields": [
+        { "name": "title", "label": "Title", "ui": { "kind": "text" }, "optional": false },
+        { "name": "slug", "label": "Slug", "ui": { "kind": "text" }, "optional": false },
+        { "name": "description", "label": "Description", "ui": { "kind": "textarea" }, "optional": true },
+        { "name": "icon", "label": "Icon", "ui": { "kind": "text" }, "optional": true },
+        { "name": "order", "label": "Order", "ui": { "kind": "text" }, "optional": true }
+      ]
+    },
+    {
+      "handle": "documentation_page",
+      "label": "Documentation page",
+      "singleton": false,
+      "drafts": true,
+      "seo": true,
+      "seoMapping": { "metaTitle": "title", "metaDescription": "summary", "ogImage": "cover_image" },
+      "preview": { "path": "/docs/{slug}" },
+      "fields": [
+        { "name": "title", "label": "Title", "ui": { "kind": "text" }, "optional": false },
+        { "name": "slug", "label": "Slug", "ui": { "kind": "text" }, "optional": false },
+        { "name": "summary", "label": "Summary", "ui": { "kind": "textarea" }, "optional": true },
+        { "name": "cover_image", "label": "Cover image", "ui": { "kind": "asset" }, "optional": true },
+        {
+          "name": "category",
+          "label": "Category",
+          "ui": {
+            "kind": "select",
+            "options": [
+              { "key": "getting-started", "label": "Getting started" },
+              { "key": "guides", "label": "Guides" },
+              { "key": "api-reference", "label": "API reference" },
+              { "key": "tutorials", "label": "Tutorials" }
+            ]
+          },
+          "optional": true
+        },
+        { "name": "section", "label": "Section", "ui": { "kind": "relationship", "to": "documentation_section" }, "optional": true },
+        { "name": "author", "label": "Author", "ui": { "kind": "relationship", "to": "author" }, "optional": true },
+        { "name": "body", "label": "Body", "ui": { "kind": "blocks" }, "optional": false }
+      ]
+    }
+  ]
+}
