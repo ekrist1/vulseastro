@@ -1,7 +1,11 @@
 // Embeds the repo-root `themes/<key>/files/**` source trees into a generated TS
 // module so the package can ship them and the CLI can write them into a user's
-// project without filesystem access at install time. Mirrors sync-schema-templates.mjs.
-import { readFileSync, writeFileSync, readdirSync, statSync, mkdirSync } from 'node:fs'
+// project without filesystem access at install time. Uses the same embed-at-build
+// approach as the other sync-*.mjs codegen scripts in this directory.
+//
+// Symlinks are skipped (lstatSync, not statSync) so a symlink inside a theme
+// cannot pull files from outside the theme tree into the published package.
+import { readFileSync, writeFileSync, readdirSync, lstatSync, mkdirSync } from 'node:fs'
 import { dirname, join, relative, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -14,14 +18,19 @@ function walk(dir) {
   const out = []
   for (const name of readdirSync(dir)) {
     const abs = join(dir, name)
-    if (statSync(abs).isDirectory()) out.push(...walk(abs))
-    else out.push(abs)
+    const stat = lstatSync(abs)
+    if (stat.isSymbolicLink()) continue // never follow symlinks out of the theme tree
+    if (stat.isDirectory()) out.push(...walk(abs))
+    else if (stat.isFile()) out.push(abs)
   }
   return out
 }
 
 const themes = readdirSync(sourceDir)
-  .filter((d) => statSync(join(sourceDir, d)).isDirectory())
+  .filter((d) => {
+    const stat = lstatSync(join(sourceDir, d))
+    return stat.isDirectory() && !stat.isSymbolicLink()
+  })
   .sort()
   .map((key) => {
     const themeDir = join(sourceDir, key)

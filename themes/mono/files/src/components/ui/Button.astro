@@ -17,8 +17,10 @@ const byVariant = {
 const styles = byVariant[variant]
 
 const Tag = href ? 'a' : 'button'
+// Explicit type so a <button> doesn't default to type="submit" inside a form.
+const type = href ? undefined : 'button'
 ---
 
-<Tag href={href} class:list={[base, styles, className]}>
+<Tag href={href} type={type} class:list={[base, styles, className]}>
   <slot />
 </Tag>

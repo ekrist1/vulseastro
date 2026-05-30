@@ -101,6 +101,24 @@ program
   })
 
 program
+  .command('schema:import [file]')
+  .description('Import collection blueprints from a JSON bundle, or a built-in --template')
+  .option('--template <key>', 'Import a built-in template by key (see --list)')
+  .option('--list', 'List the available built-in templates', false)
+  .option('--remote', 'Run against the remote D1 instead of local miniflare', false)
+  .option('-c, --config <path>', 'Wrangler config to target (e.g. wrangler.production.toml); defaults to WRANGLER_CONFIG or auto-detected')
+  .action(async (file: string | undefined, opts) => {
+    const { runSchemaImport } = await import('./schema-import.js')
+    await runSchemaImport({
+      ...(file !== undefined ? { file } : {}),
+      ...(opts.template !== undefined ? { template: opts.template } : {}),
+      list: !!opts.list,
+      remote: !!opts.remote,
+      ...(opts.config !== undefined ? { config: opts.config } : {}),
+    })
+  })
+
+program
   .command('theme:add [key]')
   .description('Install a predefined, design-token-driven Astro theme into your project')
   .option('--list', 'List the available built-in themes', false)

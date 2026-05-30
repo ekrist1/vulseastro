@@ -1,0 +1,122 @@
+{
+  "version": 1,
+  "name": "Health & wellness",
+  "description": "Clinic/wellness site: practitioners, the services they offer, educational articles, and testimonials.",
+  "blueprints": [
+    {
+      "handle": "practitioner",
+      "label": "Practitioner",
+      "singleton": false,
+      "preview": { "path": "/team/{slug}" },
+      "fields": [
+        { "name": "name", "label": "Name", "ui": { "kind": "text" }, "optional": false },
+        { "name": "slug", "label": "Slug", "ui": { "kind": "text" }, "optional": false },
+        { "name": "title", "label": "Title", "ui": { "kind": "text" }, "optional": true },
+        { "name": "photo", "label": "Photo", "ui": { "kind": "asset" }, "optional": true },
+        {
+          "name": "specialties",
+          "label": "Specialties",
+          "ui": {
+            "kind": "select",
+            "multiple": true,
+            "options": [
+              { "key": "nutrition", "label": "Nutrition" },
+              { "key": "physiotherapy", "label": "Physiotherapy" },
+              { "key": "mental-health", "label": "Mental health" },
+              { "key": "general", "label": "General practice" }
+            ]
+          },
+          "optional": true
+        },
+        { "name": "bio", "label": "Bio", "ui": { "kind": "blocks" }, "optional": true }
+      ]
+    },
+    {
+      "handle": "service",
+      "label": "Service",
+      "singleton": false,
+      "drafts": true,
+      "seo": true,
+      "preview": { "path": "/services/{slug}" },
+      "fields": [
+        { "name": "title", "label": "Title", "ui": { "kind": "text" }, "optional": false },
+        { "name": "slug", "label": "Slug", "ui": { "kind": "text" }, "optional": false },
+        { "name": "summary", "label": "Summary", "ui": { "kind": "textarea" }, "optional": true },
+        { "name": "image", "label": "Image", "ui": { "kind": "asset" }, "optional": true },
+        {
+          "name": "duration",
+          "label": "Duration",
+          "ui": {
+            "kind": "select",
+            "options": [
+              { "key": "30m", "label": "30 minutes" },
+              { "key": "60m", "label": "60 minutes" },
+              { "key": "90m", "label": "90 minutes" }
+            ]
+          },
+          "optional": true
+        },
+        { "name": "price", "label": "Price", "ui": { "kind": "text" }, "optional": true },
+        { "name": "practitioner", "label": "Practitioner", "ui": { "kind": "relationship", "to": "practitioner" }, "optional": true },
+        { "name": "body", "label": "Details", "ui": { "kind": "blocks" }, "optional": false }
+      ]
+    },
+    {
+      "handle": "wellness_article",
+      "label": "Wellness article",
+      "singleton": false,
+      "drafts": true,
+      "seo": true,
+      "seoMapping": { "metaTitle": "title", "metaDescription": "excerpt", "ogImage": "cover_image" },
+      "preview": { "path": "/articles/{slug}" },
+      "fields": [
+        { "name": "title", "label": "Title", "ui": { "kind": "text" }, "optional": false },
+        { "name": "slug", "label": "Slug", "ui": { "kind": "text" }, "optional": false },
+        { "name": "excerpt", "label": "Excerpt", "ui": { "kind": "textarea" }, "optional": true },
+        { "name": "cover_image", "label": "Cover image", "ui": { "kind": "asset" }, "optional": true },
+        { "name": "published_at", "label": "Published at", "ui": { "kind": "date" }, "optional": true },
+        {
+          "name": "category",
+          "label": "Category",
+          "ui": {
+            "kind": "select",
+            "options": [
+              { "key": "nutrition", "label": "Nutrition" },
+              { "key": "fitness", "label": "Fitness" },
+              { "key": "mental-health", "label": "Mental health" },
+              { "key": "lifestyle", "label": "Lifestyle" }
+            ]
+          },
+          "optional": true
+        },
+        { "name": "author", "label": "Author", "ui": { "kind": "relationship", "to": "practitioner" }, "optional": true },
+        { "name": "body", "label": "Body", "ui": { "kind": "blocks" }, "optional": false }
+      ]
+    },
+    {
+      "handle": "testimonial",
+      "label": "Testimonial",
+      "singleton": false,
+      "fields": [
+        { "name": "author_name", "label": "Author name", "ui": { "kind": "text" }, "optional": false },
+        { "name": "quote", "label": "Quote", "ui": { "kind": "textarea" }, "optional": false },
+        { "name": "photo", "label": "Photo", "ui": { "kind": "asset" }, "optional": true },
+        {
+          "name": "rating",
+          "label": "Rating",
+          "ui": {
+            "kind": "select",
+            "options": [
+              { "key": "5", "label": "5 stars" },
+              { "key": "4", "label": "4 stars" },
+              { "key": "3", "label": "3 stars" },
+              { "key": "2", "label": "2 stars" },
+              { "key": "1", "label": "1 star" }
+            ]
+          },
+          "optional": true
+        }
+      ]
+    }
+  ]
+}
