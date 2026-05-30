@@ -1,0 +1,5 @@
+{
+  "key": "mono",
+  "name": "Mono",
+  "description": "Minimal black & white theme. Design variables (colors, fonts, radius) live in one Tailwind v4 @theme block; sections ship as Astro components with modular variants."
+}

@@ -1,0 +1,22 @@
+---
+import '../styles/theme.css'
+
+interface Props {
+  title?: string
+  description?: string
+}
+const { title = 'Mono', description } = Astro.props
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    {description && <meta name="description" content={description} />}
+  </head>
+  <body class="min-h-screen bg-bg font-sans text-fg antialiased">
+    <slot />
+  </body>
+</html>

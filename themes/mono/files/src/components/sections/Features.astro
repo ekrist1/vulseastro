@@ -1,0 +1,42 @@
+---
+import Container from '../ui/Container.astro'
+
+interface FeatureItem {
+  title: string
+  description?: string
+}
+interface Props {
+  /** 'grid' = responsive cards; 'list' = stacked rows with dividers. */
+  variant?: 'grid' | 'list'
+  heading?: string
+  items: FeatureItem[]
+}
+const { variant = 'grid', heading, items } = Astro.props
+const isGrid = variant === 'grid'
+---
+
+<section class="bg-bg text-fg">
+  <Container class="py-20">
+    {heading && (
+      <h2 class="mb-10 font-display text-2xl font-semibold tracking-tight md:text-3xl">{heading}</h2>
+    )}
+    <div
+      class:list={[
+        isGrid ? 'grid gap-8 sm:grid-cols-2 lg:grid-cols-3' : 'divide-y divide-border border-y border-border',
+      ]}
+    >
+      {items.map((item) => (
+        <div
+          class:list={[
+            isGrid
+              ? 'rounded-[var(--radius)] border border-border p-6'
+              : 'py-6',
+          ]}
+        >
+          <h3 class="font-display text-lg font-medium">{item.title}</h3>
+          {item.description && <p class="mt-2 text-muted">{item.description}</p>}
+        </div>
+      ))}
+    </div>
+  </Container>
+</section>

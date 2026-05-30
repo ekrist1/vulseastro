@@ -1,0 +1,26 @@
+---
+interface Props {
+  href?: string
+  /** 'solid' = accent fill; 'outline' = bordered; 'invert' = for dark backgrounds. */
+  variant?: 'solid' | 'outline' | 'invert'
+  class?: string
+}
+const { href, variant = 'solid', class: className = '' } = Astro.props
+
+const base =
+  'inline-flex items-center justify-center rounded-[var(--radius)] px-5 py-2.5 text-sm font-medium transition'
+const byVariant = {
+  solid: 'bg-accent text-accent-fg hover:opacity-90',
+  outline: 'border border-border text-fg hover:bg-fg/5',
+  invert: 'bg-bg text-fg hover:opacity-90',
+}
+const styles = byVariant[variant]
+
+const Tag = href ? 'a' : 'button'
+// Explicit type so a <button> doesn't default to type="submit" inside a form.
+const type = href ? undefined : 'button'
+---
+
+<Tag href={href} type={type} class:list={[base, styles, className]}>
+  <slot />
+</Tag>

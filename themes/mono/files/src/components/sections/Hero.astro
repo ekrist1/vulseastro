@@ -1,0 +1,58 @@
+---
+import Container from '../ui/Container.astro'
+import Button from '../ui/Button.astro'
+
+interface Props {
+  /** Layout variant. All share the same eyebrow/title/subtitle/CTA primitives. */
+  variant?: 'centered' | 'split' | 'minimal'
+  eyebrow?: string
+  title: string
+  subtitle?: string
+  ctaText?: string
+  ctaHref?: string
+}
+const {
+  variant = 'centered',
+  eyebrow,
+  title,
+  subtitle,
+  ctaText,
+  ctaHref,
+} = Astro.props
+
+const isCentered = variant === 'centered'
+const isSplit = variant === 'split'
+const isMinimal = variant === 'minimal'
+---
+
+<section class="bg-bg text-fg">
+  <Container class={isSplit ? 'grid items-center gap-12 py-24 md:grid-cols-2' : 'py-24'}>
+    <div class:list={[isCentered && 'mx-auto max-w-2xl text-center']}>
+      {eyebrow && (
+        <p class="mb-3 text-sm font-medium uppercase tracking-wide text-muted">{eyebrow}</p>
+      )}
+      <h1
+        class:list={[
+          'font-display font-semibold tracking-tight',
+          isMinimal ? 'text-3xl md:text-4xl' : 'text-4xl md:text-6xl',
+        ]}
+      >
+        {title}
+      </h1>
+      {subtitle && !isMinimal && (
+        <p class="mt-5 text-lg text-muted">{subtitle}</p>
+      )}
+      {ctaText && ctaHref && (
+        <div class:list={['mt-8 flex flex-wrap gap-3', isCentered && 'justify-center']}>
+          <Button href={ctaHref}>{ctaText}</Button>
+          <slot name="actions" />
+        </div>
+      )}
+    </div>
+    {isSplit && (
+      <div class="aspect-[4/3] overflow-hidden rounded-[var(--radius)] border border-border bg-fg/5">
+        <slot name="media" />
+      </div>
+    )}
+  </Container>
+</section>

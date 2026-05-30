@@ -1,0 +1,36 @@
+---
+import Container from '../ui/Container.astro'
+import Button from '../ui/Button.astro'
+
+interface Props {
+  /** 'banner' = full-bleed inverted; 'boxed' = bordered card on page background. */
+  variant?: 'banner' | 'boxed'
+  title: string
+  subtitle?: string
+  ctaText?: string
+  ctaHref?: string
+}
+const { variant = 'banner', title, subtitle, ctaText, ctaHref } = Astro.props
+const isBanner = variant === 'banner'
+---
+
+<section class:list={['py-16', isBanner ? 'bg-fg text-bg' : 'bg-bg text-fg']}>
+  <Container>
+    <div
+      class:list={[
+        'flex flex-col items-start gap-6 md:flex-row md:items-center md:justify-between',
+        !isBanner && 'rounded-[var(--radius)] border border-border p-10',
+      ]}
+    >
+      <div>
+        <h2 class="font-display text-2xl font-semibold tracking-tight md:text-3xl">{title}</h2>
+        {subtitle && (
+          <p class:list={['mt-2', isBanner ? 'text-bg/70' : 'text-muted']}>{subtitle}</p>
+        )}
+      </div>
+      {ctaText && ctaHref && (
+        <Button href={ctaHref} variant={isBanner ? 'invert' : 'solid'}>{ctaText}</Button>
+      )}
+    </div>
+  </Container>
+</section>

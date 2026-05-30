@@ -1,0 +1,66 @@
+---
+// Preview of every section + variant in the Mono theme. Safe to delete once
+// you've built your real pages. Visit /theme-preview to see it.
+import ThemeLayout from '../layouts/ThemeLayout.astro'
+import Header from '../components/sections/Header.astro'
+import Hero from '../components/sections/Hero.astro'
+import Features from '../components/sections/Features.astro'
+import CTA from '../components/sections/CTA.astro'
+import Footer from '../components/sections/Footer.astro'
+
+const navLinks = [
+  { label: 'Features', href: '#features' },
+  { label: 'Pricing', href: '#pricing' },
+  { label: 'Docs', href: '#docs' },
+]
+
+const features = [
+  { title: 'Modular variants', description: 'One component per section, switch layout with a `variant` prop.' },
+  { title: 'Token-driven', description: 'Change colors, fonts, and radius in one @theme block.' },
+  { title: 'Black & white', description: 'A neutral starting point you can make your own.' },
+]
+---
+
+<ThemeLayout title="Mono theme preview">
+  <Header brand="Mono" links={navLinks} />
+
+  <Hero
+    variant="centered"
+    eyebrow="Hero · centered"
+    title="Build it black and white"
+    subtitle="A minimal, token-driven theme you fully own. Edit one file to re-skin everything."
+    ctaText="Get started"
+    ctaHref="#"
+  />
+
+  <Hero
+    variant="split"
+    eyebrow="Hero · split"
+    title="Two columns, one component"
+    subtitle="The split variant adds a media column — no extra files."
+    ctaText="Learn more"
+    ctaHref="#"
+  />
+
+  <Hero variant="minimal" title="Hero · minimal" ctaText="Go" ctaHref="#" />
+
+  <Features variant="grid" heading="Features · grid" items={features} />
+  <Features variant="list" heading="Features · list" items={features} />
+
+  <CTA
+    variant="banner"
+    title="CTA · banner"
+    subtitle="Full-bleed, inverted."
+    ctaText="Start now"
+    ctaHref="#"
+  />
+  <CTA
+    variant="boxed"
+    title="CTA · boxed"
+    subtitle="A bordered card on the page background."
+    ctaText="Start now"
+    ctaHref="#"
+  />
+
+  <Footer brand="Mono" />
+</ThemeLayout>
