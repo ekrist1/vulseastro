@@ -86,12 +86,12 @@
   ],
   "scripts": {
     "prepublishOnly": "pnpm run build",
-    "build": "pnpm run build:bridge && node scripts/sync-version.mjs && tsc -p tsconfig.json",
+    "build": "pnpm run build:bridge && node scripts/sync-version.mjs && node scripts/sync-schema-templates.mjs && tsc -p tsconfig.json",
     "build:bridge": "esbuild src/client/live-preview-bridge.ts --bundle --format=esm --outfile=src/server/assets/live-preview-bridge.js --platform=browser && node scripts/embed-bridge.mjs",
-    "pretest": "node scripts/sync-version.mjs",
+    "pretest": "node scripts/sync-version.mjs && node scripts/sync-schema-templates.mjs",
     "test": "vitest run",
     "test:watch": "vitest",
-    "pretest:integration": "node scripts/sync-version.mjs",
+    "pretest:integration": "node scripts/sync-version.mjs && node scripts/sync-schema-templates.mjs",
     "test:integration": "vitest run -c vitest.integration.config.ts",
     "typecheck": "tsc --noEmit",
     "drizzle:generate": "drizzle-kit generate"

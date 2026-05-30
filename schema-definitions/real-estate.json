@@ -1,0 +1,116 @@
+{
+  "version": 1,
+  "name": "Real estate",
+  "description": "Property listings with agents and neighborhoods, including galleries and listing metadata.",
+  "blueprints": [
+    {
+      "handle": "agent",
+      "label": "Agent",
+      "singleton": false,
+      "preview": { "path": "/agents/{slug}" },
+      "fields": [
+        { "name": "name", "label": "Name", "ui": { "kind": "text" }, "optional": false },
+        { "name": "slug", "label": "Slug", "ui": { "kind": "text" }, "optional": false },
+        { "name": "photo", "label": "Photo", "ui": { "kind": "asset" }, "optional": true },
+        { "name": "phone", "label": "Phone", "ui": { "kind": "text" }, "optional": true },
+        { "name": "email", "label": "Email", "ui": { "kind": "text" }, "optional": true },
+        { "name": "bio", "label": "Bio", "ui": { "kind": "textarea" }, "optional": true }
+      ]
+    },
+    {
+      "handle": "neighborhood",
+      "label": "Neighborhood",
+      "singleton": false,
+      "preview": { "path": "/neighborhoods/{slug}" },
+      "fields": [
+        { "name": "name", "label": "Name", "ui": { "kind": "text" }, "optional": false },
+        { "name": "slug", "label": "Slug", "ui": { "kind": "text" }, "optional": false },
+        { "name": "description", "label": "Description", "ui": { "kind": "textarea" }, "optional": true },
+        { "name": "image", "label": "Image", "ui": { "kind": "asset" }, "optional": true }
+      ]
+    },
+    {
+      "handle": "property",
+      "label": "Property",
+      "singleton": false,
+      "drafts": true,
+      "seo": true,
+      "seoMapping": { "metaTitle": "title", "metaDescription": "summary", "ogImage": "featured_image" },
+      "preview": { "path": "/properties/{slug}" },
+      "fields": [
+        { "name": "title", "label": "Title", "ui": { "kind": "text" }, "optional": false },
+        { "name": "slug", "label": "Slug", "ui": { "kind": "text" }, "optional": false },
+        { "name": "summary", "label": "Summary", "ui": { "kind": "textarea" }, "optional": true },
+        { "name": "featured_image", "label": "Featured image", "ui": { "kind": "asset" }, "optional": true },
+        { "name": "price", "label": "Price", "ui": { "kind": "text" }, "optional": true },
+        {
+          "name": "status",
+          "label": "Status",
+          "ui": {
+            "kind": "select",
+            "options": [
+              { "key": "for-sale", "label": "For sale" },
+              { "key": "for-rent", "label": "For rent" },
+              { "key": "pending", "label": "Pending" },
+              { "key": "sold", "label": "Sold" }
+            ]
+          },
+          "optional": true
+        },
+        {
+          "name": "property_type",
+          "label": "Property type",
+          "ui": {
+            "kind": "select",
+            "options": [
+              { "key": "house", "label": "House" },
+              { "key": "apartment", "label": "Apartment" },
+              { "key": "condo", "label": "Condo" },
+              { "key": "land", "label": "Land" },
+              { "key": "commercial", "label": "Commercial" }
+            ]
+          },
+          "optional": true
+        },
+        { "name": "bedrooms", "label": "Bedrooms", "ui": { "kind": "text" }, "optional": true },
+        { "name": "bathrooms", "label": "Bathrooms", "ui": { "kind": "text" }, "optional": true },
+        { "name": "area", "label": "Area", "ui": { "kind": "text" }, "optional": true },
+        { "name": "address", "label": "Address", "ui": { "kind": "textarea" }, "optional": true },
+        { "name": "featured", "label": "Featured", "ui": { "kind": "boolean" }, "optional": true },
+        { "name": "agent", "label": "Agent", "ui": { "kind": "relationship", "to": "agent" }, "optional": true },
+        { "name": "neighborhood", "label": "Neighborhood", "ui": { "kind": "relationship", "to": "neighborhood" }, "optional": true },
+        {
+          "name": "gallery",
+          "label": "Gallery",
+          "ui": {
+            "kind": "grid",
+            "mode": "stacked",
+            "addLabel": "Add photo",
+            "fields": [
+              { "name": "image", "label": "Image", "ui": { "kind": "asset" }, "optional": false },
+              { "name": "caption", "label": "Caption", "ui": { "kind": "text" }, "optional": true }
+            ]
+          },
+          "optional": true
+        },
+        {
+          "name": "amenities",
+          "label": "Amenities",
+          "ui": {
+            "kind": "select",
+            "multiple": true,
+            "options": [
+              { "key": "parking", "label": "Parking" },
+              { "key": "pool", "label": "Pool" },
+              { "key": "garden", "label": "Garden" },
+              { "key": "gym", "label": "Gym" },
+              { "key": "balcony", "label": "Balcony" }
+            ]
+          },
+          "optional": true
+        },
+        { "name": "body", "label": "Description", "ui": { "kind": "blocks" }, "optional": false }
+      ]
+    }
+  ]
+}

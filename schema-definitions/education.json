@@ -1,0 +1,92 @@
+{
+  "version": 1,
+  "name": "Education",
+  "description": "Online learning platform: instructors, courses grouped by category, and lessons within courses.",
+  "blueprints": [
+    {
+      "handle": "instructor",
+      "label": "Instructor",
+      "singleton": false,
+      "preview": { "path": "/instructors/{slug}" },
+      "fields": [
+        { "name": "name", "label": "Name", "ui": { "kind": "text" }, "optional": false },
+        { "name": "slug", "label": "Slug", "ui": { "kind": "text" }, "optional": false },
+        { "name": "photo", "label": "Photo", "ui": { "kind": "asset" }, "optional": true },
+        {
+          "name": "expertise",
+          "label": "Expertise",
+          "ui": {
+            "kind": "select",
+            "multiple": true,
+            "options": [
+              { "key": "design", "label": "Design" },
+              { "key": "development", "label": "Development" },
+              { "key": "business", "label": "Business" },
+              { "key": "marketing", "label": "Marketing" }
+            ]
+          },
+          "optional": true
+        },
+        { "name": "bio", "label": "Bio", "ui": { "kind": "blocks" }, "optional": true }
+      ]
+    },
+    {
+      "handle": "course_category",
+      "label": "Course category",
+      "singleton": false,
+      "fields": [
+        { "name": "name", "label": "Name", "ui": { "kind": "text" }, "optional": false },
+        { "name": "slug", "label": "Slug", "ui": { "kind": "text" }, "optional": false },
+        { "name": "description", "label": "Description", "ui": { "kind": "textarea" }, "optional": true }
+      ]
+    },
+    {
+      "handle": "course",
+      "label": "Course",
+      "singleton": false,
+      "drafts": true,
+      "seo": true,
+      "seoMapping": { "metaTitle": "title", "metaDescription": "summary", "ogImage": "cover_image" },
+      "preview": { "path": "/courses/{slug}" },
+      "fields": [
+        { "name": "title", "label": "Title", "ui": { "kind": "text" }, "optional": false },
+        { "name": "slug", "label": "Slug", "ui": { "kind": "text" }, "optional": false },
+        { "name": "summary", "label": "Summary", "ui": { "kind": "textarea" }, "optional": true },
+        { "name": "cover_image", "label": "Cover image", "ui": { "kind": "asset" }, "optional": true },
+        {
+          "name": "level",
+          "label": "Level",
+          "ui": {
+            "kind": "select",
+            "options": [
+              { "key": "beginner", "label": "Beginner" },
+              { "key": "intermediate", "label": "Intermediate" },
+              { "key": "advanced", "label": "Advanced" }
+            ]
+          },
+          "optional": true
+        },
+        { "name": "duration", "label": "Duration", "ui": { "kind": "text" }, "optional": true },
+        { "name": "category", "label": "Category", "ui": { "kind": "relationship", "to": "course_category" }, "optional": true },
+        { "name": "instructor", "label": "Instructor", "ui": { "kind": "relationship", "to": "instructor" }, "optional": true },
+        { "name": "body", "label": "Overview", "ui": { "kind": "blocks" }, "optional": false }
+      ]
+    },
+    {
+      "handle": "lesson",
+      "label": "Lesson",
+      "singleton": false,
+      "drafts": true,
+      "preview": { "path": "/lessons/{slug}" },
+      "fields": [
+        { "name": "title", "label": "Title", "ui": { "kind": "text" }, "optional": false },
+        { "name": "slug", "label": "Slug", "ui": { "kind": "text" }, "optional": false },
+        { "name": "course", "label": "Course", "ui": { "kind": "relationship", "to": "course" }, "optional": true },
+        { "name": "order", "label": "Order", "ui": { "kind": "text" }, "optional": true },
+        { "name": "duration", "label": "Duration", "ui": { "kind": "text" }, "optional": true },
+        { "name": "video", "label": "Video", "ui": { "kind": "link" }, "optional": true },
+        { "name": "body", "label": "Content", "ui": { "kind": "blocks" }, "optional": false }
+      ]
+    }
+  ]
+}

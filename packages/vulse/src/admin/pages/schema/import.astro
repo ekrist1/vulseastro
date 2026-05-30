@@ -1,0 +1,7 @@
+---
+import AdminShell from '../../components/AdminShell.astro'
+import SchemaImport from '../../components/SchemaImport.vue'
+---
+<AdminShell title="Import collections" activePath="/admin/schema/import">
+  <SchemaImport client:only="vue" />
+</AdminShell>
