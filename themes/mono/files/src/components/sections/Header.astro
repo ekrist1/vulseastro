@@ -1,0 +1,27 @@
+---
+import Container from '../ui/Container.astro'
+
+interface NavLink {
+  label: string
+  href: string
+}
+interface Props {
+  brand?: string
+  links?: NavLink[]
+}
+const { brand = 'Brand', links = [] } = Astro.props
+---
+
+<header class="border-b border-border bg-bg text-fg">
+  <Container class="flex h-16 items-center justify-between">
+    <a href="/" class="font-display text-lg font-semibold tracking-tight">{brand}</a>
+    {links.length > 0 && (
+      <nav class="flex items-center gap-6 text-sm">
+        {links.map((link) => (
+          <a href={link.href} class="text-muted transition hover:text-fg">{link.label}</a>
+        ))}
+      </nav>
+    )}
+    <slot />
+  </Container>
+</header>

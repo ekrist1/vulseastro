@@ -100,6 +100,22 @@ program
     })
   })
 
+program
+  .command('theme:add [key]')
+  .description('Install a predefined, design-token-driven Astro theme into your project')
+  .option('--list', 'List the available built-in themes', false)
+  .option('--force', 'Overwrite existing files', false)
+  .option('--dir <dir>', 'Install under a subdirectory of cwd (default: project root)')
+  .action(async (key: string | undefined, opts) => {
+    const { runThemeAdd } = await import('./theme-add.js')
+    await runThemeAdd({
+      ...(key !== undefined ? { key } : {}),
+      list: !!opts.list,
+      force: !!opts.force,
+      ...(opts.dir !== undefined ? { dir: opts.dir } : {}),
+    })
+  })
+
 program.parseAsync().catch((err) => {
   console.error(err instanceof Error ? err.message : err)
   process.exit(1)

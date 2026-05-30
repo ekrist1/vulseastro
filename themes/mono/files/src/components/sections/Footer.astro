@@ -1,0 +1,16 @@
+---
+import Container from '../ui/Container.astro'
+
+interface Props {
+  brand?: string
+}
+const { brand = 'Brand' } = Astro.props
+const year = new Date().getFullYear()
+---
+
+<footer class="border-t border-border bg-bg text-fg">
+  <Container class="flex flex-col items-center justify-between gap-4 py-10 text-sm text-muted sm:flex-row">
+    <p>&copy; {year} {brand}</p>
+    <slot />
+  </Container>
+</footer>

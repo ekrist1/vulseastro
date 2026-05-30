@@ -1,0 +1,39 @@
+@import "tailwindcss";
+
+/*
+ * Tell Tailwind which files use utility classes. Tailwind scans these for the
+ * classes it needs to generate. Keep these globs in sync if you move files.
+ */
+@source "../components/sections/**/*.astro";
+@source "../components/ui/**/*.astro";
+@source "../pages/theme-preview.astro";
+
+/*
+ * Exclude the layout that imports THIS stylesheet. Without this, Tailwind's
+ * source-scanning + the layout's CSS import create a dev full-reload loop.
+ */
+@source not "../layouts/ThemeLayout.astro";
+
+/*
+ * ── Design variables ──────────────────────────────────────────────────────
+ * This is the single place to re-skin the theme. Editing a value here updates
+ * every section, because the components use the utilities these tokens drive:
+ *   --color-bg     -> bg-bg / text-bg / border-bg
+ *   --color-fg     -> text-fg / bg-fg / border-fg
+ *   --font-display -> font-display
+ *   --radius       -> rounded-[var(--radius)]
+ * Defaults are intentionally black & white.
+ */
+@theme {
+  --color-bg: #ffffff;
+  --color-fg: #0a0a0a;
+  --color-muted: #6b7280;
+  --color-border: #e5e7eb;
+  --color-accent: #0a0a0a;
+  --color-accent-fg: #ffffff;
+
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-display: var(--font-sans);
+
+  --radius: 0.5rem;
+}
