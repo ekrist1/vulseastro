@@ -1,0 +1,118 @@
+{
+  "version": 1,
+  "name": "SaaS platform",
+  "description": "Marketing & product content for a SaaS: team, features, pricing plans, and a changelog.",
+  "blueprints": [
+    {
+      "handle": "team_member",
+      "label": "Team member",
+      "singleton": false,
+      "fields": [
+        { "name": "name", "label": "Name", "ui": { "kind": "text" }, "optional": false },
+        { "name": "role", "label": "Role", "ui": { "kind": "text" }, "optional": true },
+        { "name": "bio", "label": "Bio", "ui": { "kind": "textarea" }, "optional": true },
+        { "name": "avatar", "label": "Avatar", "ui": { "kind": "asset" }, "optional": true },
+        { "name": "linkedin", "label": "LinkedIn", "ui": { "kind": "link" }, "optional": true }
+      ]
+    },
+    {
+      "handle": "feature",
+      "label": "Feature",
+      "singleton": false,
+      "drafts": true,
+      "seo": true,
+      "preview": { "path": "/features/{slug}" },
+      "fields": [
+        { "name": "title", "label": "Title", "ui": { "kind": "text" }, "optional": false },
+        { "name": "slug", "label": "Slug", "ui": { "kind": "text" }, "optional": false },
+        { "name": "summary", "label": "Summary", "ui": { "kind": "textarea" }, "optional": true },
+        { "name": "icon", "label": "Icon", "ui": { "kind": "text" }, "optional": true },
+        { "name": "image", "label": "Image", "ui": { "kind": "asset" }, "optional": true },
+        {
+          "name": "category",
+          "label": "Category",
+          "ui": {
+            "kind": "select",
+            "options": [
+              { "key": "core", "label": "Core" },
+              { "key": "collaboration", "label": "Collaboration" },
+              { "key": "security", "label": "Security" },
+              { "key": "integrations", "label": "Integrations" }
+            ]
+          },
+          "optional": true
+        },
+        { "name": "body", "label": "Body", "ui": { "kind": "blocks" }, "optional": false }
+      ]
+    },
+    {
+      "handle": "pricing_plan",
+      "label": "Pricing plan",
+      "singleton": false,
+      "fields": [
+        { "name": "name", "label": "Name", "ui": { "kind": "text" }, "optional": false },
+        { "name": "slug", "label": "Slug", "ui": { "kind": "text" }, "optional": false },
+        { "name": "price", "label": "Price", "ui": { "kind": "text" }, "optional": false },
+        {
+          "name": "billing_period",
+          "label": "Billing period",
+          "ui": {
+            "kind": "select",
+            "options": [
+              { "key": "monthly", "label": "Monthly" },
+              { "key": "yearly", "label": "Yearly" },
+              { "key": "one-time", "label": "One-time" }
+            ]
+          },
+          "optional": true
+        },
+        { "name": "description", "label": "Description", "ui": { "kind": "textarea" }, "optional": true },
+        { "name": "highlighted", "label": "Highlighted", "ui": { "kind": "boolean" }, "optional": true },
+        {
+          "name": "plan_features",
+          "label": "Plan features",
+          "ui": {
+            "kind": "grid",
+            "mode": "table",
+            "addLabel": "Add feature",
+            "fields": [
+              { "name": "label", "label": "Feature", "ui": { "kind": "text" }, "optional": false },
+              { "name": "included", "label": "Included", "ui": { "kind": "boolean" }, "optional": true }
+            ]
+          },
+          "optional": true
+        },
+        { "name": "cta_label", "label": "CTA label", "ui": { "kind": "text" }, "optional": true },
+        { "name": "cta_link", "label": "CTA link", "ui": { "kind": "link" }, "optional": true }
+      ]
+    },
+    {
+      "handle": "changelog_entry",
+      "label": "Changelog entry",
+      "singleton": false,
+      "drafts": true,
+      "preview": { "path": "/changelog/{slug}" },
+      "fields": [
+        { "name": "title", "label": "Title", "ui": { "kind": "text" }, "optional": false },
+        { "name": "slug", "label": "Slug", "ui": { "kind": "text" }, "optional": false },
+        { "name": "version", "label": "Version", "ui": { "kind": "text" }, "optional": true },
+        { "name": "released_at", "label": "Released at", "ui": { "kind": "date" }, "optional": true },
+        {
+          "name": "type",
+          "label": "Type",
+          "ui": {
+            "kind": "select",
+            "options": [
+              { "key": "added", "label": "Added" },
+              { "key": "changed", "label": "Changed" },
+              { "key": "fixed", "label": "Fixed" },
+              { "key": "removed", "label": "Removed" }
+            ]
+          },
+          "optional": true
+        },
+        { "name": "body", "label": "Body", "ui": { "kind": "blocks" }, "optional": false }
+      ]
+    }
+  ]
+}

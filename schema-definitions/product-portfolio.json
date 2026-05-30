@@ -1,0 +1,82 @@
+{
+  "version": 1,
+  "name": "Product portfolio",
+  "description": "A catalog of products organized by category, each with a gallery and specifications.",
+  "blueprints": [
+    {
+      "handle": "product_category",
+      "label": "Product category",
+      "singleton": false,
+      "fields": [
+        { "name": "name", "label": "Name", "ui": { "kind": "text" }, "optional": false },
+        { "name": "slug", "label": "Slug", "ui": { "kind": "text" }, "optional": false },
+        { "name": "description", "label": "Description", "ui": { "kind": "textarea" }, "optional": true },
+        { "name": "image", "label": "Image", "ui": { "kind": "asset" }, "optional": true }
+      ]
+    },
+    {
+      "handle": "product",
+      "label": "Product",
+      "singleton": false,
+      "drafts": true,
+      "seo": true,
+      "seoMapping": { "metaTitle": "title", "metaDescription": "summary", "ogImage": "featured_image" },
+      "preview": { "path": "/products/{slug}" },
+      "fields": [
+        { "name": "title", "label": "Title", "ui": { "kind": "text" }, "optional": false },
+        { "name": "slug", "label": "Slug", "ui": { "kind": "text" }, "optional": false },
+        { "name": "summary", "label": "Summary", "ui": { "kind": "textarea" }, "optional": true },
+        { "name": "featured_image", "label": "Featured image", "ui": { "kind": "asset" }, "optional": true },
+        { "name": "price", "label": "Price", "ui": { "kind": "text" }, "optional": true },
+        { "name": "category", "label": "Category", "ui": { "kind": "relationship", "to": "product_category" }, "optional": true },
+        { "name": "featured", "label": "Featured", "ui": { "kind": "boolean" }, "optional": true },
+        {
+          "name": "tags",
+          "label": "Tags",
+          "ui": {
+            "kind": "select",
+            "multiple": true,
+            "clearable": true,
+            "options": [
+              { "key": "new", "label": "New" },
+              { "key": "bestseller", "label": "Bestseller" },
+              { "key": "limited", "label": "Limited edition" },
+              { "key": "sale", "label": "On sale" }
+            ]
+          },
+          "optional": true
+        },
+        {
+          "name": "gallery",
+          "label": "Gallery",
+          "ui": {
+            "kind": "grid",
+            "mode": "stacked",
+            "addLabel": "Add image",
+            "fields": [
+              { "name": "image", "label": "Image", "ui": { "kind": "asset" }, "optional": false },
+              { "name": "alt", "label": "Alt text", "ui": { "kind": "text" }, "optional": true },
+              { "name": "caption", "label": "Caption", "ui": { "kind": "text" }, "optional": true }
+            ]
+          },
+          "optional": true
+        },
+        {
+          "name": "specs",
+          "label": "Specifications",
+          "ui": {
+            "kind": "grid",
+            "mode": "table",
+            "addLabel": "Add spec",
+            "fields": [
+              { "name": "label", "label": "Label", "ui": { "kind": "text" }, "optional": false },
+              { "name": "value", "label": "Value", "ui": { "kind": "text" }, "optional": false }
+            ]
+          },
+          "optional": true
+        },
+        { "name": "body", "label": "Description", "ui": { "kind": "blocks" }, "optional": false }
+      ]
+    }
+  ]
+}
