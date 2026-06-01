@@ -1,4 +1,4 @@
-import { z } from 'astro/zod'
+import { z } from 'zod'
 import type { Auth } from './better-auth.js'
 import type { AuthContext, Role } from '../core/blueprints/types.js'
 import { AccessDeniedError, ValidationError } from '../core/errors.js'

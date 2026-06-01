@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { z } from 'astro/zod'
+import { z } from 'zod'
 
 import { parseContent } from '../../src/core/parse-content.js'
 import { ValidationError } from '../../src/core/errors.js'

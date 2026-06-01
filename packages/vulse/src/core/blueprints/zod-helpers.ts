@@ -1,4 +1,4 @@
-import { z as astroZ, type ZodRawShape, type ZodTypeAny } from 'astro/zod'
+import { z as astroZ, type ZodRawShape, type ZodTypeAny } from 'zod'
 import { blockSchema } from '../blocks/schema.js'
 import { LinkValueSchema } from './definition.js'
 

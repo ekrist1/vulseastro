@@ -1,4 +1,4 @@
-import { z } from 'astro/zod'
+import { z } from 'zod'
 
 const handleRegex = /^[a-z][a-z0-9_-]*$/
 const fieldNameRegex = /^[a-z_][a-z0-9_-]*$/

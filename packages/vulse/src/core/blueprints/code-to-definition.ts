@@ -1,4 +1,4 @@
-import type { z } from 'astro/zod'
+import type { z } from 'zod'
 import type { FieldDescriptor } from './reflect-fields.js'
 import type { Blueprint } from './types.js'
 import type { BlueprintDefinition, FieldDefinition, FieldUi, NestedFieldDefinition } from './definition.js'

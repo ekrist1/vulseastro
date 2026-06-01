@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { z } from 'astro/zod'
+import type { z } from 'zod'
 import { imageBlock } from '../../../../core/blocks/schema'
 import MediaField from '../../fields/MediaField.vue'
 

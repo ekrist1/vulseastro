@@ -1,4 +1,4 @@
-import { z } from 'astro/zod'
+import { z } from 'zod'
 import { SeoFieldMappingSchema } from './seo.js'
 
 export const SelectOptionSchema = z.union([

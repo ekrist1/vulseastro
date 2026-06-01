@@ -1,3 +1,22 @@
+/**
+ * The Astro content-layer adapter — the ONE module that intentionally tracks
+ * Astro's `astro/loaders` API (`Loader` / `LoaderContext` / `ctx.store`).
+ *
+ * This is the most churn-prone Astro surface: the Content Layer API is younger
+ * and moves faster than Astro's integration or route APIs. The framework seam is
+ * kept deliberately thin so an Astro major is a fix *here* (plus the other
+ * adapter modules), not a change to the framework-agnostic core. The core
+ * (`src/core/**`) and the request/runtime layer (`src/server/routes/**`,
+ * `handler.ts`, `runtime.ts`) import zero Astro — enforced by
+ * `tests/unit/astro-seam.test.ts`, which also asserts `astro/loaders` is
+ * imported only here.
+ *
+ * On an Astro major, re-verify against the upstream changelog:
+ *   - the `Loader` shape (`name`, `load(ctx)`)
+ *   - `LoaderContext` (`ctx.store`, `ctx.parseData`, `ctx.meta`, …)
+ *   - the `DataStore` API used below (`store.set`, `store.clear`, …)
+ * See docs/architecture.md for the full seam.
+ */
 import type { Loader } from 'astro/loaders'
 import { createDb } from '../core/db.js'
 import { readLocalesConfig } from '../core/locales.js'

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { z } from 'astro/zod'
+import type { z } from 'zod'
 import { listBlock } from '../../../../core/blocks/schema'
 type Block = z.infer<typeof listBlock>
 const props = defineProps<{ modelValue: Block }>()

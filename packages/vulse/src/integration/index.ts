@@ -34,13 +34,11 @@ const SSR_TAILWIND_EXTERNAL = [
 /**
  * Excluded from Vite dep pre-bundling: dev/build-only or native deps that break
  * esbuild. Do NOT add @vulsecms/core's own runtime deps (better-auth, drizzle-orm,
- * nanoid, …) here — they're nested under the package in pnpm installs, and
+ * zod, nanoid, …) here — they're nested under the package in pnpm installs, and
  * excluding them from the SSR optimizer leaves unresolvable bare imports in the
- * SSR bundle (e.g. "Cannot find module 'drizzle-orm/d1'"). `astro/zod` is safe to
- * exclude because it resolves via the consumer's top-level `astro` install.
+ * SSR bundle (e.g. "Cannot find module 'drizzle-orm/d1'").
  */
 const OPTIMIZE_DEPS_EXCLUDE = [
-  'astro/zod',
   '@tailwindcss/vite',
   '@tailwindcss/oxide',
   '@tailwindcss/node',

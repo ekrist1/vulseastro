@@ -1,4 +1,4 @@
-import type { z } from 'astro/zod'
+import type { z } from 'zod'
 import { compileBlueprintSchema } from '../blueprints/compile.js'
 import type { CompiledSet } from '../sets/compile.js'
 import type { FieldDefinition } from '../blueprints/definition.js'

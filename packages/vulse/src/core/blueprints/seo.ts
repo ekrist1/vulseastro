@@ -1,4 +1,4 @@
-import { z } from 'astro/zod'
+import { z } from 'zod'
 import type { FieldDescriptor } from './reflect-fields.js'
 
 export const SEO_FIELD_PATH = 'seo'
