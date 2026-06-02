@@ -1,4 +1,4 @@
-import { z } from 'astro/zod'
+import { z } from 'zod'
 
 export const headingBlock = z.object({
   type: z.literal('heading'),

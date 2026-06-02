@@ -1,4 +1,4 @@
-import type { z as Zod } from 'astro/zod'
+import type { z as Zod } from 'zod'
 import type { Blueprint } from './types.js'
 import { z } from './zod-helpers.js'
 

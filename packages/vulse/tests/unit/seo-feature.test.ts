@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { z } from 'astro/zod'
+import { z } from 'zod'
 import { compileBlueprintSchema } from '../../src/core/blueprints/compile.js'
 import { applySeoToSchema, resolveEffectiveSeo, resolvedSeoSummary, seoZodSchema } from '../../src/core/blueprints/seo.js'
 import { fieldDescriptorsFromBlueprint } from '../../src/core/blueprints/reflect-fields.js'

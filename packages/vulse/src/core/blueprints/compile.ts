@@ -1,4 +1,4 @@
-import { z } from 'astro/zod'
+import { z } from 'zod'
 import { sha256Hex } from '../sha256.js'
 import type { CompiledSet } from '../sets/compile.js'
 import { validateSetNodes } from '../sets/validate-tree.js'

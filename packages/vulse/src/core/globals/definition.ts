@@ -1,4 +1,4 @@
-import { z } from 'astro/zod'
+import { z } from 'zod'
 import { sha256Hex } from '../sha256.js'
 import { type FieldDefinition, FieldDefinitionSchema } from '../blueprints/definition.js'
 

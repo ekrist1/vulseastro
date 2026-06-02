@@ -1,4 +1,4 @@
-import type { z } from 'astro/zod'
+import type { z } from 'zod'
 import type { BlueprintDefinition, FieldDefinition } from './definition.js'
 
 export type Role = 'admin' | 'editor' | 'member'

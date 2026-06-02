@@ -1,4 +1,4 @@
-import { z } from 'astro/zod'
+import { z } from 'zod'
 import { NestedFieldDefinitionSchema } from '../blueprints/definition.js'
 
 export const SetDefinitionSchema = z.object({

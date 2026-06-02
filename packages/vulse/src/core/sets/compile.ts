@@ -1,4 +1,4 @@
-import type { z } from 'astro/zod'
+import type { z } from 'zod'
 import { compileFieldObject } from '../blueprints/compile.js'
 import type { SetDefinition } from './definition.js'
 

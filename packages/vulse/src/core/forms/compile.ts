@@ -1,4 +1,4 @@
-import { z } from 'astro/zod'
+import { z } from 'zod'
 import type { FormDefinition, FormFieldDefinition } from './definition.js'
 
 export interface CompiledForm {

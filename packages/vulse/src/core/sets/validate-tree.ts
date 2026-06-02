@@ -1,4 +1,4 @@
-import type { z } from 'astro/zod'
+import type { z } from 'zod'
 import type { CompiledSet } from './compile.js'
 
 interface PMNode {

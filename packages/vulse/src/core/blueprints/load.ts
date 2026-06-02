@@ -1,4 +1,4 @@
-import type { z } from 'astro/zod'
+import type { z } from 'zod'
 import { BlueprintRegistry } from './registry.js'
 import type { Blueprint } from './types.js'
 import type { VulseDb } from '../db.js'

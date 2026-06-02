@@ -1,4 +1,4 @@
-import { z } from 'astro/zod'
+import { z } from 'zod'
 import type { Auth } from '../better-auth.js'
 import type { VulseDb } from '../../core/db.js'
 import {

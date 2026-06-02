@@ -1,4 +1,4 @@
-import { z } from 'astro/zod'
+import { z } from 'zod'
 import { and, eq, like, or } from 'drizzle-orm'
 import { hashPassword } from 'better-auth/crypto'
 import { nanoid } from 'nanoid'
