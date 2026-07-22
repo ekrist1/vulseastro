@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { env } from 'cloudflare:test'
-import { applyMigrations } from '../../src/core/migrations'
+import { applyMigrations } from '../helpers/apply-migrations'
 import { createDb } from '../../src/core/db'
 import { FormsRepo } from '../../src/core/repos/forms'
 import { formSubmitRoutes } from '../../src/server/routes/form-submit'

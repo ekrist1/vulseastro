@@ -202,7 +202,7 @@ Cloudflare Pages and Workers need bindings declared at the platform level, not j
 
 ### Deploys succeed but new migrations don't run
 
-The runtime applies migrations on the first request after a deploy. If you want to apply them ahead of time:
+Migrations never run on their own — the runtime does not apply them, and deploying alone does nothing to the database. Apply them explicitly:
 
 ```bash
 npx vulse migrate --remote -c wrangler.production.toml
@@ -213,8 +213,7 @@ npx vulse migrate --remote -c wrangler.production.toml
 Check the ledger to see what's applied:
 
 ```bash
-wrangler d1 execute DB --remote --command \
-  "SELECT id, datetime(applied_at/1000, 'unixepoch') FROM _vulse_migrations ORDER BY id;"
+wrangler d1 migrations list DB --remote -c wrangler.production.toml
 ```
 
 ### Worker exceeds CPU time

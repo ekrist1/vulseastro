@@ -22,3 +22,6 @@ jobs:
       - run: pnpm --filter @vulsecms/core build
       - run: pnpm --filter @vulsecms/core test
       - run: pnpm --filter @vulsecms/core test:integration
+      # The playground consumes the package like a real project (workspace:*).
+      # Building it here keeps it from drifting as the package evolves.
+      - run: pnpm --filter vulse-play build

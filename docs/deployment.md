@@ -134,7 +134,7 @@ npx vulse migrate --remote -c wrangler.production.toml
 
 `-c/--config` selects which wrangler config the migration runs against (it also falls back to the `WRANGLER_CONFIG` environment variable if set). Without it, `--remote` would apply to whatever `database_id` your default `wrangler.toml` points at — i.e. your dev database.
 
-This is idempotent — already-applied migrations are skipped. The runtime would apply pending migrations on the first request anyway, but doing it ahead of time means the first user doesn't pay for it.
+This is idempotent — already-applied migrations are skipped. Migrations are applied **only** by this command (it wraps `wrangler d1 migrations apply`); the runtime never applies them on its own. Skipping this step against a fresh database means the first request fails with `no such table` errors, so run it before every deploy that ships new migrations.
 
 ## 4. Secrets
 

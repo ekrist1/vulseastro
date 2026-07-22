@@ -236,10 +236,13 @@ migrations/
 ├── 0004_forms.sql                Forms, submissions, upload drafts, rate limits
 ├── 0005_globals.sql              Global sets and values
 ├── 0006_preview_sessions.sql     Live preview sessions
-└── meta/                         Drizzle Kit metadata (used by drizzle-kit generate)
+├── 0007_redirects.sql            Redirects
+└── 0008_two_factor.sql           Better Auth two-factor table
 ```
 
 Migration `0002_tree_drafts` was folded into `0000_init` when the i18n schema split was introduced. The ledger ID is intentionally skipped to keep history forward-only.
+
+Migrations are hand-written, forward-only SQL (`NNNN_name.sql`) applied with `wrangler d1 migrations apply` — never rename an existing file, since wrangler's ledger tracks them by filename. When adding a migration, update `src/core/schema.ts` to match; the schema-drift integration test fails CI if the two disagree.
 
 ### `playground/vulse-play/`
 

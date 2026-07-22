@@ -24,13 +24,12 @@ After the install you should:
 
 Migrations are bundled into the Vulse package and shipped with each release. They are forward-only.
 
-The runtime applies them automatically the first time the worker boots after a deploy, by reading the bundled SQL files at `node_modules/@vulsecms/core/migrations/`. You don't normally need to run `vulse migrate` manually in production — but it is useful when you want to apply changes before the first request hits the new worker, or when you are operating against multiple environments and want to keep ledgers in sync.
+The runtime does **not** apply them — `vulse migrate` is the only thing that does. After upgrading the package, run it against every database (local and production) before deploying code that expects the new tables.
 
 ### What `vulse migrate` does
 
-1. Connects to the D1 binding (`DB`) via `wrangler`.
-2. Ensures a `_vulse_migrations` ledger table exists.
-3. For each shipped migration not yet recorded, runs the SQL and inserts a ledger row.
+1. Ensures your wrangler config points `migrations_dir` at the bundled SQL files (`node_modules/@vulsecms/core/migrations/`).
+2. Runs `wrangler d1 migrations apply DB --local|--remote`, which executes each not-yet-applied file and records it in wrangler's `d1_migrations` ledger table.
 
 ### Targeting
 

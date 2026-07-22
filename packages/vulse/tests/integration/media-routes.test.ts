@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { env } from 'cloudflare:test'
-import { applyMigrations } from '../../src/core/migrations'
+import { applyMigrations } from '../helpers/apply-migrations'
 import { createDb } from '../../src/core/db'
 import { createAuth } from '../../src/server/better-auth'
 import { mediaRoutes } from '../../src/server/routes/media'
