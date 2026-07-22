@@ -165,7 +165,7 @@ export const vulseFormUniqueValues = sqliteTable('vulse_form_unique_values', {
   submissionId: text('submission_id').notNull().references(() => vulseFormSubmissions.id, { onDelete: 'cascade' }),
   createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
 }, (t) => ({
-  pk: uniqueIndex('vulse_form_unique_values_pk').on(t.formHandle, t.fieldName, t.valueHash),
+  pk: primaryKey({ columns: [t.formHandle, t.fieldName, t.valueHash] }),
   bySubmission: index('vulse_form_unique_values_submission').on(t.submissionId),
 }))
 
@@ -175,7 +175,7 @@ export const vulseFormRateLimits = sqliteTable('vulse_form_rate_limits', {
   windowStart: integer('window_start', { mode: 'timestamp_ms' }).notNull(),
   count: integer('count').notNull().default(1),
 }, (t) => ({
-  pk: uniqueIndex('vulse_form_rate_limits_pk').on(t.formHandle, t.ipHash, t.windowStart),
+  pk: primaryKey({ columns: [t.formHandle, t.ipHash, t.windowStart] }),
 }))
 
 // --- Globals ---

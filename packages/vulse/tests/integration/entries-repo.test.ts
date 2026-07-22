@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { env } from 'cloudflare:test'
-import { applyMigrations } from '../../src/core/migrations'
+import { applyMigrations } from '../helpers/apply-migrations'
 import { createDb } from '../../src/core/db'
 import { EntriesRepo } from '../../src/core/repos/entries'
 

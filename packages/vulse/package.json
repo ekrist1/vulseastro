@@ -93,8 +93,7 @@
     "test:watch": "vitest",
     "pretest:integration": "node scripts/sync-version.mjs && node scripts/sync-schema-templates.mjs && node scripts/sync-themes.mjs",
     "test:integration": "vitest run -c vitest.integration.config.ts",
-    "typecheck": "tsc --noEmit",
-    "drizzle:generate": "drizzle-kit generate"
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@astrojs/vue": "^6.0.1",
@@ -124,7 +123,6 @@
     "@types/node": "^22.0.0",
     "@types/qrcode": "^1.5.6",
     "astro": "^6.3.7",
-    "drizzle-kit": "^0.31.10",
     "esbuild": "^0.25.12",
     "vite": "^7.3.0",
     "vitest": "^2.1.0",

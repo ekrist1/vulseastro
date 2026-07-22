@@ -27,7 +27,13 @@ function splitStatements(sql: string): string[] {
     .filter(Boolean)
 }
 
-/** Applies bundled SQL migrations directly to a D1 binding (used in tests and Workers). */
+/**
+ * Applies the bundled SQL migrations directly to a miniflare D1 binding.
+ * Test-only: production databases are migrated exclusively via
+ * `vulse migrate` (wrangler d1 migrations apply), which uses wrangler's own
+ * `d1_migrations` ledger — the `_vulse_migrations` table below exists only
+ * in test databases.
+ */
 export async function applyMigrations(db: D1Database): Promise<void> {
   await db.exec(
     'CREATE TABLE IF NOT EXISTS _vulse_migrations (id TEXT PRIMARY KEY, applied_at INTEGER NOT NULL)',

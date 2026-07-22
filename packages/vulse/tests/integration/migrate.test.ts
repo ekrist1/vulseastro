@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { env } from 'cloudflare:test'
-import { applyMigrations } from '../../src/core/migrations'
+import { applyMigrations } from '../helpers/apply-migrations'
 
 describe('applyMigrations', () => {
   it('creates all vulse tables in a fresh D1', async () => {
